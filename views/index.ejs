@@ -1256,6 +1256,21 @@
                                 renderTable();
                                 showToast('คุมะล้างข้อมูลให้เกลี้ยงเลยครับ! 🧼');
                                 break;
+                            case 'delete_testcases':
+                                if (data.data && Array.isArray(data.data)) {
+                                    // Sort indices descending to avoid shifting issues
+                                    const sortedIndices = [...data.data]
+                                        .map(i => parseInt(i) - 1)
+                                        .filter(i => i >= 0 && i < testCases.length)
+                                        .sort((a, b) => b - a);
+
+                                    sortedIndices.forEach(idx => {
+                                        testCases.splice(idx, 1);
+                                    });
+                                    renderTable();
+                                    showToast(`คุมะลบข้อที่เลือกให้แล้วครับ ${data.data.join(', ')}! 🐾`);
+                                }
+                                break;
                         }
                     }
                     if (data.message) addChatMessage('ai', data.message);
