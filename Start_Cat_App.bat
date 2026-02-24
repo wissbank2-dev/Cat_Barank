@@ -15,7 +15,7 @@ if not exist "node_modules\" (
 
 echo [2/3] Starting server...
 REM Start the server in a new window so this script can continue to open the browser
-start /b node server.js
+start /b node index.js
 
 echo [3/3] Opening browser at http://localhost:3000...
 timeout /t 3 >nul
