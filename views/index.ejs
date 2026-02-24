@@ -238,6 +238,24 @@
             border: 2px solid #fda4af;
             box-shadow: 0 0 0 3px rgba(253, 164, 175, 0.2);
         }
+
+        .file-preview-item {
+            background: white;
+            border: 1px solid #fecdd3;
+            border-radius: 0.75rem;
+            padding: 0.25rem 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.75rem;
+            color: #e11d48;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+        }
+
+        .drag-over {
+            background-color: #fff1f2 !important;
+            border: 4px dashed #fda4af !important;
+        }
     </style>
 </head>
 
@@ -267,10 +285,19 @@
             </div>
         </div>
 
+        <!-- Preview Area -->
+        <div id="ai-file-preview" class="hidden flex-wrap gap-2 p-3 bg-rose-50/50 border-t border-rose-100"></div>
+
         <!-- Input -->
         <div class="p-4 border-t-2 border-rose-100 bg-white">
-            <div class="flex gap-2">
-                <input type="text" id="chat-input" placeholder="พิมพ์คุยกับน้องแมว..." class="flex-1 p-2 text-sm">
+            <div class="flex gap-2 items-center">
+                <button onclick="document.getElementById('ai-file-input').click()"
+                    class="text-rose-400 hover:text-rose-500 transition-colors" title="แนบไฟล์">
+                    <span class="text-2xl">📎</span>
+                </button>
+                <input type="file" id="ai-file-input" class="hidden" multiple onchange="handleAIFileSelect(this)">
+                <input type="text" id="chat-input" placeholder="พิมพ์คุยหรือส่งไฟล์หาผม..."
+                    class="flex-1 p-2 text-sm border-2 border-rose-50 rounded-xl focus:border-rose-300 focus:outline-none transition-all">
                 <button onclick="sendMessage()" class="btn-primary p-2 rounded-xl">
                     <span class="text-xl">🚀</span>
                 </button>
@@ -1074,13 +1101,80 @@
             icon.textContent = isAIOpen ? '✕' : '🐱';
         };
 
+        let selectedAIFiles = [];
+
+        window.handleAIFileSelect = function (input) {
+            const files = Array.from(input.files);
+            selectedAIFiles = [...selectedAIFiles, ...files];
+            renderAIFilePreviews();
+            input.value = '';
+        };
+
+        function renderAIFilePreviews() {
+            const container = document.getElementById('ai-file-preview');
+            if (selectedAIFiles.length === 0) {
+                container.classList.add('hidden');
+                return;
+            }
+            container.classList.remove('hidden');
+            container.innerHTML = '';
+            selectedAIFiles.forEach((file, index) => {
+                const item = document.createElement('div');
+                item.className = 'file-preview-item';
+                item.innerHTML = `
+                    <span class="truncate max-w-[150px]">📄 ${file.name}</span>
+                    <button onclick="removeAIFile(${index})" class="hover:text-red-600 font-bold">✕</button>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        window.removeAIFile = function (index) {
+            selectedAIFiles.splice(index, 1);
+            renderAIFilePreviews();
+        };
+
+        // Initialize drag & drop for AI sidebar
+        setTimeout(() => {
+            const chatContainer = document.getElementById('chat-container');
+            if (!chatContainer) return;
+            chatContainer.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                chatContainer.classList.add('drag-over');
+            });
+            ['dragleave', 'drop'].forEach(evt => {
+                chatContainer.addEventListener(evt, () => chatContainer.classList.remove('drag-over'));
+            });
+            chatContainer.addEventListener('drop', (e) => {
+                e.preventDefault();
+                const files = Array.from(e.dataTransfer.files);
+                selectedAIFiles = [...selectedAIFiles, ...files];
+                renderAIFilePreviews();
+                showToast('เพิ่มไฟล์แล้วแง้ว! 🐾');
+            });
+        }, 1000);
+
         window.sendMessage = async function () {
             const input = document.getElementById('chat-input');
             const msg = input.value.trim();
-            if (!msg) return;
+            if (!msg && selectedAIFiles.length === 0) return;
 
-            addChatMessage('user', msg);
+            // Show what's being sent
+            let displayMsg = msg;
+            if (selectedAIFiles.length > 0) {
+                displayMsg = (msg ? msg + '\n' : '') + selectedAIFiles.map(f => '📎 ' + f.name).join('\n');
+            }
+            addChatMessage('user', displayMsg);
             input.value = '';
+
+            const formData = new FormData();
+            formData.append('message', msg || "ช่วยวิเคราะห์ไฟล์นี้หน่อยครับ");
+            formData.append('history', JSON.stringify(chatHistory));
+            selectedAIFiles.forEach(file => formData.append('files', file));
+
+            // Clear preview
+            selectedAIFiles = [];
+            renderAIFilePreviews();
 
             // Show typing indicator
             const typingId = addChatMessage('ai', '<span class="typing-dot"></span><span class="typing-dot" style="animation-delay: 0.2s"></span><span class="typing-dot" style="animation-delay: 0.4s"></span>', true);
@@ -1088,8 +1182,7 @@
             try {
                 const res = await fetch('/api/chat', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ message: msg, history: chatHistory })
+                    body: formData // No Content-Type header needed for FormData
                 });
                 const data = await res.json();
 

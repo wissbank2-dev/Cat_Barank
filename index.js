@@ -2,10 +2,12 @@ require('dotenv').config();
 const express = require('express');
 const path = require('path');
 const ExcelJS = require('exceljs');
+const multer = require('multer');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const upload = multer({ storage: multer.memoryStorage() });
 
 // Initialize AI
 const apiKey = process.env.GEMINI_API_KEY || '';
@@ -171,8 +173,17 @@ app.get('/api/template', async (req, res) => {
 });
 
 // AI Chat Endpoint
-app.post('/api/chat', async (req, res) => {
-    const { message, history } = req.body;
+app.post('/api/chat', upload.array('files'), async (req, res) => {
+    const { message } = req.body;
+    let history = [];
+
+    try {
+        if (req.body.history) {
+            history = JSON.parse(req.body.history);
+        }
+    } catch (e) {
+        console.error('History parse error:', e);
+    }
 
     if (!process.env.GEMINI_API_KEY || process.env.GEMINI_API_KEY === 'YOUR_API_KEY_HERE') {
         return res.status(400).json({
@@ -185,7 +196,21 @@ app.post('/api/chat', async (req, res) => {
             history: history || [],
         });
 
-        const result = await chat.sendMessage(message);
+        // Prepare message parts (text + files)
+        const parts = [message];
+
+        if (req.files && req.files.length > 0) {
+            req.files.forEach(file => {
+                parts.push({
+                    inlineData: {
+                        data: file.buffer.toString('base64'),
+                        mimeType: file.mimetype
+                    }
+                });
+            });
+        }
+
+        const result = await chat.sendMessage(parts);
         const responseText = result.response.text();
 
         // Try to parse if it's a JSON command
