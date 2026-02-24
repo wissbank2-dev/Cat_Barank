@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require('express');
 const path = require('path');
 const ExcelJS = require('exceljs');
@@ -192,8 +193,12 @@ app.post('/api/chat', async (req, res) => {
 
         res.json({ message: responseText });
     } catch (error) {
-        console.error('Chat error:', error);
-        res.status(500).json({ error: 'น้องแมวป่วย... ลองใหม่อีกทีนะแง้ว (Error: ' + error.message + ')' });
+        console.error('Chat error full stack:', error);
+        res.status(500).json({
+            error: 'น้องแมวป่วย... ลองใหม่อีกทีนะแง้ว',
+            details: error.message,
+            stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+        });
     }
 });
 
