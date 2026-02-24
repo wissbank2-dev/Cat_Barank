@@ -256,6 +256,14 @@
             background-color: #fff1f2 !important;
             border: 4px dashed #fda4af !important;
         }
+
+        #chat-input {
+            resize: none;
+            max-height: 150px;
+            min-height: 42px;
+            overflow-y: hidden;
+            line-height: 1.5;
+        }
     </style>
 </head>
 
@@ -296,9 +304,11 @@
                     <span class="text-2xl">📎</span>
                 </button>
                 <input type="file" id="ai-file-input" class="hidden" multiple onchange="handleAIFileSelect(this)">
-                <input type="text" id="chat-input" placeholder="พิมพ์คุยหรือส่งไฟล์หาผม..."
-                    class="flex-1 p-2 text-sm border-2 border-rose-50 rounded-xl focus:border-rose-300 focus:outline-none transition-all">
-                <button onclick="sendMessage()" class="btn-primary p-2 rounded-xl">
+                <textarea id="chat-input" placeholder="พิมพ์คุยหรือส่งไฟล์หาผม..."
+                    class="flex-1 p-2 text-sm border-2 border-rose-50 rounded-xl focus:border-rose-300 focus:outline-none transition-all"
+                    rows="1"></textarea>
+                <button onclick="sendMessage()"
+                    class="btn-primary p-2 rounded-xl h-[42px] flex items-center justify-center">
                     <span class="text-xl">🚀</span>
                 </button>
             </div>
@@ -1166,6 +1176,7 @@
             }
             addChatMessage('user', displayMsg);
             input.value = '';
+            input.style.height = 'auto';
 
             const formData = new FormData();
             formData.append('message', msg || "ช่วยวิเคราะห์ไฟล์นี้หน่อยครับ");
@@ -1252,9 +1263,20 @@
             return id;
         }
 
-        document.getElementById('chat-input').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') sendMessage();
-        });
+        const chatInput = document.getElementById('chat-input');
+        if (chatInput) {
+            chatInput.addEventListener('input', function () {
+                this.style.height = 'auto';
+                this.style.height = (this.scrollHeight) + 'px';
+            });
+
+            chatInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage();
+                }
+            });
+        }
 
         // ==================== INLINE EDITING LOGIC ====================
         window.updateTestCaseData = function (index, field, value) {
