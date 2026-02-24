@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://cat-barank.onrender.com/sitemap.xml

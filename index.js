@@ -20,7 +20,7 @@ if (apiKey) {
 
 const genAI = new GoogleGenerativeAI(apiKey);
 const model = genAI.getGenerativeModel({
-    model: "gemini-2.5-flash",
+    model: "gemini-flash-latest",
     systemInstruction: `คุณคือ "ผู้ช่วย KUMA (คุมะ)" (KUMA Assistant) ประจำโปรแกรม KUMA Test Case Builder.
 คุณมีความสามารถในการควบคุมโปรแกรมนี้ได้เหมือนที่ผู้ใช้ทำ โดยการส่ง JSON command กลับมา
 
@@ -256,11 +256,17 @@ app.post('/api/chat', upload.array('files'), async (req, res) => {
 
         res.json({ message: responseText });
     } catch (error) {
-        console.error('Chat error full stack:', error);
+        console.error('--- KUMA ERROR LOG START ---');
+        console.error('Name:', error.name);
+        console.error('Message:', error.message);
+        console.error('Status:', error.status);
+        console.error('Stack:', error.stack);
+        console.error('--- KUMA ERROR LOG END ---');
+
         res.status(500).json({
             error: 'น้องแมวป่วย... ลองใหม่อีกทีนะแง้ว',
             details: error.message,
-            stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+            code: error.status || 500
         });
     }
 });
