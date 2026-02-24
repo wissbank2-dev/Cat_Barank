@@ -1233,29 +1233,6 @@
                                     showToast('คุมะเพิ่ม Test Case ให้แล้วครับ! 🐾');
                                 }
                                 break;
-                            case 'switch_page':
-                                if (data.page) {
-                                    switchPage(data.page);
-                                    showToast(`คุมะเปลี่ยนหน้าไปหน้า ${data.page} ให้แล้วครับ! 🐻`);
-                                }
-                                break;
-                            case 'export_excel':
-                                if (testCases.length > 0) {
-                                    document.getElementById('exportBtn').click();
-                                    showToast('คุมะส่งออกไฟล์ Excel ให้แล้วครับ! 📥');
-                                } else {
-                                    showToast('ยังไม่มีข้อมูลให้ส่งออกครับเมี้ยว 😿', 'error');
-                                }
-                                break;
-                            case 'save_history':
-                                saveTestCaseHistory();
-                                showToast('คุมะบันทึกประวัติให้เรียบร้อยครับ! 💾');
-                                break;
-                            case 'clear_all':
-                                testCases = [];
-                                renderTable();
-                                showToast('คุมะล้างข้อมูลให้เกลี้ยงเลยครับ! 🧼');
-                                break;
                             case 'delete_testcases':
                                 if (data.data && Array.isArray(data.data)) {
                                     // Sort indices descending to avoid shifting issues
@@ -1269,6 +1246,99 @@
                                     });
                                     renderTable();
                                     showToast(`คุมะลบข้อที่เลือกให้แล้วครับ ${data.data.join(', ')}! 🐾`);
+                                }
+                                break;
+                            case 'switch_page':
+                                if (data.page) {
+                                    switchPage(data.page);
+                                    showToast(`คุมะเปลี่ยนหน้าไปหน้า ${data.page} ให้แล้วครับ! 🐻`);
+                                }
+                                break;
+                            case 'export_excel':
+                                const pageToExport = document.getElementById('page1').classList.contains('hidden') ? 2 : 1;
+                                if (pageToExport === 1) {
+                                    if (testCases.length > 0) document.getElementById('exportBtn').click();
+                                    else showToast('ยังไม่มีข้อมูล Test Case ให้ส่งออกครับ 😿', 'error');
+                                } else {
+                                    if (generatedPayloads.length > 0) document.getElementById('exportPayloadBtn').click();
+                                    else showToast('ยังไม่มีข้อมูล Payload ให้ส่งออกครับ 😿', 'error');
+                                }
+                                break;
+                            case 'save_history':
+                                const activeSavePage = document.getElementById('page1').classList.contains('hidden') ? 2 : 1;
+                                if (activeSavePage === 1) {
+                                    saveTestCaseHistory();
+                                } else {
+                                    showToast('หน้านี้บันทึกประวัติอัติโนมัติเมื่ออัปโหลดครับเมี้ยว 🐾');
+                                }
+                                break;
+                            case 'clear_all':
+                                const activeClearPage = document.getElementById('page1').classList.contains('hidden') ? 2 : 1;
+                                if (activeClearPage === 1) {
+                                    testCases = []; renderTable();
+                                } else {
+                                    generatedPayloads = []; renderPayloads();
+                                }
+                                showToast('คุมะล้างข้อมูลให้เกลี้ยงเลยครับ! 🧼');
+                                break;
+                            case 'add_payloads':
+                                if (data.data) {
+                                    const payloads = Array.isArray(data.data) ? data.data : [data.data];
+                                    payloads.forEach(p => {
+                                        const entry = {
+                                            sheetName: p.sheetName || 'AI Generated',
+                                            items: p.items || [],
+                                            payload: {}
+                                        };
+                                        function parsePath(path) {
+                                            const parts = [];
+                                            const tokens = path.replace(/\[(\d+)\]/g, '.$1').split('.');
+                                            tokens.forEach(t => { if (/^\d+$/.test(t)) parts.push(parseInt(t, 10)); else parts.push(t); });
+                                            return parts;
+                                        }
+                                        function setNestedValue(obj, path, value) {
+                                            const parts = parsePath(path);
+                                            let current = obj;
+                                            for (let i = 0; i < parts.length - 1; i++) {
+                                                const key = parts[i];
+                                                if (current[key] === undefined) current[key] = typeof parts[i + 1] === 'number' ? [] : {};
+                                                current = current[key];
+                                            }
+                                            current[parts[parts.length - 1]] = value;
+                                        }
+                                        entry.items.forEach(item => setNestedValue(entry.payload, item.key, item.value));
+                                        generatedPayloads.push(entry);
+                                    });
+                                    renderPayloads();
+                                    saveToHistory('AI_Generated_Payloads', generatedPayloads);
+                                    showToast('คุมะสร้าง JSON Payload ให้แล้วครับ! 🔧');
+                                }
+                                break;
+                            case 'copy_text':
+                                if (data.data) {
+                                    navigator.clipboard.writeText(data.data).then(() => {
+                                        showToast('คุมะคัดลอกข้อความเป็น Clipboard ให้แล้วครับ! 📋');
+                                    });
+                                }
+                                break;
+                            case 'load_history':
+                                if (typeof data.data === 'number') {
+                                    const currentPage = document.getElementById('page1').classList.contains('hidden') ? 2 : 1;
+                                    if (currentPage === 1) {
+                                        const history = JSON.parse(localStorage.getItem(TESTCASE_HISTORY_KEY) || '[]');
+                                        if (history[data.data]) {
+                                            testCases = [...history[data.data].data];
+                                            renderTable();
+                                            showToast('คุมะดึงประวัติ Test Case มาให้แล้วครับ! 📂');
+                                        }
+                                    } else {
+                                        const history = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
+                                        if (history[data.data]) {
+                                            generatedPayloads = [...history[data.data].payloads];
+                                            renderPayloads();
+                                            showToast('คุมะดึงประวัติ Payload มาให้แล้วครับ! 📂');
+                                        }
+                                    }
                                 }
                                 break;
                         }
