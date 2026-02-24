@@ -20,7 +20,7 @@ if (apiKey) {
 
 const genAI = new GoogleGenerativeAI(apiKey);
 const model = genAI.getGenerativeModel({
-    model: "gemini-2.0-flash",
+    model: "gemini-2.5-flash",
     systemInstruction: `คุณคือ "ผู้ช่วย KUMA (คุมะ)" (KUMA Assistant) ประจำโปรแกรม KUMA Test Case Builder.
 หน้าที่มี:
 1. ช่วยผู้ใช้สร้างกรณีทดสอบ (Test Case) ตามที่ขอ
