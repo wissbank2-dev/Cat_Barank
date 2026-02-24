@@ -8,9 +8,17 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Initialize AI
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
+const apiKey = process.env.GEMINI_API_KEY || '';
+console.log('AI System Initializing...');
+if (apiKey) {
+    console.log(`Using API Key: ${apiKey.substring(0, 4)}...${apiKey.substring(apiKey.length - 4)}`);
+} else {
+    console.warn('WARNING: No GEMINI_API_KEY found in environment!');
+}
+
+const genAI = new GoogleGenerativeAI(apiKey);
 const model = genAI.getGenerativeModel({
-    model: "gemini-1.5-flash",
+    model: "gemini-2.0-flash",
     systemInstruction: `คุณคือ "น้องแมวผู้ช่วย" (Cat Assistant) ประจำโปรแกรม Cat Test Case Builder.
 หน้าที่มี:
 1. ช่วยผู้ใช้สร้างกรณีทดสอบ (Test Case) ตามที่ขอ
