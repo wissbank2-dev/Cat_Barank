@@ -204,14 +204,40 @@ app.post('/api/chat', upload.array('files'), async (req, res) => {
         const parts = [message];
 
         if (req.files && req.files.length > 0) {
-            req.files.forEach(file => {
-                parts.push({
-                    inlineData: {
-                        data: file.buffer.toString('base64'),
-                        mimeType: file.mimetype
+            for (const file of req.files) {
+                // If it's an Excel file, parse it to text
+                if (file.mimetype === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
+                    file.mimetype === 'application/vnd.ms-excel') {
+                    try {
+                        const workbook = new ExcelJS.Workbook();
+                        await workbook.xlsx.load(file.buffer);
+                        let excelText = `(ข้อมูลจากไฟล์ Excel: ${file.originalname})\n`;
+                        workbook.eachSheet((worksheet) => {
+                            excelText += `--- Sheet: ${worksheet.name} ---\n`;
+                            worksheet.eachRow((row) => {
+                                excelText += row.values.slice(1).join(' | ') + '\n';
+                            });
+                        });
+                        parts.push(excelText);
+                    } catch (err) {
+                        console.error('Excel parse error:', err);
+                        parts.push(`(ไม่สามารถอ่านไฟล์ Excel ${file.originalname} ได้)`);
                     }
-                });
-            });
+                }
+                // If it's a text or csv file, send as text
+                else if (file.mimetype.startsWith('text/')) {
+                    parts.push(`(ข้อมูลจากไฟล์ ${file.originalname}):\n${file.buffer.toString('utf-8')}`);
+                }
+                // Otherwise try inlineData (for images, PDFs)
+                else {
+                    parts.push({
+                        inlineData: {
+                            data: file.buffer.toString('base64'),
+                            mimeType: file.mimetype
+                        }
+                    });
+                }
+            }
         }
 
         const result = await chat.sendMessage(parts);
