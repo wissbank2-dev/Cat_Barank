@@ -1,8 +1,32 @@
 const express = require('express');
 const path = require('path');
 const ExcelJS = require('exceljs');
+const { GoogleGenerativeAI } = require('@google/generative-ai');
+
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// Initialize AI
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
+const model = genAI.getGenerativeModel({
+    model: "gemini-1.5-flash",
+    systemInstruction: `คุณคือ "น้องแมวผู้ช่วย" (Cat Assistant) ประจำโปรแกรม Cat Test Case Builder.
+หน้าที่มี:
+1. ช่วยผู้ใช้สร้างกรณีทดสอบ (Test Case) ตามที่ขอ
+2. ตอบคำถามทั่วไปเกี่ยวกับซอฟต์แวร์เทสติ้ง
+3. คุยเล่นและให้กำลังใจผู้ใช้ด้วยสไตล์แมวๆ (ใช้หางเสียง แง้ว, เมี้ยว, 🐾)
+
+หากผู้ใช้ให้ข้อมูล Test Case มา ให้คุณสรุปส่งกลับเป็น JSON format พิเศษที่โปรแกรมจะนำไปใช้ได้ดังนี้:
+{
+  "action": "add_testcases",
+  "data": [
+    {"name": "...", "step": "...", "expected": "..."},
+    ...
+  ],
+  "message": "ข้อความตอบกลับจากคุณ"
+}
+ถ้าเป็นการคุยทั่วไป ให้ตอบเป็นข้อความปกติได้เลย`
+});
 
 // Set EJS as the template engine
 app.set('view engine', 'ejs');
@@ -134,6 +158,42 @@ app.get('/api/template', async (req, res) => {
     } catch (error) {
         console.error('Template generation failed:', error);
         res.status(500).json({ error: 'Failed to generate template' });
+    }
+});
+
+// AI Chat Endpoint
+app.post('/api/chat', async (req, res) => {
+    const { message, history } = req.body;
+
+    if (!process.env.GEMINI_API_KEY) {
+        return res.status(400).json({
+            error: "ยังไม่ได้ตั้งค่า GEMINI_API_KEY ครับแม่มนุษย์! 🐾 (กรุณาตั้งค่าใน Environment Variable หรือบอกผมให้ช่วยตั้งค่าให้ได้นะเมี้ยว)"
+        });
+    }
+
+    try {
+        const chat = model.startChat({
+            history: history || [],
+        });
+
+        const result = await chat.sendMessage(message);
+        const responseText = result.response.text();
+
+        // Try to parse if it's a JSON command
+        try {
+            const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+            if (jsonMatch) {
+                const jsonObj = JSON.parse(jsonMatch[0]);
+                return res.json(jsonObj);
+            }
+        } catch (e) {
+            // Not a JSON command, just a normal text response
+        }
+
+        res.json({ message: responseText });
+    } catch (error) {
+        console.error('Chat error:', error);
+        res.status(500).json({ error: 'น้องแมวป่วย... ลองใหม่อีกทีนะแง้ว (Error: ' + error.message + ')' });
     }
 });
 

@@ -167,10 +167,116 @@
                 transform: translateY(0);
             }
         }
+
+        /* AI Sidebar Styles */
+        #ai-sidebar {
+            transition: transform 0.3s ease;
+            z-index: 100;
+        }
+
+        .chat-bubble {
+            border-radius: 1.5rem;
+            padding: 0.75rem 1rem;
+            max-width: 85%;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+
+        .chat-bubble.user {
+            background-color: #fda4af;
+            color: white;
+            border-bottom-right-radius: 0.25rem;
+            margin-left: auto;
+        }
+
+        .chat-bubble.ai {
+            background-color: white;
+            color: #4b5563;
+            border: 2px solid #fecdd3;
+            border-bottom-left-radius: 0.25rem;
+            margin-right: auto;
+        }
+
+        .typing-dot {
+            width: 6px;
+            height: 6px;
+            background: #fda4af;
+            border-radius: 50%;
+            display: inline-block;
+            animation: typing 1s infinite alternate;
+        }
+
+        @keyframes typing {
+            from {
+                opacity: 0.3;
+                transform: translateY(0);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(-4px);
+            }
+        }
+
+        /* Editable Table Styles */
+        [contenteditable="true"] {
+            border-bottom: 1px dashed transparent;
+            padding: 2px 4px;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+
+        [contenteditable="true"]:hover {
+            background-color: #fff1f2;
+            border-bottom-color: #fda4af;
+        }
+
+        [contenteditable="true"]:focus {
+            outline: none;
+            background-color: white;
+            border: 2px solid #fda4af;
+            box-shadow: 0 0 0 3px rgba(253, 164, 175, 0.2);
+        }
     </style>
 </head>
 
-<body class="min-h-screen py-10 px-4 relative">
+<body class="min-h-screen pb-20 overflow-x-hidden">
+    <!-- AI Sidebar -->
+    <div id="ai-sidebar"
+        class="fixed left-0 top-0 h-full w-80 bg-white border-r-4 border-rose-200 shadow-2xl flex flex-col -translate-x-full">
+        <!-- Toggle Button (Inside) -->
+        <button onclick="toggleAI()"
+            class="absolute -right-12 top-1/2 -translate-y-1/2 bg-white border-4 border-l-0 border-rose-200 p-2 rounded-r-2xl shadow-lg hover:bg-rose-50 transition-colors group">
+            <span id="ai-toggle-icon" class="text-2xl block group-hover:scale-110 transition-transform">🐱</span>
+        </button>
+
+        <!-- Header -->
+        <div class="p-6 border-b-2 border-rose-100 bg-rose-50/50">
+            <h3 class="font-bold text-rose-500 flex items-center gap-2">
+                <span class="text-2xl">🤖</span> น้องแมวผู้ช่วย (AI Agent)
+            </h3>
+            <p class="text-xs text-rose-300 mt-1">สั่งผมสร้าง Test Case หรือถามอะไรก็ได้นะแง้ว!</p>
+        </div>
+
+        <!-- Chat Content -->
+        <div id="chat-container" class="flex-1 overflow-y-auto p-4 space-y-4 bg-rose-50/20">
+            <div class="chat-bubble ai shadow-sm">
+                สวัสดีคะน้ามนุษย์! 🐾 ผมเป็นเอเจนท์น้องแมว ยินดีที่ได้รู้จักนะเมี้ยว สั่งผมได้เลย เช่น
+                "สร้างเทสเคสสมัครสมาชิกให้หน่อย"
+            </div>
+        </div>
+
+        <!-- Input -->
+        <div class="p-4 border-t-2 border-rose-100 bg-white">
+            <div class="flex gap-2">
+                <input type="text" id="chat-input" placeholder="พิมพ์คุยกับน้องแมว..." class="flex-1 p-2 text-sm">
+                <button onclick="sendMessage()" class="btn-primary p-2 rounded-xl">
+                    <span class="text-xl">🚀</span>
+                </button>
+            </div>
+        </div>
+    </div>
     <!-- Cat Atmosphere Layer -->
     <div id="cat-atmosphere"></div>
     <div class="max-w-4xl mx-auto">
@@ -244,6 +350,10 @@
                         </button>
                         <input type="file" id="importTestCaseInput" accept=".xlsx" class="hidden"
                             onchange="importTestCases(this)">
+                        <button onclick="saveTestCaseHistory()"
+                            class="bg-blue-100 text-blue-600 px-4 py-2 rounded-xl text-sm font-medium hover:bg-blue-200 transition-colors">
+                            💾 บันทึกประวัติ
+                        </button>
                         <button id="resetBtn"
                             class="bg-rose-50 text-rose-400 px-4 py-2 rounded-xl text-sm font-medium hover:bg-rose-100 transition-colors">
                             ล้างทั้งหมด
@@ -271,6 +381,21 @@
                         <div class="text-5xl mb-2">🐾</div>
                         ยังไม่มีขั้นตอนการทดสอบ เพิ่มข้อมูลด้านบนเพื่อเริ่มสร้าง!
                     </div>
+                </div>
+            </div>
+            <!-- Page 1 History -->
+            <div class="mt-8 bg-white rounded-[2rem] p-6 shadow-xl border-2 border-rose-100">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-bold text-rose-500 flex items-center">
+                        <span class="mr-2">📂</span> ประวัติ Test Case ที่บันทึกไว้
+                    </h2>
+                </div>
+                <div id="testCaseHistoryList" class="space-y-2">
+                    <!-- Historical test case groups will be rendered here -->
+                </div>
+                <div id="testCaseHistoryEmpty" class="text-center py-6 text-rose-200">
+                    <div class="text-3xl mb-1">📋</div>
+                    ยังไม่มีประวัติการบันทึก
                 </div>
             </div>
         </div>
@@ -415,30 +540,7 @@
             testStepInput.focus();
         });
 
-        function renderTable() {
-            tableBody.innerHTML = '';
-            if (testCases.length === 0) {
-                emptyState.classList.remove('hidden');
-                exportBtn.classList.add('hidden');
-            } else {
-                emptyState.classList.add('hidden');
-                exportBtn.classList.remove('hidden');
-                testCases.forEach((tc, index) => {
-                    const row = document.createElement('tr');
-                    row.className = 'border-b border-rose-50 hover:bg-rose-50/30 transition-colors';
-                    row.innerHTML = `
-                        <td class="py-4 px-4 font-medium">${index + 1}</td>
-                        <td class="py-4 px-4 whitespace-nowrap overflow-hidden text-ellipsis max-w-xs">${escapeHtml(tc.name)}</td>
-                        <td class="py-4 px-4 whitespace-pre-line">${escapeHtml(tc.step)}</td>
-                        <td class="py-4 px-4 whitespace-pre-line">${escapeHtml(tc.expected)}</td>
-                        <td class="py-4 px-4 text-center">
-                            <button onclick="deleteStep(${index})" class="btn-danger w-8 h-8 rounded-full inline-flex items-center justify-center font-bold" title="ลบขั้นตอน">✕</button>
-                        </td>
-                    `;
-                    tableBody.appendChild(row);
-                });
-            }
-        }
+
 
         function escapeHtml(text) {
             const div = document.createElement('div');
@@ -959,6 +1061,188 @@
                 alert('เกิดข้อผิดพลาดในการส่งออกไฟล์: ' + error.message);
             }
         }
+
+        // ==================== AI SIDEBAR LOGIC ====================
+        let isAIOpen = false;
+        let chatHistory = [];
+
+        window.toggleAI = function () {
+            const sidebar = document.getElementById('ai-sidebar');
+            const icon = document.getElementById('ai-toggle-icon');
+            isAIOpen = !isAIOpen;
+            sidebar.style.transform = isAIOpen ? 'translateX(0)' : 'translateX(-100%)';
+            icon.textContent = isAIOpen ? '✕' : '🐱';
+        };
+
+        window.sendMessage = async function () {
+            const input = document.getElementById('chat-input');
+            const msg = input.value.trim();
+            if (!msg) return;
+
+            addChatMessage('user', msg);
+            input.value = '';
+
+            // Show typing indicator
+            const typingId = addChatMessage('ai', '<span class="typing-dot"></span><span class="typing-dot" style="animation-delay: 0.2s"></span><span class="typing-dot" style="animation-delay: 0.4s"></span>', true);
+
+            try {
+                const res = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: msg, history: chatHistory })
+                });
+                const data = await res.json();
+
+                // Remove typing indicator
+                document.getElementById(typingId).remove();
+
+                if (data.error) {
+                    addChatMessage('ai', '❌ ' + data.error);
+                } else {
+                    if (data.action === 'add_testcases') {
+                        testCases = [...testCases, ...data.data];
+                        renderTable();
+                        addChatMessage('ai', data.message || 'เพิ่ม Test Case ให้แล้วครับแง้ว! 🐾');
+                        showToast('AI เพิ่ม Test Case ให้แล้ว! ✨');
+                    } else {
+                        addChatMessage('ai', data.message);
+                    }
+
+                    // Update internal chat history
+                    chatHistory.push({ role: 'user', parts: [{ text: msg }] });
+                    chatHistory.push({ role: 'model', parts: [{ text: data.message || '' }] });
+                }
+            } catch (err) {
+                document.getElementById(typingId).remove();
+                addChatMessage('ai', 'ขออภัยครับแม่มนุษย์ น้องแมวมีปัญหาขัดข้อง... 😿');
+            }
+        };
+
+        function addChatMessage(role, text, isRaw = false) {
+            const container = document.getElementById('chat-container');
+            const id = 'chat-' + Date.now();
+            const div = document.createElement('div');
+            div.id = id;
+            div.className = `chat-bubble ${role} shadow-sm fade-in`;
+            if (isRaw) div.innerHTML = text;
+            else div.textContent = text;
+            container.appendChild(div);
+            container.scrollTop = container.scrollHeight;
+            return id;
+        }
+
+        document.getElementById('chat-input').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendMessage();
+        });
+
+        // ==================== INLINE EDITING LOGIC ====================
+        window.updateTestCaseData = function (index, field, value) {
+            testCases[index][field] = value.trim();
+        };
+
+        // Modify renderTable to add contenteditable
+        function renderTable() {
+            tableBody.innerHTML = '';
+            if (testCases.length === 0) {
+                emptyState.classList.remove('hidden');
+                exportBtn.classList.add('hidden');
+            } else {
+                emptyState.classList.add('hidden');
+                exportBtn.classList.remove('hidden');
+                testCases.forEach((tc, index) => {
+                    const row = document.createElement('tr');
+                    row.className = 'border-b border-rose-50 hover:bg-rose-50/30 transition-colors';
+                    row.innerHTML = `
+                        <td class="py-4 px-4 font-medium">${index + 1}</td>
+                        <td class="py-4 px-4" contenteditable="true" onblur="updateTestCaseData(${index}, 'name', this.innerText)">${escapeHtml(tc.name)}</td>
+                        <td class="py-4 px-4 whitespace-pre-line" contenteditable="true" onblur="updateTestCaseData(${index}, 'step', this.innerText)">${escapeHtml(tc.step)}</td>
+                        <td class="py-4 px-4 whitespace-pre-line" contenteditable="true" onblur="updateTestCaseData(${index}, 'expected', this.innerText)">${escapeHtml(tc.expected)}</td>
+                        <td class="py-4 px-4 text-center">
+                            <button onclick="deleteStep(${index})" class="btn-danger w-8 h-8 rounded-full inline-flex items-center justify-center font-bold" title="ลบขั้นตอน">✕</button>
+                        </td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+            }
+        }
+
+        // ==================== PAGE 1 HISTORY LOGIC ====================
+        const TESTCASE_HISTORY_KEY = 'cat_testcase_history';
+
+        window.saveTestCaseHistory = function () {
+            if (testCases.length === 0) {
+                alert('โปรดเพิ่ม Test Case ก่อนบันทึกนะแง้ว!');
+                return;
+            }
+            const name = prompt('กรุณาตั้งชื่อชุด Test Case นี้:', testCases[0].name || 'ชุดทดสอบใหม่');
+            if (name === null) return;
+
+            const history = JSON.parse(localStorage.getItem(TESTCASE_HISTORY_KEY) || '[]');
+            history.unshift({
+                id: Date.now(),
+                name: name || 'ไม่ได้ระบุชื่อ',
+                date: new Date().toLocaleString('th-TH'),
+                data: [...testCases]
+            });
+            localStorage.setItem(TESTCASE_HISTORY_KEY, JSON.stringify(history));
+            renderTestCaseHistory();
+            showToast('บันทึกประวัติสำเร็จ! 💾');
+        };
+
+        function renderTestCaseHistory() {
+            const list = document.getElementById('testCaseHistoryList');
+            const empty = document.getElementById('testCaseHistoryEmpty');
+            const history = JSON.parse(localStorage.getItem(TESTCASE_HISTORY_KEY) || '[]');
+
+            list.innerHTML = '';
+            if (history.length === 0) {
+                empty.classList.remove('hidden');
+                return;
+            }
+            empty.classList.add('hidden');
+
+            history.forEach((item, idx) => {
+                const el = document.createElement('div');
+                el.className = 'flex items-center justify-between bg-white border-2 border-rose-50 rounded-xl px-4 py-3 hover:border-rose-200 transition-all shadow-sm';
+                el.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <span class="text-xl">📋</span>
+                        <div>
+                            <p class="font-bold text-gray-700 text-sm">${escapeHtml(item.name)}</p>
+                            <p class="text-xs text-gray-400">${item.date} · ${item.data.length} ขั้นตอน</p>
+                        </div>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="loadTestCaseFromHistory(${idx})" class="bg-rose-50 text-rose-500 px-3 py-1 rounded-lg text-xs font-bold hover:bg-rose-100 transition-colors">
+                            📂 ดึงข้อมูล
+                        </button>
+                        <button onclick="deleteTestCaseHistory(${idx})" class="text-gray-300 hover:text-red-400 p-1 transition-colors">
+                            ✕
+                        </button>
+                    </div>
+                `;
+                list.appendChild(el);
+            });
+        }
+
+        window.loadTestCaseFromHistory = function (idx) {
+            const history = JSON.parse(localStorage.getItem(TESTCASE_HISTORY_KEY) || '[]');
+            if (confirm('ต้องการดึงข้อมูลชุดนี้มาแทนที่ข้อมูลปัจจุบันใช่หรือไม่?')) {
+                testCases = [...history[idx].data];
+                renderTable();
+                showToast('ดึงข้อมูลสำเร็จ! 🐾');
+            }
+        };
+
+        window.deleteTestCaseHistory = function (idx) {
+            if (!confirm('ยืนยันระบบลบบันทึกชุดนี้?')) return;
+            const history = JSON.parse(localStorage.getItem(TESTCASE_HISTORY_KEY) || '[]');
+            history.splice(idx, 1);
+            localStorage.setItem(TESTCASE_HISTORY_KEY, JSON.stringify(history));
+            renderTestCaseHistory();
+        };
+
+        renderTestCaseHistory();
 
         // Toast notification
         function showToast(message) {
