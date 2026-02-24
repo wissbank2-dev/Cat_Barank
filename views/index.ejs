@@ -1192,14 +1192,41 @@
                 if (data.error) {
                     addChatMessage('ai', '❌ ' + data.error);
                 } else {
-                    if (data.action === 'add_testcases') {
-                        testCases = [...testCases, ...data.data];
-                        renderTable();
-                        addChatMessage('ai', data.message || 'เพิ่ม Test Case ให้แล้วครับแง้ว! 🐾');
-                        showToast('AI เพิ่ม Test Case ให้แล้ว! ✨');
-                    } else {
-                        addChatMessage('ai', data.message);
+                    if (data.action) {
+                        switch (data.action) {
+                            case 'add_testcases':
+                                if (data.data) {
+                                    testCases = [...testCases, ...data.data];
+                                    renderTable();
+                                    showToast('คุมะเพิ่ม Test Case ให้แล้วครับ! 🐾');
+                                }
+                                break;
+                            case 'switch_page':
+                                if (data.page) {
+                                    switchPage(data.page);
+                                    showToast(`คุมะเปลี่ยนหน้าไปหน้า ${data.page} ให้แล้วครับ! 🐻`);
+                                }
+                                break;
+                            case 'export_excel':
+                                if (testCases.length > 0) {
+                                    document.getElementById('exportBtn').click();
+                                    showToast('คุมะส่งออกไฟล์ Excel ให้แล้วครับ! 📥');
+                                } else {
+                                    showToast('ยังไม่มีข้อมูลให้ส่งออกครับเมี้ยว 😿', 'error');
+                                }
+                                break;
+                            case 'save_history':
+                                saveTestCaseHistory();
+                                showToast('คุมะบันทึกประวัติให้เรียบร้อยครับ! 💾');
+                                break;
+                            case 'clear_all':
+                                testCases = [];
+                                renderTable();
+                                showToast('คุมะล้างข้อมูลให้เกลี้ยงเลยครับ! 🧼');
+                                break;
+                        }
                     }
+                    if (data.message) addChatMessage('ai', data.message);
 
                     // Update internal chat history
                     chatHistory.push({ role: 'user', parts: [{ text: msg }] });
