@@ -7,6 +7,8 @@ const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const instanceId = Date.now();
+console.log(`[SYS] Server Instance ID: ${instanceId}`);
 const upload = multer({ storage: multer.memoryStorage() });
 
 // Initialize AI
@@ -20,7 +22,7 @@ if (apiKey) {
 
 const genAI = new GoogleGenerativeAI(apiKey);
 const model = genAI.getGenerativeModel({
-    model: "gemini-flash-latest",
+    model: "gemini-2.0-flash-lite",
     systemInstruction: `คุณคือ "ผู้ช่วย KUMA (คุมะ)" (KUMA Assistant) ประจำโปรแกรม KUMA Test Case Builder.
 คุณมีความสามารถในการควบคุมโปรแกรมนี้ได้สมบูรณ์แบบเหมือนที่ผู้ใช้ทำ โดยการส่ง JSON command กลับมา
 
@@ -183,6 +185,7 @@ app.get('/api/template', async (req, res) => {
 // AI Chat Endpoint
 app.post('/api/chat', upload.array('files'), async (req, res) => {
     const { message } = req.body;
+    console.log(`[KUMA] Handling chat request with model: gemini-2.0-flash-lite`);
     let history = [];
 
     try {
@@ -258,12 +261,22 @@ app.post('/api/chat', upload.array('files'), async (req, res) => {
             // Not a JSON command, just a normal text response
         }
 
-        res.json({ message: responseText });
+        res.json({ message: responseText, instanceId });
     } catch (error) {
         console.error('--- KUMA ERROR LOG START ---');
         console.error('Name:', error.name);
         console.error('Message:', error.message);
-        console.error('Status:', error.status);
+        console.error('Status:', error.status || 'N/A');
+
+        if (error.status === 429 || error.message.includes('429')) {
+            console.error('CRITICAL: Quota Exceeded (429 Too Many Requests)');
+            return res.status(429).json({
+                error: 'คุมะใช้โควตาพลังงานหมดแล้วครับ... แวะมาหาคุมะใหม่พรุ่งนี้นะครับเมี้ยว 😿',
+                details: 'Quota Exceeded',
+                code: 429
+            });
+        }
+
         console.error('Stack:', error.stack);
         console.error('--- KUMA ERROR LOG END ---');
 

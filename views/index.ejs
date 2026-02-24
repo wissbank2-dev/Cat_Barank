@@ -285,6 +285,326 @@
             overflow-y: hidden;
             line-height: 1.5;
         }
+
+        /* ===== KUMA Desktop Pet ===== */
+        #kuma-pet {
+            position: fixed;
+            bottom: 60px;
+            left: 100px;
+            z-index: 999;
+            cursor: grab;
+            user-select: none;
+            transition: bottom 0.3s ease;
+            filter: drop-shadow(2px 4px 6px rgba(0, 0, 0, 0.15));
+        }
+
+        #kuma-pet.dragging {
+            cursor: grabbing;
+            transition: none;
+        }
+
+        #kuma-pet.hidden-cat {
+            bottom: -120px !important;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.5s ease;
+        }
+
+        #kuma-pet.entering {
+            animation: catEnter 0.6s ease forwards;
+        }
+
+        @keyframes catEnter {
+            0% {
+                bottom: -120px;
+                opacity: 0;
+            }
+
+            60% {
+                bottom: 70px;
+                opacity: 1;
+            }
+
+            80% {
+                bottom: 55px;
+            }
+
+            100% {
+                bottom: 60px;
+                opacity: 1;
+            }
+        }
+
+        /* Cat Body - Pure CSS Orange Cat */
+        .kuma-body {
+            position: relative;
+            width: 70px;
+            height: 55px;
+        }
+
+        /* Main body */
+        .kuma-body .body {
+            position: absolute;
+            bottom: 0;
+            left: 10px;
+            width: 50px;
+            height: 35px;
+            background: #F4A236;
+            border-radius: 50% 50% 45% 45%;
+        }
+
+        .kuma-body .body::after {
+            content: '';
+            position: absolute;
+            top: 6px;
+            left: 8px;
+            width: 34px;
+            height: 18px;
+            background: #F7C16B;
+            border-radius: 50%;
+        }
+
+        /* Head */
+        .kuma-body .head {
+            position: absolute;
+            bottom: 22px;
+            left: 0;
+            width: 34px;
+            height: 30px;
+            background: #F4A236;
+            border-radius: 50% 50% 40% 40%;
+            z-index: 2;
+        }
+
+        /* Eyes */
+        .kuma-body .eye {
+            position: absolute;
+            width: 6px;
+            height: 7px;
+            background: #333;
+            border-radius: 50%;
+            top: 12px;
+            z-index: 3;
+        }
+
+        .kuma-body .eye.left {
+            left: 8px;
+        }
+
+        .kuma-body .eye.right {
+            left: 20px;
+        }
+
+        .kuma-body .eye::after {
+            content: '';
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: white;
+            border-radius: 50%;
+            top: 1px;
+            left: 1px;
+        }
+
+        /* Nose */
+        .kuma-body .nose {
+            position: absolute;
+            width: 5px;
+            height: 3px;
+            background: #E8836B;
+            border-radius: 50%;
+            top: 17px;
+            left: 14px;
+            z-index: 3;
+        }
+
+        /* Ears */
+        .kuma-body .ear {
+            position: absolute;
+            width: 0;
+            height: 0;
+            border-left: 7px solid transparent;
+            border-right: 7px solid transparent;
+            border-bottom: 14px solid #F4A236;
+            z-index: 1;
+        }
+
+        .kuma-body .ear.left {
+            top: -6px;
+            left: 1px;
+            transform: rotate(-15deg);
+        }
+
+        .kuma-body .ear.right {
+            top: -6px;
+            left: 18px;
+            transform: rotate(15deg);
+        }
+
+        .kuma-body .ear::after {
+            content: '';
+            position: absolute;
+            border-left: 4px solid transparent;
+            border-right: 4px solid transparent;
+            border-bottom: 9px solid #FFD4A8;
+            top: 4px;
+            left: -4px;
+        }
+
+        /* Tail */
+        .kuma-body .tail {
+            position: absolute;
+            bottom: 15px;
+            right: -5px;
+            width: 25px;
+            height: 8px;
+            background: #F4A236;
+            border-radius: 0 50% 50% 0;
+            transform-origin: left center;
+            animation: tailWag 0.8s ease-in-out infinite alternate;
+        }
+
+        @keyframes tailWag {
+            from {
+                transform: rotate(-10deg);
+            }
+
+            to {
+                transform: rotate(20deg);
+            }
+        }
+
+        /* Legs */
+        .kuma-body .leg {
+            position: absolute;
+            bottom: -8px;
+            width: 8px;
+            height: 12px;
+            background: #E8952F;
+            border-radius: 0 0 3px 3px;
+        }
+
+        .kuma-body .leg.fl {
+            left: 14px;
+        }
+
+        .kuma-body .leg.fr {
+            left: 24px;
+        }
+
+        .kuma-body .leg.bl {
+            left: 38px;
+        }
+
+        .kuma-body .leg.br {
+            left: 48px;
+        }
+
+        /* Walking animation */
+        #kuma-pet.walking .leg.fl,
+        #kuma-pet.walking .leg.br {
+            animation: legWalk 0.3s ease-in-out infinite alternate;
+        }
+
+        #kuma-pet.walking .leg.fr,
+        #kuma-pet.walking .leg.bl {
+            animation: legWalk 0.3s ease-in-out infinite alternate-reverse;
+        }
+
+        @keyframes legWalk {
+            from {
+                height: 12px;
+                bottom: -8px;
+            }
+
+            to {
+                height: 8px;
+                bottom: -4px;
+            }
+        }
+
+        /* Sleeping animation */
+        #kuma-pet.sleeping .eye {
+            height: 2px !important;
+            top: 15px !important;
+            border-radius: 2px !important;
+        }
+
+        #kuma-pet.sleeping .zzz {
+            display: block;
+        }
+
+        .zzz {
+            display: none;
+            position: absolute;
+            top: -15px;
+            right: 5px;
+            font-size: 12px;
+            color: #fda4af;
+            animation: zzzFloat 1.5s ease-in-out infinite;
+        }
+
+        @keyframes zzzFloat {
+            0% {
+                opacity: 0;
+                transform: translateY(0) scale(0.8);
+            }
+
+            50% {
+                opacity: 1;
+                transform: translateY(-8px) scale(1);
+            }
+
+            100% {
+                opacity: 0;
+                transform: translateY(-16px) scale(0.6);
+            }
+        }
+
+        /* Cat House Button */
+        #cat-house-btn {
+            position: fixed;
+            bottom: 15px;
+            left: 15px;
+            z-index: 1000;
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #F4A236, #E8952F);
+            border: 3px solid #fff;
+            box-shadow: 0 4px 15px rgba(244, 162, 54, 0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 22px;
+            transition: all 0.3s ease;
+        }
+
+        #cat-house-btn:hover {
+            transform: scale(1.15);
+            box-shadow: 0 6px 20px rgba(244, 162, 54, 0.6);
+        }
+
+        #cat-house-btn .tooltip {
+            position: absolute;
+            bottom: 55px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #333;
+            color: white;
+            padding: 4px 10px;
+            border-radius: 8px;
+            font-size: 11px;
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s;
+        }
+
+        #cat-house-btn:hover .tooltip {
+            opacity: 1;
+        }
     </style>
 </head>
 
@@ -1501,6 +1821,192 @@
             document.body.appendChild(toast);
             setTimeout(() => toast.remove(), 2500);
         }
+    </script>
+
+    <!-- KUMA Desktop Pet -->
+    <div id="kuma-pet" class="hidden-cat">
+        <div class="kuma-body">
+            <div class="head">
+                <div class="ear left"></div>
+                <div class="ear right"></div>
+                <div class="eye left"></div>
+                <div class="eye right"></div>
+                <div class="nose"></div>
+            </div>
+            <div class="body"></div>
+            <div class="tail"></div>
+            <div class="leg fl"></div>
+            <div class="leg fr"></div>
+            <div class="leg bl"></div>
+            <div class="leg br"></div>
+            <span class="zzz">💤</span>
+        </div>
+    </div>
+
+    <div id="cat-house-btn" onclick="toggleCatHouse()">
+        🏠
+        <span class="tooltip">เรียกคุมะออกมาเล่น!</span>
+    </div>
+
+    <script>
+        (function () {
+            const pet = document.getElementById('kuma-pet');
+            const houseBtn = document.getElementById('cat-house-btn');
+            let catOut = false;
+            let isDragging = false;
+            let walkInterval = null;
+            let idleTimeout = null;
+            let sleepTimeout = null;
+            let posX = 100, posY = 60;
+            let dirX = 1; // 1 = right, -1 = left
+            let speed = 1.5;
+            let dragOffsetX = 0, dragOffsetY = 0;
+
+            // Toggle cat house
+            window.toggleCatHouse = function () {
+                if (catOut) {
+                    // Send cat home
+                    catOut = false;
+                    stopWalking();
+                    pet.classList.remove('walking', 'sleeping', 'entering');
+                    pet.classList.add('hidden-cat');
+                    houseBtn.innerHTML = '🏠<span class="tooltip">เรียกคุมะออกมาเล่น!</span>';
+                } else {
+                    // Let cat out
+                    catOut = true;
+                    pet.classList.remove('hidden-cat');
+                    pet.classList.add('entering');
+                    pet.style.left = posX + 'px';
+                    pet.style.bottom = posY + 'px';
+                    houseBtn.innerHTML = '🏠<span class="tooltip">ให้คุมะเข้าบ้าน</span>';
+                    setTimeout(() => {
+                        pet.classList.remove('entering');
+                        startWalking();
+                    }, 700);
+                }
+            };
+
+            function startWalking() {
+                if (walkInterval) clearInterval(walkInterval);
+                pet.classList.remove('sleeping');
+                pet.classList.add('walking');
+                resetIdleTimer();
+
+                walkInterval = setInterval(() => {
+                    if (isDragging || !catOut) return;
+
+                    posX += dirX * speed;
+
+                    // Bounce off viewport edges
+                    const maxX = window.innerWidth - 80;
+                    if (posX <= 10) { posX = 10; dirX = 1; }
+                    if (posX >= maxX) { posX = maxX; dirX = -1; }
+
+                    pet.style.left = posX + 'px';
+                    pet.style.transform = dirX < 0 ? 'scaleX(-1)' : 'scaleX(1)';
+                }, 30);
+
+                // Randomly change direction
+                scheduleDirectionChange();
+            }
+
+            function scheduleDirectionChange() {
+                const next = 2000 + Math.random() * 5000;
+                setTimeout(() => {
+                    if (!catOut || isDragging) return;
+                    // Randomly: change direction, pause, or keep going
+                    const action = Math.random();
+                    if (action < 0.3) {
+                        dirX *= -1; // flip
+                    } else if (action < 0.5) {
+                        // Pause briefly
+                        stopWalking();
+                        pet.classList.remove('walking');
+                        setTimeout(() => {
+                            if (catOut && !isDragging) startWalking();
+                        }, 1500 + Math.random() * 2000);
+                        return;
+                    }
+                    if (catOut) scheduleDirectionChange();
+                }, next);
+            }
+
+            function stopWalking() {
+                if (walkInterval) { clearInterval(walkInterval); walkInterval = null; }
+            }
+
+            function resetIdleTimer() {
+                if (idleTimeout) clearTimeout(idleTimeout);
+                if (sleepTimeout) clearTimeout(sleepTimeout);
+                pet.classList.remove('sleeping');
+
+                sleepTimeout = setTimeout(() => {
+                    if (!isDragging && catOut) {
+                        stopWalking();
+                        pet.classList.remove('walking');
+                        pet.classList.add('sleeping');
+                    }
+                }, 15000 + Math.random() * 10000);
+            }
+
+            // ---- Drag & Drop ----
+            function startDrag(e) {
+                if (!catOut) return;
+                isDragging = true;
+                pet.classList.add('dragging');
+                pet.classList.remove('walking', 'sleeping');
+                stopWalking();
+
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                const rect = pet.getBoundingClientRect();
+                dragOffsetX = clientX - rect.left;
+                dragOffsetY = clientY - rect.top;
+
+                e.preventDefault();
+            }
+
+            function moveDrag(e) {
+                if (!isDragging) return;
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+                posX = clientX - dragOffsetX;
+                posY = window.innerHeight - clientY - (55 - dragOffsetY);
+
+                // Clamp
+                posX = Math.max(0, Math.min(window.innerWidth - 80, posX));
+                posY = Math.max(0, Math.min(window.innerHeight - 80, posY));
+
+                pet.style.left = posX + 'px';
+                pet.style.bottom = posY + 'px';
+                e.preventDefault();
+            }
+
+            function endDrag() {
+                if (!isDragging) return;
+                isDragging = false;
+                pet.classList.remove('dragging');
+                setTimeout(() => {
+                    if (catOut) startWalking();
+                }, 500);
+            }
+
+            pet.addEventListener('mousedown', startDrag);
+            document.addEventListener('mousemove', moveDrag);
+            document.addEventListener('mouseup', endDrag);
+            pet.addEventListener('touchstart', startDrag, { passive: false });
+            document.addEventListener('touchmove', moveDrag, { passive: false });
+            document.addEventListener('touchend', endDrag);
+
+            // Wake up sleeping cat on click
+            pet.addEventListener('click', () => {
+                if (pet.classList.contains('sleeping')) {
+                    pet.classList.remove('sleeping');
+                    startWalking();
+                }
+            });
+        })();
     </script>
 </body>
 
