@@ -1,0 +1,916 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>เครื่องมือสร้างกรณีทดสอบน้องแมว ฅ^•ﻌ•^ฅ</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Kanit', sans-serif;
+            background-color: #fff1f2;
+        }
+
+        .cat-card {
+            background-color: white;
+            border: 4px solid #fda4af;
+            border-radius: 2.5rem;
+        }
+
+        .btn-primary {
+            background-color: #fda4af;
+            color: white;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background-color: #f43f5e;
+            transform: translateY(-2px);
+        }
+
+        .btn-primary:disabled {
+            background-color: #fecdd3;
+            cursor: not-allowed;
+        }
+
+        .btn-danger {
+            background-color: #fee2e2;
+            color: #ef4444;
+            transition: all 0.2s ease;
+        }
+
+        .btn-danger:hover {
+            background-color: #fecaca;
+        }
+
+        input,
+        textarea {
+            border: 2px solid #fecdd3;
+            border-radius: 1rem;
+            transition: border-color 0.3s ease;
+        }
+
+        input:focus,
+        textarea:focus {
+            outline: none;
+            border-color: #fda4af;
+            box-shadow: 0 0 0 3px rgba(253, 164, 175, 0.2);
+        }
+
+        .tab-active {
+            background-color: #fda4af;
+            color: white;
+            box-shadow: 0 4px 15px rgba(253, 164, 175, 0.4);
+        }
+
+        .tab-inactive {
+            background-color: white;
+            color: #fda4af;
+            border: 2px solid #fecdd3;
+        }
+
+        .tab-inactive:hover {
+            background-color: #fff1f2;
+        }
+
+        .json-block {
+            background-color: #1e293b;
+            color: #e2e8f0;
+            border-radius: 1rem;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85rem;
+            overflow-x: auto;
+        }
+
+        .json-key {
+            color: #7dd3fc;
+        }
+
+        .json-string {
+            color: #86efac;
+        }
+
+        .json-number {
+            color: #fcd34d;
+        }
+
+        .json-bool {
+            color: #c4b5fd;
+        }
+
+        .upload-zone {
+            border: 3px dashed #fecdd3;
+            border-radius: 1.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .upload-zone:hover,
+        .upload-zone.drag-over {
+            border-color: #fda4af;
+            background-color: #fff1f2;
+        }
+
+        /* Animated Background Cats */
+        #cat-atmosphere {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            pointer-events: none;
+            overflow: hidden;
+        }
+
+        .bg-cat {
+            position: absolute;
+            opacity: 0.15;
+            filter: grayscale(0.2);
+            animation: float 20s infinite linear;
+            user-select: none;
+        }
+
+        @keyframes float {
+            0% {
+                transform: translate(0, 0) rotate(0deg);
+            }
+
+            25% {
+                transform: translate(15px, 25px) rotate(10deg);
+            }
+
+            50% {
+                transform: translate(-10px, 40px) rotate(-5deg);
+            }
+
+            75% {
+                transform: translate(-25px, 15px) rotate(5deg);
+            }
+
+            100% {
+                transform: translate(0, 0) rotate(0deg);
+            }
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+
+<body class="min-h-screen py-10 px-4 relative">
+    <!-- Cat Atmosphere Layer -->
+    <div id="cat-atmosphere"></div>
+    <div class="max-w-4xl mx-auto">
+
+        <!-- Header -->
+        <div class="text-center mb-6">
+            <div class="text-4xl mb-2 text-rose-400">ฅ^•ﻌ•^ฅ</div>
+            <h1 class="text-3xl font-bold text-rose-500">เครื่องมือสร้างกรณีทดสอบน้องแมว</h1>
+            <p class="text-rose-300">Cat Test Case Builder</p>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <div class="flex justify-center gap-3 mb-8">
+            <button id="tabPage1" onclick="switchPage(1)"
+                class="tab-active px-6 py-3 rounded-full font-bold text-sm transition-all">
+                📝 สร้างกรณีทดสอบ
+            </button>
+            <button id="tabPage2" onclick="switchPage(2)"
+                class="tab-inactive px-6 py-3 rounded-full font-bold text-sm transition-all">
+                🔧 JSON Payload Generator
+            </button>
+        </div>
+
+        <!-- ==================== PAGE 1: Test Case Builder ==================== -->
+        <div id="page1">
+            <div class="cat-card p-8 shadow-2xl relative mb-10">
+                <div class="space-y-4">
+                    <div>
+                        <label for="testCaseName" class="block text-sm font-medium text-rose-600 mb-1">ชื่อกรณีทดสอบ
+                            (Test Case Name)</label>
+                        <input type="text" id="testCaseName" placeholder="เช่น การล็อกอินเข้าสู่ระบบ"
+                            class="w-full p-3 bg-rose-50">
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label for="testStep" class="block text-sm font-medium text-rose-600 mb-1">ขั้นตอนการทดสอบ
+                                (Test Step)</label>
+                            <textarea id="testStep" rows="3" placeholder="กรอกขั้นตอนการทดสอบที่นี่..."
+                                class="w-full p-3 bg-rose-50 resize-none"></textarea>
+                        </div>
+                        <div>
+                            <label for="expectedResult"
+                                class="block text-sm font-medium text-rose-600 mb-1">ผลลัพธ์ที่คาดหวัง (Expected
+                                Result)</label>
+                            <textarea id="expectedResult" rows="3" placeholder="กรอกผลลัพธ์ที่คาดหวังที่นี่..."
+                                class="w-full p-3 bg-rose-50 resize-none"></textarea>
+                        </div>
+                    </div>
+                    <div class="flex justify-end">
+                        <button id="addStepBtn" disabled class="btn-primary px-8 py-3 rounded-full font-bold shadow-lg">
+                            เพิ่มขั้นตอนถัดไป (Add Next Step)
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Preview Table -->
+            <div class="bg-white rounded-[2rem] p-6 shadow-xl border-2 border-rose-100">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-xl font-bold text-rose-500 flex items-center">
+                        <span class="mr-2">📋</span> ตารางตัวอย่าง (Preview Table)
+                    </h2>
+                    <div class="flex space-x-2">
+                        <button id="resetBtn"
+                            class="bg-rose-50 text-rose-400 px-4 py-2 rounded-xl text-sm font-medium hover:bg-rose-100 transition-colors">
+                            ล้างทั้งหมด (Reset All)
+                        </button>
+                        <button id="exportBtn"
+                            class="bg-green-100 text-green-600 px-4 py-2 rounded-xl text-sm font-medium hover:bg-green-200 transition-colors hidden">
+                            ส่งออกเป็น Excel (Export to Excel)
+                        </button>
+                    </div>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left">
+                        <thead>
+                            <tr class="border-b-2 border-rose-50">
+                                <th class="py-3 px-4 text-rose-400 font-semibold w-16">ลำดับ</th>
+                                <th class="py-3 px-4 text-rose-400 font-semibold">ชื่อกรณีทดสอบ</th>
+                                <th class="py-3 px-4 text-rose-400 font-semibold">ขั้นตอน</th>
+                                <th class="py-3 px-4 text-rose-400 font-semibold">ผลลัพธ์ที่คาดหวัง</th>
+                                <th class="py-3 px-4 text-rose-400 font-semibold w-20 text-center">จัดการ</th>
+                            </tr>
+                        </thead>
+                        <tbody id="testCaseTableBody" class="text-gray-600"></tbody>
+                    </table>
+                    <div id="emptyState" class="text-center py-10 text-rose-200">
+                        <div class="text-5xl mb-2">🐾</div>
+                        ยังไม่มีขั้นตอนการทดสอบ เพิ่มข้อมูลด้านบนเพื่อเริ่มสร้าง!
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== PAGE 2: JSON Payload Generator ==================== -->
+        <div id="page2" class="hidden">
+
+            <!-- Step 1: Download Template -->
+            <div class="cat-card p-8 shadow-2xl mb-8 fade-in">
+                <h2 class="text-xl font-bold text-rose-500 mb-4 flex items-center">
+                    <span class="text-2xl mr-2">①</span> ดาวน์โหลดไฟล์ตัวอย่าง
+                </h2>
+                <p class="text-gray-500 mb-4 text-sm">ดาวน์โหลดไฟล์ Excel ตัวอย่างเพื่อใส่ JSON Key-Value ที่ต้องการ
+                    แล้วอัปโหลดกลับมา</p>
+                <a href="/api/template"
+                    class="btn-primary inline-flex items-center px-6 py-3 rounded-full font-bold shadow-lg">
+                    📥 ดาวน์โหลดไฟล์ตัวอย่าง (Download Template)
+                </a>
+            </div>
+
+            <!-- Step 2: Upload -->
+            <div class="cat-card p-8 shadow-2xl mb-8 fade-in">
+                <h2 class="text-xl font-bold text-rose-500 mb-4 flex items-center">
+                    <span class="text-2xl mr-2">②</span> อัปโหลดไฟล์ที่แก้ไขแล้ว
+                </h2>
+                <div id="uploadZone" class="upload-zone p-10 text-center cursor-pointer">
+                    <div class="text-5xl mb-3">📂</div>
+                    <p class="text-rose-400 font-medium">คลิกหรือลากไฟล์ .xlsx มาวางที่นี่</p>
+                    <p class="text-rose-300 text-sm mt-1">รองรับเฉพาะไฟล์ .xlsx เท่านั้น</p>
+                    <input type="file" id="fileInput" accept=".xlsx" class="hidden">
+                </div>
+                <div id="fileInfo"
+                    class="mt-4 hidden bg-green-50 border border-green-200 rounded-xl p-3 flex items-center justify-between">
+                    <span class="text-green-600 font-medium text-sm" id="fileName">📄 filename.xlsx</span>
+                    <button onclick="clearUpload()" class="text-red-400 hover:text-red-600 text-sm font-medium">✕
+                        ลบ</button>
+                </div>
+            </div>
+
+            <!-- Step 3: Preview Payloads -->
+            <div id="payloadSection" class="hidden fade-in">
+                <div class="bg-white rounded-[2rem] p-6 shadow-xl border-2 border-rose-100 mb-8">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-xl font-bold text-rose-500 flex items-center">
+                            <span class="text-2xl mr-2">③</span> Payload ที่สร้างได้ (<span id="payloadCount">0</span>
+                            รายการ)
+                        </h2>
+                        <div class="flex space-x-2">
+                            <button id="copyAllBtn" onclick="copyAllPayloads()"
+                                class="bg-blue-50 text-blue-500 px-4 py-2 rounded-xl text-sm font-medium hover:bg-blue-100 transition-colors">
+                                📋 คัดลอกทั้งหมด
+                            </button>
+                            <button id="exportPayloadBtn" onclick="exportPayloads()"
+                                class="bg-green-100 text-green-600 px-4 py-2 rounded-xl text-sm font-medium hover:bg-green-200 transition-colors">
+                                📥 ส่งออกเป็น Excel
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="payloadCards" class="space-y-4">
+                        <!-- Payload cards will be rendered here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 4: Upload History -->
+            <div class="bg-white rounded-[2rem] p-6 shadow-xl border-2 border-rose-100 mb-8">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-bold text-rose-500 flex items-center">
+                        <span class="text-2xl mr-2">④</span> ประวัติการอัปโหลด (History)
+                    </h2>
+                    <button onclick="clearHistory()"
+                        class="bg-rose-50 text-rose-400 px-4 py-2 rounded-xl text-sm font-medium hover:bg-rose-100 transition-colors">
+                        🗑️ ล้างประวัติ
+                    </button>
+                </div>
+                <div id="historyList" class="space-y-2">
+                    <!-- History items rendered here -->
+                </div>
+                <div id="historyEmpty" class="text-center py-6 text-rose-200">
+                    <div class="text-3xl mb-1">📁</div>
+                    ยังไม่มีประวัติการอัปโหลด
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ==================== Navigation ====================
+        function switchPage(page) {
+            const page1 = document.getElementById('page1');
+            const page2 = document.getElementById('page2');
+            const tab1 = document.getElementById('tabPage1');
+            const tab2 = document.getElementById('tabPage2');
+
+            if (page === 1) {
+                page1.classList.remove('hidden');
+                page2.classList.add('hidden');
+                tab1.className = 'tab-active px-6 py-3 rounded-full font-bold text-sm transition-all';
+                tab2.className = 'tab-inactive px-6 py-3 rounded-full font-bold text-sm transition-all';
+            } else {
+                page1.classList.add('hidden');
+                page2.classList.remove('hidden');
+                tab2.className = 'tab-active px-6 py-3 rounded-full font-bold text-sm transition-all';
+                tab1.className = 'tab-inactive px-6 py-3 rounded-full font-bold text-sm transition-all';
+            }
+        }
+
+        // ==================== PAGE 1: Test Case Builder ====================
+        const testCaseNameInput = document.getElementById('testCaseName');
+        const testStepInput = document.getElementById('testStep');
+        const expectedResultInput = document.getElementById('expectedResult');
+        const addStepBtn = document.getElementById('addStepBtn');
+        const tableBody = document.getElementById('testCaseTableBody');
+        const emptyState = document.getElementById('emptyState');
+        const resetBtn = document.getElementById('resetBtn');
+        const exportBtn = document.getElementById('exportBtn');
+
+        let testCases = [];
+
+        function validateInputs() {
+            const hasName = testCaseNameInput.value.trim() !== '';
+            const hasStep = testStepInput.value.trim() !== '';
+            const hasExpected = expectedResultInput.value.trim() !== '';
+            addStepBtn.disabled = !(hasName && hasStep && hasExpected);
+        }
+
+        [testCaseNameInput, testStepInput, expectedResultInput].forEach(input => {
+            input.addEventListener('input', validateInputs);
+        });
+
+        addStepBtn.addEventListener('click', () => {
+            testCases.push({
+                name: testCaseNameInput.value.trim(),
+                step: testStepInput.value.trim(),
+                expected: expectedResultInput.value.trim()
+            });
+            renderTable();
+            testStepInput.value = '';
+            expectedResultInput.value = '';
+            validateInputs();
+            testStepInput.focus();
+        });
+
+        function renderTable() {
+            tableBody.innerHTML = '';
+            if (testCases.length === 0) {
+                emptyState.classList.remove('hidden');
+                exportBtn.classList.add('hidden');
+            } else {
+                emptyState.classList.add('hidden');
+                exportBtn.classList.remove('hidden');
+                testCases.forEach((tc, index) => {
+                    const row = document.createElement('tr');
+                    row.className = 'border-b border-rose-50 hover:bg-rose-50/30 transition-colors';
+                    row.innerHTML = `
+                        <td class="py-4 px-4 font-medium">${index + 1}</td>
+                        <td class="py-4 px-4 whitespace-nowrap overflow-hidden text-ellipsis max-w-xs">${escapeHtml(tc.name)}</td>
+                        <td class="py-4 px-4 whitespace-pre-line">${escapeHtml(tc.step)}</td>
+                        <td class="py-4 px-4 whitespace-pre-line">${escapeHtml(tc.expected)}</td>
+                        <td class="py-4 px-4 text-center">
+                            <button onclick="deleteStep(${index})" class="btn-danger w-8 h-8 rounded-full inline-flex items-center justify-center font-bold" title="ลบขั้นตอน">✕</button>
+                        </td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+            }
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        window.deleteStep = function (index) {
+            testCases.splice(index, 1);
+            renderTable();
+        };
+
+        resetBtn.addEventListener('click', () => {
+            if (confirm('คุณต้องการล้างข้อมูลทั้งหมดใช่หรือไม่?')) {
+                testCases = [];
+                testCaseNameInput.value = '';
+                testStepInput.value = '';
+                expectedResultInput.value = '';
+                renderTable();
+                validateInputs();
+            }
+        });
+
+        // Page 1 Excel Export (ExcelJS)
+        exportBtn.addEventListener('click', async () => {
+            try {
+                const workbook = new ExcelJS.Workbook();
+                const worksheet = workbook.addWorksheet('Test Cases');
+                worksheet.columns = [
+                    { header: 'ลำดับ', key: 'no', width: 10 },
+                    { header: 'ชื่อกรณีทดสอบ', key: 'name', width: 30 },
+                    { header: 'ขั้นตอนการทดสอบ', key: 'step', width: 50 },
+                    { header: 'ผลลัพธ์ที่คาดหวัง', key: 'expected', width: 50 }
+                ];
+                worksheet.getRow(1).font = { bold: true };
+                worksheet.getRow(1).alignment = { vertical: 'middle' };
+                testCases.forEach((tc, index) => {
+                    const row = worksheet.addRow({ no: index + 1, name: tc.name, step: tc.step, expected: tc.expected });
+                    row.getCell('step').alignment = { wrapText: true, vertical: 'top' };
+                    row.getCell('expected').alignment = { wrapText: true, vertical: 'top' };
+                    row.getCell('name').alignment = { vertical: 'top' };
+                    row.getCell('no').alignment = { vertical: 'top' };
+                });
+                const rawName = testCases[0].name || 'test-cases';
+                const safeName = rawName.replace(/[\\\/:*?"<>|]/g, '_').trim();
+                const buffer = await workbook.xlsx.writeBuffer();
+                const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+                saveAs(blob, `Cat_Test_Case_${safeName || 'Export'}.xlsx`);
+            } catch (error) {
+                console.error('Export failed:', error);
+                alert('เกิดข้อผิดพลาดในการส่งออกไฟล์: ' + error.message);
+            }
+        });
+
+        // ==================== PAGE 2: JSON Payload Generator ====================
+        const uploadZone = document.getElementById('uploadZone');
+        const fileInput = document.getElementById('fileInput');
+        const fileInfo = document.getElementById('fileInfo');
+        const fileNameEl = document.getElementById('fileName');
+        const payloadSection = document.getElementById('payloadSection');
+        const payloadCards = document.getElementById('payloadCards');
+        const payloadCountEl = document.getElementById('payloadCount');
+
+        let generatedPayloads = [];
+
+        // Upload zone click
+        uploadZone.addEventListener('click', () => fileInput.click());
+
+        // Drag & drop
+        uploadZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadZone.classList.add('drag-over');
+        });
+        uploadZone.addEventListener('dragleave', () => {
+            uploadZone.classList.remove('drag-over');
+        });
+        uploadZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadZone.classList.remove('drag-over');
+            const file = e.dataTransfer.files[0];
+            if (file && file.name.endsWith('.xlsx')) {
+                processFile(file);
+            } else {
+                alert('กรุณาอัปโหลดไฟล์ .xlsx เท่านั้น');
+            }
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files[0]) processFile(e.target.files[0]);
+        });
+
+        async function processFile(file) {
+            fileNameEl.textContent = '📄 ' + file.name;
+            fileInfo.classList.remove('hidden');
+
+            try {
+                const arrayBuffer = await file.arrayBuffer();
+                const workbook = new ExcelJS.Workbook();
+                await workbook.xlsx.load(arrayBuffer);
+
+                // ---- Nested JSON helper functions ----
+                function parsePath(path) {
+                    const parts = [];
+                    const tokens = path.replace(/\[(\d+)\]/g, '.$1').split('.');
+                    tokens.forEach(t => {
+                        if (/^\d+$/.test(t)) {
+                            parts.push(parseInt(t, 10));
+                        } else {
+                            parts.push(t);
+                        }
+                    });
+                    return parts;
+                }
+
+                function setNestedValue(obj, path, value) {
+                    const parts = parsePath(path);
+                    let current = obj;
+                    for (let i = 0; i < parts.length - 1; i++) {
+                        const key = parts[i];
+                        const nextKey = parts[i + 1];
+                        if (current[key] === undefined) {
+                            current[key] = typeof nextKey === 'number' ? [] : {};
+                        }
+                        current = current[key];
+                    }
+                    current[parts[parts.length - 1]] = value;
+                }
+
+                function parseValue(val) {
+                    if (val === 'true') return true;
+                    if (val === 'false') return false;
+                    if (val === 'null') return null;
+                    if (/^-?\d+(\.\d+)?$/.test(val)) return Number(val);
+                    return val;
+                }
+
+                // ---- Loop through all sheets (skip instruction sheet) ----
+                generatedPayloads = [];
+                const skippedNames = ['คำแนะนำ', 'instructions'];
+
+                workbook.worksheets.forEach(worksheet => {
+                    const sheetName = worksheet.name.toLowerCase().trim();
+                    if (skippedNames.some(s => sheetName === s.toLowerCase())) return;
+
+                    const rows = [];
+                    worksheet.eachRow((row, rowNumber) => {
+                        if (rowNumber === 1) return; // Skip header
+                        const key = row.getCell(2).value; // Column B = Key
+                        let value = row.getCell(3).value;   // Column C = Value
+
+                        // Handle rich text / formula objects
+                        if (value && typeof value === 'object' && value.richText) {
+                            value = value.richText.map(rt => rt.text).join('');
+                        }
+                        if (value && typeof value === 'object' && value.result !== undefined) {
+                            value = value.result;
+                        }
+
+                        if (key && key.toString().trim()) {
+                            rows.push({
+                                key: key.toString().trim(),
+                                value: value !== null && value !== undefined ? value.toString().trim() : ''
+                            });
+                        }
+                    });
+
+                    if (rows.length === 0) return;
+
+                    // Build nested payload for this sheet
+                    const payload = {};
+                    rows.forEach(r => {
+                        setNestedValue(payload, r.key, parseValue(r.value));
+                    });
+
+                    generatedPayloads.push({
+                        sheetName: worksheet.name,
+                        items: rows,
+                        payload
+                    });
+                });
+
+                if (generatedPayloads.length === 0) {
+                    alert('ไม่พบข้อมูล Key-Value ในไฟล์');
+                    return;
+                }
+
+                renderPayloads();
+                saveToHistory(file.name, generatedPayloads);
+            } catch (error) {
+                console.error('File processing error:', error);
+                alert('เกิดข้อผิดพลาดในการอ่านไฟล์: ' + error.message);
+            }
+        }
+
+        // ==================== Upload History (localStorage) ====================
+        const HISTORY_KEY = 'cat_payload_history';
+
+        function getHistory() {
+            try {
+                return JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
+            } catch { return []; }
+        }
+
+        function saveToHistory(fileName, payloads) {
+            const history = getHistory();
+            history.unshift({
+                id: Date.now(),
+                fileName,
+                date: new Date().toLocaleString('th-TH'),
+                payloadCount: payloads.length,
+                payloads: payloads
+            });
+            // Keep max 20 entries
+            if (history.length > 20) history.length = 20;
+            localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+            renderHistory();
+        }
+
+        function renderHistory() {
+            const historyList = document.getElementById('historyList');
+            const historyEmpty = document.getElementById('historyEmpty');
+            const history = getHistory();
+
+            historyList.innerHTML = '';
+            if (history.length === 0) {
+                historyEmpty.classList.remove('hidden');
+                return;
+            }
+            historyEmpty.classList.add('hidden');
+
+            history.forEach((item, idx) => {
+                const el = document.createElement('div');
+                el.className = 'flex items-center justify-between bg-rose-50/50 rounded-xl px-4 py-3 hover:bg-rose-50 transition-colors';
+                el.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <span class="text-lg">📄</span>
+                        <div>
+                            <p class="font-medium text-gray-700 text-sm">${escapeHtml(item.fileName)}</p>
+                            <p class="text-xs text-gray-400">${item.date} · ${item.payloadCount} payload(s)</p>
+                        </div>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="loadFromHistory(${idx})" class="bg-white text-blue-500 px-3 py-1 rounded-lg text-xs font-medium hover:bg-blue-50 transition-colors border border-blue-200">
+                            👁️ ดู
+                        </button>
+                        <button onclick="deleteFromHistory(${idx})" class="bg-white text-red-400 px-3 py-1 rounded-lg text-xs font-medium hover:bg-red-50 transition-colors border border-red-200">
+                            ✕
+                        </button>
+                    </div>
+                `;
+                historyList.appendChild(el);
+            });
+        }
+
+        window.loadFromHistory = function (idx) {
+            const history = getHistory();
+            if (!history[idx]) return;
+            generatedPayloads = history[idx].payloads;
+            fileNameEl.textContent = '📄 ' + history[idx].fileName + ' (จากประวัติ)';
+            fileInfo.classList.remove('hidden');
+            renderPayloads();
+            showToast('โหลดจากประวัติสำเร็จ! 📂');
+        };
+
+        window.deleteFromHistory = function (idx) {
+            const history = getHistory();
+            history.splice(idx, 1);
+            localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+            renderHistory();
+            showToast('ลบรายการจากประวัติแล้ว');
+        };
+
+        function clearHistory() {
+            if (!confirm('ต้องการล้างประวัติทั้งหมดใช่หรือไม่?')) return;
+            localStorage.removeItem(HISTORY_KEY);
+            renderHistory();
+            showToast('ล้างประวัติเรียบร้อย');
+        }
+
+        // Render history on page load
+        renderHistory();
+
+        // ---- Cat Atmosphere Generator ----
+        function createCatAtmosphere() {
+            const atmosphere = document.getElementById('cat-atmosphere');
+            const catIcons = ['🐱', '🐈', '😺', '🐾', '🐈‍⬛', '🐾', '😸', '😻', '🐾'];
+            const count = 40; // Number of cats
+
+            for (let i = 0; i < count; i++) {
+                const cat = document.createElement('div');
+                cat.className = 'bg-cat';
+                cat.textContent = catIcons[Math.floor(Math.random() * catIcons.length)];
+
+                // Random position
+                cat.style.left = Math.random() * 100 + '%';
+                cat.style.top = Math.random() * 100 + '%';
+
+                // Random size
+                const size = 20 + Math.random() * 60;
+                cat.style.fontSize = size + 'px';
+
+                // Random animation delay and duration
+                cat.style.animationDelay = (Math.random() * -20) + 's';
+                cat.style.animationDuration = (15 + Math.random() * 15) + 's';
+
+                atmosphere.appendChild(cat);
+            }
+        }
+        createCatAtmosphere();
+
+        function clearUpload() {
+            fileInput.value = '';
+            fileInfo.classList.add('hidden');
+            payloadSection.classList.add('hidden');
+            generatedPayloads = [];
+        }
+
+        function renderPayloads() {
+            payloadCards.innerHTML = '';
+            payloadCountEl.textContent = generatedPayloads.length;
+            payloadSection.classList.remove('hidden');
+
+            // ---- Combined JSON block (when 2+ payloads) ----
+            if (generatedPayloads.length > 1) {
+                const allPayloads = generatedPayloads.map(e => e.payload);
+                const combinedJson = JSON.stringify(allPayloads, null, 2);
+                const combinedHighlighted = syntaxHighlight(combinedJson);
+
+                const combinedCard = document.createElement('div');
+                combinedCard.className = 'border-2 border-indigo-200 rounded-2xl overflow-hidden fade-in mb-6';
+                combinedCard.innerHTML = `
+                    <div class="bg-indigo-50 px-5 py-3 flex justify-between items-center">
+                        <span class="font-bold text-indigo-500">📦 JSON รวมทั้งหมด (${generatedPayloads.length} Payloads)</span>
+                        <button onclick="copyCombinedPayloads()" class="bg-white text-indigo-400 px-3 py-1 rounded-lg text-xs font-medium hover:bg-indigo-100 transition-colors border border-indigo-200">
+                            📋 คัดลอก JSON รวม
+                        </button>
+                    </div>
+                    <div class="px-5 py-4">
+                        <pre class="json-block p-4" style="max-height: 400px; overflow-y: auto;">${combinedHighlighted}</pre>
+                    </div>
+                `;
+                payloadCards.appendChild(combinedCard);
+            }
+
+            generatedPayloads.forEach((entry, idx) => {
+                const jsonStr = JSON.stringify(entry.payload, null, 2);
+                const highlighted = syntaxHighlight(jsonStr);
+
+                const card = document.createElement('div');
+                card.className = 'border-2 border-rose-100 rounded-2xl overflow-hidden fade-in';
+                card.innerHTML = `
+                    <div class="bg-rose-50 px-5 py-3 flex justify-between items-center">
+                        <span class="font-bold text-rose-500">🐱 Payload #${idx + 1} ${entry.sheetName ? `<span class="text-rose-300 font-normal text-sm ml-2">(${escapeHtml(entry.sheetName)})</span>` : ''}</span>
+                        <button onclick="copyPayload(${idx})" class="bg-white text-rose-400 px-3 py-1 rounded-lg text-xs font-medium hover:bg-rose-100 transition-colors border border-rose-200">
+                            📋 คัดลอก
+                        </button>
+                    </div>
+                    <!-- Key-Value Table -->
+                    <div class="px-5 py-3">
+                        <table class="w-full text-sm mb-3">
+                            <thead>
+                                <tr class="border-b border-rose-50">
+                                    <th class="py-2 px-3 text-left text-rose-400 font-semibold w-12">No.</th>
+                                    <th class="py-2 px-3 text-left text-rose-400 font-semibold">Key</th>
+                                    <th class="py-2 px-3 text-left text-rose-400 font-semibold">Value</th>
+                                </tr>
+                            </thead>
+                            <tbody class="text-gray-600">
+                                ${entry.items.map((item, i) => `
+                                    <tr class="border-b border-rose-50/50">
+                                        <td class="py-2 px-3">${i + 1}</td>
+                                        <td class="py-2 px-3 font-mono text-blue-600">${escapeHtml(item.key)}</td>
+                                        <td class="py-2 px-3 font-mono">${escapeHtml(item.value)}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                    <!-- JSON Preview -->
+                    <div class="px-5 pb-4">
+                        <p class="text-xs text-gray-400 mb-2 font-medium">JSON Payload:</p>
+                        <pre class="json-block p-4">${highlighted}</pre>
+                    </div>
+                `;
+                payloadCards.appendChild(card);
+            });
+        }
+
+        function syntaxHighlight(json) {
+            return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, (match) => {
+                let cls = 'json-number';
+                if (/^"/.test(match)) {
+                    if (/:$/.test(match)) {
+                        cls = 'json-key';
+                        match = match.replace(/:$/, '') + ':';
+                        return `<span class="${cls}">${match.slice(0, -1)}</span>:`;
+                    }
+                    cls = 'json-string';
+                } else if (/true|false/.test(match)) {
+                    cls = 'json-bool';
+                }
+                return `<span class="${cls}">${match}</span>`;
+            });
+        }
+
+        window.copyPayload = function (idx) {
+            const text = JSON.stringify(generatedPayloads[idx].payload, null, 2);
+            navigator.clipboard.writeText(text).then(() => {
+                showToast('คัดลอก Payload สำเร็จ! 🐱');
+            });
+        };
+
+        window.copyCombinedPayloads = function () {
+            const allPayloads = generatedPayloads.map(e => e.payload);
+            const text = JSON.stringify(allPayloads, null, 2);
+            navigator.clipboard.writeText(text).then(() => {
+                showToast('คัดลอก JSON รวมทั้งหมดสำเร็จ! 📦');
+            });
+        };
+
+        function copyAllPayloads() {
+            const allText = generatedPayloads.map((entry, idx) =>
+                `// Payload #${idx + 1}${entry.sheetName ? ' (' + entry.sheetName + ')' : ''}\n${JSON.stringify(entry.payload, null, 2)}`
+            ).join('\n\n');
+            navigator.clipboard.writeText(allText).then(() => {
+                showToast('คัดลอกทั้งหมดสำเร็จ! 🐱');
+            });
+        }
+
+        async function exportPayloads() {
+            try {
+                const workbook = new ExcelJS.Workbook();
+
+                generatedPayloads.forEach((entry, pIdx) => {
+                    const sheetName = entry.sheetName || `Payload ${pIdx + 1}`;
+                    const worksheet = workbook.addWorksheet(sheetName);
+
+                    worksheet.columns = [
+                        { header: 'ลำดับ', key: 'no', width: 10 },
+                        { header: 'Key', key: 'key', width: 30 },
+                        { header: 'Value', key: 'value', width: 40 },
+                        { header: 'JSON Payload', key: 'payload', width: 60 }
+                    ];
+
+                    worksheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
+                    worksheet.getRow(1).alignment = { vertical: 'middle', horizontal: 'center' };
+                    worksheet.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFDA4AF' } };
+
+                    const jsonStr = JSON.stringify(entry.payload, null, 2);
+                    entry.items.forEach((item, i) => {
+                        const row = worksheet.addRow({
+                            no: i + 1,
+                            key: item.key,
+                            value: item.value,
+                            payload: i === 0 ? jsonStr : ''
+                        });
+                        row.getCell('payload').alignment = { wrapText: true, vertical: 'top' };
+                        row.getCell('key').alignment = { vertical: 'top' };
+                        row.getCell('value').alignment = { vertical: 'top' };
+                        row.getCell('no').alignment = { vertical: 'top' };
+                    });
+                });
+
+                const buffer = await workbook.xlsx.writeBuffer();
+                const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+                saveAs(blob, 'Cat_JSON_Payloads.xlsx');
+                showToast('ส่งออก Excel สำเร็จ! 📥');
+            } catch (error) {
+                console.error('Export failed:', error);
+                alert('เกิดข้อผิดพลาดในการส่งออกไฟล์: ' + error.message);
+            }
+        }
+
+        // Toast notification
+        function showToast(message) {
+            const toast = document.createElement('div');
+            toast.className = 'fixed bottom-6 right-6 bg-gray-800 text-white px-6 py-3 rounded-xl shadow-2xl text-sm font-medium z-50 fade-in';
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 2500);
+        }
+    </script>
+</body>
+
+</html>
