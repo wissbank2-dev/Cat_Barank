@@ -234,13 +234,23 @@
                         <span class="mr-2">📋</span> ตารางตัวอย่าง (Preview Table)
                     </h2>
                     <div class="flex space-x-2">
+                        <a href="/api/testcase-template"
+                            class="bg-blue-50 text-blue-500 px-4 py-2 rounded-xl text-sm font-medium hover:bg-blue-100 transition-colors flex items-center">
+                            📥 โหลดตัวอย่าง
+                        </a>
+                        <button onclick="document.getElementById('importTestCaseInput').click()"
+                            class="bg-purple-50 text-purple-500 px-4 py-2 rounded-xl text-sm font-medium hover:bg-purple-100 transition-colors">
+                            📂 นำเข้า Excel
+                        </button>
+                        <input type="file" id="importTestCaseInput" accept=".xlsx" class="hidden"
+                            onchange="importTestCases(this)">
                         <button id="resetBtn"
                             class="bg-rose-50 text-rose-400 px-4 py-2 rounded-xl text-sm font-medium hover:bg-rose-100 transition-colors">
-                            ล้างทั้งหมด (Reset All)
+                            ล้างทั้งหมด
                         </button>
                         <button id="exportBtn"
                             class="bg-green-100 text-green-600 px-4 py-2 rounded-xl text-sm font-medium hover:bg-green-200 transition-colors hidden">
-                            ส่งออกเป็น Excel (Export to Excel)
+                            ส่งออก Excel
                         </button>
                     </div>
                 </div>
@@ -451,6 +461,54 @@
                 validateInputs();
             }
         });
+
+        // Import Test Cases from Excel
+        async function importTestCases(input) {
+            const file = input.files[0];
+            if (!file) return;
+
+            try {
+                const arrayBuffer = await file.arrayBuffer();
+                const workbook = new ExcelJS.Workbook();
+                await workbook.xlsx.load(arrayBuffer);
+
+                const worksheet = workbook.getWorksheet(1); // Get first sheet
+                const newTestCases = [];
+
+                worksheet.eachRow((row, rowNumber) => {
+                    if (rowNumber === 1) return; // Skip header
+
+                    const name = row.getCell(2).value;
+                    const step = row.getCell(3).value;
+                    const expected = row.getCell(4).value;
+
+                    if (name || step || expected) {
+                        newTestCases.push({
+                            name: name?.toString() || '',
+                            step: step?.toString() || '',
+                            expected: expected?.toString() || ''
+                        });
+                    }
+                });
+
+                if (newTestCases.length > 0) {
+                    if (testCases.length > 0 && confirm('ต้องการล้างข้อมูลเดิมและแทนที่ด้วยข้อมูลใหม่ใช่หรือไม่?\n(ยกเลิกเพื่อเพิ่มต่อท้าย)')) {
+                        testCases = newTestCases;
+                    } else {
+                        testCases = [...testCases, ...newTestCases];
+                    }
+                    renderTable();
+                    showToast('นำเข้าข้อมูลสำเร็จ! 🐱');
+                } else {
+                    alert('ไม่พบข้อมูลที่ถูกต้องในไฟล์ Excel');
+                }
+            } catch (error) {
+                console.error('Import failed:', error);
+                alert('เกิดข้อผิดพลาดในการนำเข้าไฟล์: ' + error.message);
+            } finally {
+                input.value = ''; // Clear input for next time
+            }
+        }
 
         // Page 1 Excel Export (ExcelJS)
         exportBtn.addEventListener('click', async () => {

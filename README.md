@@ -81,7 +81,7 @@ npm run dev
 ## 📁 โครงสร้างโปรเจกต์
 
 ```
-├── server.js          # Express server + routes + template API
+├── index.js           # Express server + routes + template API
 ├── views/
 │   └── index.ejs      # หน้าเว็บหลัก (2 หน้า + Client-side JS)
 ├── package.json

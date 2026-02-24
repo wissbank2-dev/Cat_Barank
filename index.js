@@ -20,7 +20,38 @@ app.get('/', (req, res) => {
     res.render('index');
 });
 
-// Template Download Endpoint
+// Test Case Template Download Endpoint
+app.get('/api/testcase-template', async (req, res) => {
+    try {
+        const workbook = new ExcelJS.Workbook();
+        const ws = workbook.addWorksheet('Test Cases');
+
+        // Style header
+        ws.columns = [
+            { header: 'ลำดับ (No.)', key: 'no', width: 10 },
+            { header: 'ชื่อกรณีทดสอบ (Name)', key: 'name', width: 30 },
+            { header: 'ขั้นตอนการทดสอบ (Step)', key: 'step', width: 50 },
+            { header: 'ผลลัพธ์ที่คาดหวัง (Expected)', key: 'expected', width: 50 }
+        ];
+        ws.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
+        ws.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFDA4AF' } };
+        ws.getRow(1).alignment = { vertical: 'middle', horizontal: 'center' };
+
+        // Add example row
+        ws.addRow({ no: 1, name: 'ตัวอย่างการทดสอบ', step: '1. เปิดเบราว์เซอร์\n2. เข้าหน้าเว็บ', expected: 'หน้าเว็บแสดงผลถูกต้อง' });
+        ws.getRow(2).alignment = { wrapText: true, vertical: 'top' };
+
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', 'attachment; filename=Test_Case_Template_Cat.xlsx');
+        await workbook.xlsx.write(res);
+        res.end();
+    } catch (error) {
+        console.error('Test case template generation failed:', error);
+        res.status(500).json({ error: 'Failed to generate template' });
+    }
+});
+
+// JSON Template Download Endpoint
 app.get('/api/template', async (req, res) => {
     try {
         const workbook = new ExcelJS.Workbook();
