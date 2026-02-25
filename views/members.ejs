@@ -536,6 +536,38 @@
         .chat-notif-toast span { opacity: 0.9; font-size: 0.8rem; }
         @keyframes slideInRight { from { transform: translateX(120%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
 
+
+        /* Chat notification toast */
+        .chat-notif-toast {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            background: linear-gradient(135deg, #fff0f3, #ffe4e8);
+            border: 2px solid #fda4af;
+            color: #881337;
+            padding: 16px 22px;
+            border-radius: 1.2rem;
+            box-shadow: 0 10px 40px rgba(244,63,94,0.25), 0 0 0 1px rgba(244,63,94,0.1);
+            z-index: 9998;
+            cursor: pointer;
+            animation: toastSlideIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+            max-width: 360px;
+            min-width: 240px;
+            backdrop-filter: blur(10px);
+        }
+        .chat-notif-toast .toast-icon { font-size: 1.8rem; margin-right: 10px; }
+        .chat-notif-toast .toast-title { font-size: 1rem; font-weight: 700; color: #e11d48; margin-bottom: 3px; }
+        .chat-notif-toast .toast-body { font-size: 0.9rem; color: #6b2140; opacity: 0.85; }
+        .chat-notif-toast .toast-close { position: absolute; top: 8px; right: 12px; color: #fda4af; font-size: 1rem; cursor: pointer; background: none; border: none; }
+        .chat-notif-toast .toast-close:hover { color: #e11d48; }
+        @keyframes toastSlideIn {
+            from { transform: translateX(120%) scale(0.8); opacity: 0; }
+            to { transform: translateX(0) scale(1); opacity: 1; }
+        }
+        @keyframes toastSlideOut {
+            from { transform: translateX(0) scale(1); opacity: 1; }
+            to { transform: translateX(120%) scale(0.8); opacity: 0; }
+        }
         /* ==================== KUMA AI FLOATING CHAT ==================== */
         .kuma-fab {
             position: fixed;
@@ -2469,14 +2501,31 @@
             } catch(e) { console.log("Notif err:", e); }
         }
 
-        // Show in-page toast notification (always visible)
+        // Show in-page toast notification (cute cat style) 🐱
         function showChatToast(senderName, text) {
+            // Remove existing toast
+            document.querySelectorAll(".chat-notif-toast").forEach(t => t.remove());
             const toast = document.createElement("div");
             toast.className = "chat-notif-toast";
-            toast.innerHTML = `<strong>\uD83D\uDCAC ${senderName}</strong><br><span>${text || "\u0e2a\u0e48\u0e07\u0e23\u0e39\u0e1b\u0e20\u0e32\u0e1e"}</span>`;
+            toast.innerHTML = `
+                <button class="toast-close" onclick="event.stopPropagation();this.parentElement.remove()">\u2715</button>
+                <div style="display:flex;align-items:center">
+                    <span class="toast-icon">\uD83D\uDC31</span>
+                    <div>
+                        <div class="toast-title">\uD83D\uDCAC ${senderName}</div>
+                        <div class="toast-body">${text || "\u0e2a\u0e48\u0e07\u0e02\u0e49\u0e2d\u0e04\u0e27\u0e32\u0e21\u0e43\u0e2b\u0e21\u0e48"}</div>
+                    </div>
+                </div>
+            `;
             toast.onclick = () => { toast.remove(); showSection("chat"); };
             document.body.appendChild(toast);
-            setTimeout(() => { if (toast.parentNode) toast.remove(); }, 5000);
+            // Auto dismiss with slide out animation
+            setTimeout(() => {
+                if (toast.parentNode) {
+                    toast.style.animation = "toastSlideOut 0.3s ease forwards";
+                    setTimeout(() => { if (toast.parentNode) toast.remove(); }, 300);
+                }
+            }, 5000);
         }
 
         // Combined: play sound + browser notif + in-page toast
