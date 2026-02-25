@@ -530,6 +530,12 @@
             border: none;
         }
 
+        /* Chat notification toast */
+        .chat-notif-toast { position: fixed; top: 20px; right: 20px; background: linear-gradient(135deg, #fb7185, #f43f5e); color: white; padding: 12px 20px; border-radius: 1rem; box-shadow: 0 8px 30px rgba(244,63,94,0.4); z-index: 9999; cursor: pointer; animation: slideInRight 0.3s ease; max-width: 320px; font-size: 0.85rem; }
+        .chat-notif-toast strong { font-size: 0.9rem; }
+        .chat-notif-toast span { opacity: 0.9; font-size: 0.8rem; }
+        @keyframes slideInRight { from { transform: translateX(120%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
         /* ==================== KUMA AI FLOATING CHAT ==================== */
         .kuma-fab {
             position: fixed;
@@ -2111,6 +2117,16 @@
                             ${isMe ? `<img src="${senderAvatar}" class="w-8 h-8 rounded-full object-cover border border-rose-200 shrink-0 mt-1" onerror="this.src='${defaultAvatarSvg}'">` : ''}
                         </div>`;
                     });
+                    // Play sound for new messages from others in active chat
+                    const lastMsg = snap.docs[snap.docs.length - 1]?.data();
+                    if (lastMsg && lastMsg.senderUid !== uid && lastMsg.createdAt) {
+                        const msgTime = lastMsg.createdAt.toMillis();
+                        const lastHeard = parseInt(localStorage.getItem("lastHeard_" + currentChatId) || "0");
+                        if (msgTime > lastHeard) {
+                            playNotifSound();
+                            localStorage.setItem("lastHeard_" + currentChatId, msgTime.toString());
+                        }
+                    }
                     msgDiv.scrollTop = msgDiv.scrollHeight;
                     // Mark as read
                     if (currentChatType === 'private') {
@@ -2357,68 +2373,81 @@
 
         // ==================== CHAT SOUND & BROWSER NOTIFICATIONS ====================
         let notifSoundEnabled = true;
-        let notifPermission = "default";
+        let _audioCtx = null;
 
-        // Request notification permission on load
-        if ("Notification" in window) {
-            notifPermission = Notification.permission;
-            if (notifPermission === "default") {
-                Notification.requestPermission().then(p => { notifPermission = p; });
+        // Create AudioContext on first user interaction (required by browsers)
+        function getAudioCtx() {
+            if (!_audioCtx) _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if (_audioCtx.state === "suspended") _audioCtx.resume();
+            return _audioCtx;
+        }
+        // Init audio context on any user interaction
+        document.addEventListener("click", () => getAudioCtx(), { once: true });
+        document.addEventListener("keydown", () => getAudioCtx(), { once: true });
+
+        // Request notification permission
+        function requestNotifPermission() {
+            if ("Notification" in window && Notification.permission === "default") {
+                Notification.requestPermission();
             }
         }
+        // Request on page interaction
+        document.addEventListener("click", requestNotifPermission, { once: true });
 
-        // Generate notification sound using Web Audio API
+        // Play notification sound
         function playNotifSound() {
             if (!notifSoundEnabled) return;
             try {
-                const ctx = new (window.AudioContext || window.webkitAudioContext)();
-                // Note 1
-                const osc1 = ctx.createOscillator();
-                const gain1 = ctx.createGain();
-                osc1.type = "sine";
-                osc1.frequency.setValueAtTime(830, ctx.currentTime);
-                gain1.gain.setValueAtTime(0.3, ctx.currentTime);
-                gain1.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.15);
-                osc1.connect(gain1);
-                gain1.connect(ctx.destination);
-                osc1.start(ctx.currentTime);
-                osc1.stop(ctx.currentTime + 0.15);
-                // Note 2 (higher)
-                const osc2 = ctx.createOscillator();
-                const gain2 = ctx.createGain();
-                osc2.type = "sine";
-                osc2.frequency.setValueAtTime(1200, ctx.currentTime + 0.12);
-                gain2.gain.setValueAtTime(0.3, ctx.currentTime + 0.12);
-                gain2.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.35);
-                osc2.connect(gain2);
-                gain2.connect(ctx.destination);
-                osc2.start(ctx.currentTime + 0.12);
-                osc2.stop(ctx.currentTime + 0.35);
-                setTimeout(() => ctx.close(), 500);
-            } catch(e) { console.log("Sound error:", e); }
+                const ctx = getAudioCtx();
+                const now = ctx.currentTime;
+                // Tone 1: 830 Hz
+                const o1 = ctx.createOscillator(); const g1 = ctx.createGain();
+                o1.type = "sine"; o1.frequency.value = 830;
+                g1.gain.setValueAtTime(0.35, now);
+                g1.gain.exponentialRampToValueAtTime(0.01, now + 0.18);
+                o1.connect(g1); g1.connect(ctx.destination);
+                o1.start(now); o1.stop(now + 0.18);
+                // Tone 2: 1200 Hz
+                const o2 = ctx.createOscillator(); const g2 = ctx.createGain();
+                o2.type = "sine"; o2.frequency.value = 1200;
+                g2.gain.setValueAtTime(0.35, now + 0.15);
+                g2.gain.exponentialRampToValueAtTime(0.01, now + 0.38);
+                o2.connect(g2); g2.connect(ctx.destination);
+                o2.start(now + 0.15); o2.stop(now + 0.38);
+            } catch(e) { console.log("Sound err:", e); }
         }
 
-        // Show browser notification
+        // Show browser notification (works both focused and unfocused)
         function showBrowserNotif(title, body, icon) {
-            if (notifPermission !== "granted") return;
-            if (document.hasFocus()) return; // only when tab not focused
+            if (!("Notification" in window) || Notification.permission !== "granted") return;
             try {
                 const n = new Notification(title, {
-                    body: body,
+                    body: body || "\u0e02\u0e49\u0e2d\u0e04\u0e27\u0e32\u0e21\u0e43\u0e2b\u0e21\u0e48",
                     icon: icon || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='50' fill='%23fda4af'/%3E%3Ctext x='50' y='65' text-anchor='middle' font-size='50'%3E\uD83D\uDC31%3C/text%3E%3C/svg%3E",
-                    tag: "kuma-chat",
-                    renotify: true
+                    tag: "kuma-chat-" + Date.now(),
+                    requireInteraction: false
                 });
                 n.onclick = () => { window.focus(); n.close(); };
-                setTimeout(() => n.close(), 5000);
-            } catch(e) { console.log("Notif error:", e); }
+                setTimeout(() => n.close(), 6000);
+            } catch(e) { console.log("Notif err:", e); }
         }
 
-        // Combined notification trigger
+        // Show in-page toast notification (always visible)
+        function showChatToast(senderName, text) {
+            const toast = document.createElement("div");
+            toast.className = "chat-notif-toast";
+            toast.innerHTML = `<strong>\uD83D\uDCAC ${senderName}</strong><br><span>${text || "\u0e2a\u0e48\u0e07\u0e23\u0e39\u0e1b\u0e20\u0e32\u0e1e"}</span>`;
+            toast.onclick = () => { toast.remove(); showSection("chat"); };
+            document.body.appendChild(toast);
+            setTimeout(() => { if (toast.parentNode) toast.remove(); }, 5000);
+        }
+
+        // Combined: play sound + browser notif + in-page toast
         function triggerChatNotif(senderName, messageText, senderPhoto) {
             playNotifSound();
-            const body = messageText ? (messageText.length > 50 ? messageText.substring(0, 50) + "..." : messageText) : "\u0e2a\u0e48\u0e07\u0e23\u0e39\u0e1b\u0e20\u0e32\u0e1e";
+            const body = messageText ? (messageText.length > 60 ? messageText.substring(0, 60) + "..." : messageText) : "\u0e2a\u0e48\u0e07\u0e23\u0e39\u0e1b\u0e20\u0e32\u0e1e \uD83D\uDCF7";
             showBrowserNotif("\uD83D\uDCAC " + senderName, body, senderPhoto);
+            showChatToast(senderName, body);
         }
 
         // ==================== NOTIFICATION BADGES ====================
