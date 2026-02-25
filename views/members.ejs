@@ -2394,26 +2394,59 @@
         // Request on page interaction
         document.addEventListener("click", requestNotifPermission, { once: true });
 
-        // Play notification sound
+        // Play cute cat meow notification sound 🐱
         function playNotifSound() {
             if (!notifSoundEnabled) return;
             try {
                 const ctx = getAudioCtx();
                 const now = ctx.currentTime;
-                // Tone 1: 830 Hz
-                const o1 = ctx.createOscillator(); const g1 = ctx.createGain();
-                o1.type = "sine"; o1.frequency.value = 830;
-                g1.gain.setValueAtTime(0.35, now);
-                g1.gain.exponentialRampToValueAtTime(0.01, now + 0.18);
-                o1.connect(g1); g1.connect(ctx.destination);
-                o1.start(now); o1.stop(now + 0.18);
-                // Tone 2: 1200 Hz
-                const o2 = ctx.createOscillator(); const g2 = ctx.createGain();
-                o2.type = "sine"; o2.frequency.value = 1200;
-                g2.gain.setValueAtTime(0.35, now + 0.15);
-                g2.gain.exponentialRampToValueAtTime(0.01, now + 0.38);
-                o2.connect(g2); g2.connect(ctx.destination);
-                o2.start(now + 0.15); o2.stop(now + 0.38);
+
+                // === Cute "Meow!" sound ===
+                // Main meow tone (slides up then down like a real cat)
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = "sine";
+                // Start at ~600Hz, slide up to ~900Hz, then back down (meow shape)
+                osc.frequency.setValueAtTime(600, now);
+                osc.frequency.linearRampToValueAtTime(950, now + 0.12);
+                osc.frequency.linearRampToValueAtTime(700, now + 0.3);
+                osc.frequency.linearRampToValueAtTime(500, now + 0.45);
+                // Volume envelope: quick attack, sustain, fade
+                gain.gain.setValueAtTime(0, now);
+                gain.gain.linearRampToValueAtTime(0.3, now + 0.03);
+                gain.gain.setValueAtTime(0.3, now + 0.15);
+                gain.gain.linearRampToValueAtTime(0.15, now + 0.3);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.45);
+                osc.connect(gain); gain.connect(ctx.destination);
+                osc.start(now); osc.stop(now + 0.5);
+
+                // Harmonics for warmth (makes it sound more natural)
+                const osc2 = ctx.createOscillator();
+                const gain2 = ctx.createGain();
+                osc2.type = "triangle";
+                osc2.frequency.setValueAtTime(1200, now);
+                osc2.frequency.linearRampToValueAtTime(1900, now + 0.12);
+                osc2.frequency.linearRampToValueAtTime(1400, now + 0.3);
+                osc2.frequency.linearRampToValueAtTime(1000, now + 0.45);
+                gain2.gain.setValueAtTime(0, now);
+                gain2.gain.linearRampToValueAtTime(0.08, now + 0.03);
+                gain2.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
+                osc2.connect(gain2); gain2.connect(ctx.destination);
+                osc2.start(now); osc2.stop(now + 0.4);
+
+                // Second short "mew" after a tiny pause
+                const osc3 = ctx.createOscillator();
+                const gain3 = ctx.createGain();
+                osc3.type = "sine";
+                osc3.frequency.setValueAtTime(750, now + 0.5);
+                osc3.frequency.linearRampToValueAtTime(1000, now + 0.58);
+                osc3.frequency.linearRampToValueAtTime(650, now + 0.72);
+                gain3.gain.setValueAtTime(0, now + 0.5);
+                gain3.gain.linearRampToValueAtTime(0.25, now + 0.52);
+                gain3.gain.exponentialRampToValueAtTime(0.01, now + 0.72);
+                osc3.connect(gain3); gain3.connect(ctx.destination);
+                osc3.start(now + 0.5); osc3.stop(now + 0.75);
+
             } catch(e) { console.log("Sound err:", e); }
         }
 
