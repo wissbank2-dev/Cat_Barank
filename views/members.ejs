@@ -372,6 +372,8 @@
                 </div>
                 <div class="text-center mt-4">
                     <span class="auth-link" onclick="showForm('login')">← กลับหน้า Login</span>
+                    <span id="backToMembersLink" class="auth-link hidden ml-4" onclick="backToMembers()">←
+                        กลับหน้าสมาชิก</span>
                 </div>
             </div>
 
@@ -416,8 +418,7 @@
                     <div class="space-y-1">
                         <div class="nav-item active" onclick="showSection('notes')">📝 บันทึก Notes</div>
                         <div class="nav-item" onclick="showSection('profile')">⚙️ ตั้งค่าโปรไฟล์</div>
-                        <div class="nav-item"
-                            onclick="showForm('changePass');document.getElementById('authScreen').classList.remove('hidden');document.getElementById('membersArea').classList.add('hidden');">
+                        <div class="nav-item" onclick="showChangePasswordModal()">
                             🔐 เปลี่ยนรหัสผ่าน</div>
                     </div>
                 </div>
@@ -542,6 +543,27 @@
         </div>
     </div>
 
+    <!-- Change Password Modal (overlay on members area) -->
+    <div id="changePassModal" class="hidden modal-overlay">
+        <div class="modal-content max-w-md">
+            <div class="text-center mb-6">
+                <div class="text-5xl mb-2">🔐🔄</div>
+                <h1 class="text-2xl font-bold text-rose-500">เปลี่ยนรหัสผ่าน</h1>
+            </div>
+            <div class="space-y-4">
+                <input type="password" id="modalOldPassword" class="auth-input" placeholder="🔒 รหัสผ่านเดิม">
+                <input type="password" id="modalNewPassword" class="auth-input" placeholder="🔑 รหัสผ่านใหม่">
+                <input type="password" id="modalNewPasswordConfirm" class="auth-input"
+                    placeholder="🔑 ยืนยันรหัสผ่านใหม่">
+                <button onclick="doChangePasswordModal()" class="auth-btn auth-btn-primary">เปลี่ยนรหัสผ่าน 🔄</button>
+            </div>
+            <div id="modalChangePassMsg" class="hidden mt-4 p-3 rounded-xl text-center text-sm font-medium"></div>
+            <div class="text-center mt-4">
+                <span class="auth-link" onclick="closeChangePasswordModal()">← กลับหน้าสมาชิก</span>
+            </div>
+        </div>
+    </div>
+
     <script>
         // ==================== FIREBASE CONFIG ====================
         const firebaseConfig = {
@@ -644,6 +666,49 @@
 
         function doLogout() {
             auth.signOut();
+        }
+
+        // ==================== CHANGE PASSWORD MODAL ====================
+        function showChangePasswordModal() {
+            document.getElementById('changePassModal').classList.remove('hidden');
+            document.getElementById('modalOldPassword').value = '';
+            document.getElementById('modalNewPassword').value = '';
+            document.getElementById('modalNewPasswordConfirm').value = '';
+            document.getElementById('modalChangePassMsg').classList.add('hidden');
+        }
+
+        function closeChangePasswordModal() {
+            document.getElementById('changePassModal').classList.add('hidden');
+        }
+
+        async function doChangePasswordModal() {
+            const oldPass = document.getElementById('modalOldPassword').value;
+            const newPass = document.getElementById('modalNewPassword').value;
+            const newPass2 = document.getElementById('modalNewPasswordConfirm').value;
+            const msgEl = document.getElementById('modalChangePassMsg');
+
+            if (!oldPass || !newPass) { msgEl.textContent = 'กรุณากรอกข้อมูลให้ครบ'; msgEl.className = 'mt-4 p-3 rounded-xl text-center text-sm font-medium bg-red-50 text-red-500'; msgEl.classList.remove('hidden'); return; }
+            if (newPass !== newPass2) { msgEl.textContent = 'รหัสผ่านใหม่ไม่ตรงกัน'; msgEl.className = 'mt-4 p-3 rounded-xl text-center text-sm font-medium bg-red-50 text-red-500'; msgEl.classList.remove('hidden'); return; }
+            if (newPass.length < 6) { msgEl.textContent = 'รหัสผ่านใหม่ต้องมีอย่างน้อย 6 ตัว'; msgEl.className = 'mt-4 p-3 rounded-xl text-center text-sm font-medium bg-red-50 text-red-500'; msgEl.classList.remove('hidden'); return; }
+            try {
+                const user = auth.currentUser;
+                const cred = firebase.auth.EmailAuthProvider.credential(user.email, oldPass);
+                await user.reauthenticateWithCredential(cred);
+                await user.updatePassword(newPass);
+                msgEl.textContent = 'เปลี่ยนรหัสผ่านสำเร็จ! 🔐✅';
+                msgEl.className = 'mt-4 p-3 rounded-xl text-center text-sm font-medium bg-green-50 text-green-600';
+                msgEl.classList.remove('hidden');
+                setTimeout(() => closeChangePasswordModal(), 2000);
+            } catch (e) {
+                msgEl.textContent = getErrorMessage(e.code);
+                msgEl.className = 'mt-4 p-3 rounded-xl text-center text-sm font-medium bg-red-50 text-red-500';
+                msgEl.classList.remove('hidden');
+            }
+        }
+
+        function backToMembers() {
+            document.getElementById('authScreen').classList.add('hidden');
+            document.getElementById('membersArea').classList.remove('hidden');
         }
 
         function getErrorMessage(code) {
