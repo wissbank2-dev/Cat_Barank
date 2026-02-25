@@ -522,6 +522,32 @@
                     <h2 class="text-2xl font-bold text-rose-500 mb-6">⚙️ ตั้งค่าโปรไฟล์</h2>
                     <div class="member-card max-w-lg">
                         <div class="space-y-4">
+                            <!-- Profile Photo Upload -->
+                            <div>
+                                <label class="block text-sm font-medium text-rose-500 mb-2">รูปโปรไฟล์</label>
+                                <div class="flex items-start gap-4">
+                                    <img id="profilePreview"
+                                        src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='50' fill='%23fda4af'/%3E%3Ctext x='50' y='60' text-anchor='middle' font-size='40'%3E🐱%3C/text%3E%3C/svg%3E"
+                                        class="w-20 h-20 rounded-full border-4 border-rose-300 object-cover shrink-0"
+                                        alt="">
+                                    <div class="flex-1">
+                                        <div id="photoDropZone"
+                                            class="border-2 border-dashed border-rose-200 rounded-xl p-4 text-center cursor-pointer hover:border-rose-400 hover:bg-rose-50/50 transition-all"
+                                            onclick="document.getElementById('profilePhotoInput').click()">
+                                            <div class="text-2xl mb-1">📷</div>
+                                            <p class="text-rose-400 text-xs font-medium">คลิกเลือกรูป / ลากวาง / วางรูป
+                                            </p>
+                                            <p class="text-rose-300 text-xs mt-0.5">Ctrl+V วางรูปจาก clipboard ได้</p>
+                                        </div>
+                                        <input type="file" id="profilePhotoInput" class="hidden" accept="image/*"
+                                            onchange="handleProfilePhoto(this.files[0])">
+                                        <div id="photoUploadStatus" class="text-xs mt-2 hidden"></div>
+                                        <button id="removePhotoBtn"
+                                            class="hidden text-xs text-red-400 hover:text-red-600 mt-1"
+                                            onclick="removeProfilePhoto()">🗑️ ลบรูปโปรไฟล์</button>
+                                    </div>
+                                </div>
+                            </div>
                             <div>
                                 <label class="block text-sm font-medium text-rose-500 mb-1">ชื่อที่แสดง</label>
                                 <input type="text" id="profileName" class="auth-input" placeholder="ชื่อของคุณ">
@@ -530,11 +556,7 @@
                                 <label class="block text-sm font-medium text-rose-500 mb-1">อีเมล</label>
                                 <input type="email" id="profileEmail" class="auth-input" disabled style="opacity:0.6">
                             </div>
-                            <div>
-                                <label class="block text-sm font-medium text-rose-500 mb-1">รูปโปรไฟล์ (URL)</label>
-                                <input type="text" id="profilePhoto" class="auth-input"
-                                    placeholder="https://example.com/photo.jpg">
-                            </div>
+                            <input type="hidden" id="profilePhoto" value="">
                             <button onclick="saveProfile()" class="auth-btn auth-btn-primary">💾 บันทึกโปรไฟล์</button>
                         </div>
                     </div>
@@ -742,6 +764,10 @@
                 document.getElementById('profileName').value = user.displayName || '';
                 document.getElementById('profileEmail').value = user.email;
                 document.getElementById('profilePhoto').value = user.photoURL || '';
+                if (user.photoURL) {
+                    document.getElementById('profilePreview').src = user.photoURL;
+                    document.getElementById('removePhotoBtn').classList.remove('hidden');
+                }
                 loadNotes();
             } else {
                 document.getElementById('authScreen').classList.remove('hidden');
@@ -751,6 +777,70 @@
         });
 
         // ==================== PROFILE ====================
+        let profilePhotoUrl = '';
+
+        async function handleProfilePhoto(file) {
+            if (!file || !file.type.startsWith('image/')) { showToast('กรุณาเลือกไฟล์รูปภาพ', true); return; }
+            if (file.size > 5 * 1024 * 1024) { showToast('ไฟล์ใหญ่เกิน 5MB', true); return; }
+            const user = auth.currentUser;
+            if (!user) return;
+            const statusEl = document.getElementById('photoUploadStatus');
+            statusEl.textContent = '⏳ กำลังอัปโหลด...';
+            statusEl.className = 'text-xs mt-2 text-amber-500 font-medium';
+            statusEl.classList.remove('hidden');
+            try {
+                const ref = storage.ref(`users/${user.uid}/profile_${Date.now()}.${file.name.split('.').pop()}`);
+                await ref.put(file);
+                profilePhotoUrl = await ref.getDownloadURL();
+                document.getElementById('profilePhoto').value = profilePhotoUrl;
+                document.getElementById('profilePreview').src = profilePhotoUrl;
+                document.getElementById('removePhotoBtn').classList.remove('hidden');
+                statusEl.textContent = '✅ อัปโหลดสำเร็จ! กดบันทึกโปรไฟล์เพื่อยืนยัน';
+                statusEl.className = 'text-xs mt-2 text-green-500 font-medium';
+            } catch (e) {
+                statusEl.textContent = '❌ อัปโหลดล้มเหลว: ' + e.message;
+                statusEl.className = 'text-xs mt-2 text-red-500 font-medium';
+            }
+        }
+
+        function removeProfilePhoto() {
+            profilePhotoUrl = '';
+            document.getElementById('profilePhoto').value = '';
+            document.getElementById('profilePreview').src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='50' fill='%23fda4af'/%3E%3Ctext x='50' y='60' text-anchor='middle' font-size='40'%3E🐱%3C/text%3E%3C/svg%3E";
+            document.getElementById('removePhotoBtn').classList.add('hidden');
+            document.getElementById('photoUploadStatus').classList.add('hidden');
+        }
+
+        // Drag & Drop for profile photo
+        document.addEventListener('DOMContentLoaded', () => {
+            const dropZone = document.getElementById('photoDropZone');
+            if (dropZone) {
+                dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.style.borderColor = '#fb7185'; dropZone.style.background = '#fff1f2'; });
+                dropZone.addEventListener('dragleave', () => { dropZone.style.borderColor = ''; dropZone.style.background = ''; });
+                dropZone.addEventListener('drop', e => {
+                    e.preventDefault(); dropZone.style.borderColor = ''; dropZone.style.background = '';
+                    const file = e.dataTransfer.files[0];
+                    if (file && file.type.startsWith('image/')) handleProfilePhoto(file);
+                    else showToast('กรุณาลากวางไฟล์รูปภาพ', true);
+                });
+            }
+        });
+
+        // Ctrl+V Paste for profile photo
+        document.addEventListener('paste', e => {
+            const profileSection = document.getElementById('sectionProfile');
+            if (profileSection && !profileSection.classList.contains('hidden')) {
+                const items = e.clipboardData.items;
+                for (const item of items) {
+                    if (item.type.startsWith('image/')) {
+                        e.preventDefault();
+                        handleProfilePhoto(item.getAsFile());
+                        break;
+                    }
+                }
+            }
+        });
+
         async function saveProfile() {
             const user = auth.currentUser;
             const name = document.getElementById('profileName').value.trim();
