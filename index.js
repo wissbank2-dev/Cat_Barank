@@ -91,6 +91,11 @@ app.get('/', (req, res) => {
     res.render('index');
 });
 
+// Members Area Route
+app.get('/members', (req, res) => {
+    res.render('members');
+});
+
 // Test Case Template Download Endpoint
 app.get('/api/testcase-template', async (req, res) => {
     try {

@@ -1,0 +1,1090 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>สำหรับเพื่อนสนิทน้องคุมะ 🐱</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <!-- Quill.js Rich Editor -->
+    <link href="https://cdn.quilljs.com/1.3.7/quill.snow.css" rel="stylesheet">
+    <script src="https://cdn.quilljs.com/1.3.7/quill.min.js"></script>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
+    <style>
+        * {
+            font-family: 'Noto Sans Thai', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #fdf2f8 0%, #fce7f3 30%, #fff1f2 60%, #fef9c3 100%);
+            min-height: 100vh;
+        }
+
+        /* Auth Card */
+        .auth-card {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(20px);
+            border: 2px solid #fecdd3;
+            border-radius: 2rem;
+            box-shadow: 0 20px 60px rgba(253, 164, 175, 0.15);
+        }
+
+        .auth-input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #fecdd3;
+            border-radius: 1rem;
+            outline: none;
+            font-size: 0.95rem;
+            transition: all 0.3s;
+            background: #fff5f5;
+        }
+
+        .auth-input:focus {
+            border-color: #fb7185;
+            box-shadow: 0 0 0 3px rgba(251, 113, 133, 0.15);
+            background: white;
+        }
+
+        .auth-btn {
+            width: 100%;
+            padding: 12px;
+            border-radius: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: none;
+            font-size: 1rem;
+        }
+
+        .auth-btn-primary {
+            background: linear-gradient(135deg, #fb7185, #f43f5e);
+            color: white;
+            box-shadow: 0 4px 15px rgba(244, 63, 94, 0.3);
+        }
+
+        .auth-btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(244, 63, 94, 0.4);
+        }
+
+        .auth-btn-google {
+            background: white;
+            color: #374151;
+            border: 2px solid #e5e7eb;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .auth-btn-google:hover {
+            background: #f9fafb;
+            border-color: #d1d5db;
+        }
+
+        .auth-link {
+            color: #f43f5e;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.85rem;
+        }
+
+        .auth-link:hover {
+            text-decoration: underline;
+        }
+
+        /* Members Area */
+        .member-card {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(15px);
+            border: 2px solid #fecdd3;
+            border-radius: 1.5rem;
+            padding: 1.5rem;
+            transition: all 0.3s;
+        }
+
+        .member-card:hover {
+            box-shadow: 0 8px 30px rgba(253, 164, 175, 0.2);
+            transform: translateY(-2px);
+        }
+
+        /* Note Cards */
+        .note-card {
+            background: white;
+            border: 2px solid #fed7aa;
+            border-radius: 1rem;
+            padding: 1rem;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .note-card:hover {
+            border-color: #fb923c;
+            box-shadow: 0 4px 15px rgba(251, 146, 60, 0.15);
+            transform: translateY(-2px);
+        }
+
+        .note-card.active {
+            border-color: #f43f5e;
+            background: #fff1f2;
+        }
+
+        /* Quill Editor Override */
+        .ql-container {
+            border-radius: 0 0 1rem 1rem;
+            border-color: #fecdd3 !important;
+            min-height: 250px;
+            font-family: 'Noto Sans Thai', sans-serif;
+        }
+
+        .ql-toolbar {
+            border-radius: 1rem 1rem 0 0;
+            border-color: #fecdd3 !important;
+            background: #fff5f5;
+        }
+
+        .ql-editor {
+            min-height: 250px;
+        }
+
+        /* Drawing Canvas */
+        #drawingCanvas {
+            border: 2px dashed #fecdd3;
+            border-radius: 1rem;
+            cursor: crosshair;
+            background: white;
+        }
+
+        /* Sidebar nav */
+        .nav-item {
+            padding: 10px 16px;
+            border-radius: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .nav-item:hover {
+            background: #ffe4e6;
+        }
+
+        .nav-item.active {
+            background: #fda4af;
+            color: white;
+        }
+
+        /* Toast */
+        .toast-msg {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: #10b981;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 1rem;
+            font-weight: 600;
+            z-index: 9999;
+            animation: slideUp 0.3s ease, fadeOut 0.3s 2.5s ease forwards;
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(20px);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes fadeOut {
+            to {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(4px);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 1.5rem;
+            padding: 2rem;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.15);
+            animation: modalIn 0.3s ease;
+        }
+
+        @keyframes modalIn {
+            from {
+                transform: scale(0.9);
+                opacity: 0;
+            }
+
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        /* Drawing toolbar */
+        .draw-tool {
+            padding: 6px 12px;
+            border-radius: 0.5rem;
+            border: 2px solid #e5e7eb;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+            background: white;
+        }
+
+        .draw-tool:hover {
+            border-color: #fb7185;
+        }
+
+        .draw-tool.active {
+            background: #fb7185;
+            color: white;
+            border-color: #fb7185;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- ==================== AUTH SCREEN ==================== -->
+    <div id="authScreen" class="min-h-screen flex items-center justify-center p-4">
+        <div class="auth-card p-8 max-w-md w-full">
+            <!-- Login Form -->
+            <div id="loginForm">
+                <div class="text-center mb-6">
+                    <div class="text-5xl mb-2">🐱🔐</div>
+                    <h1 class="text-2xl font-bold text-rose-500">สำหรับเพื่อนสนิทน้องคุมะ</h1>
+                    <p class="text-rose-300 text-sm mt-1">เข้าสู่ระบบเพื่อเข้าถึงความสามารถพิเศษ!</p>
+                </div>
+                <div class="space-y-4">
+                    <input type="email" id="loginEmail" class="auth-input" placeholder="📧 อีเมล">
+                    <input type="password" id="loginPassword" class="auth-input" placeholder="🔒 รหัสผ่าน">
+                    <button onclick="doLogin()" class="auth-btn auth-btn-primary">เข้าสู่ระบบ เมี้ยว 🐾</button>
+                    <div class="flex items-center gap-3 my-2">
+                        <div class="flex-1 h-px bg-rose-200"></div>
+                        <span class="text-rose-300 text-xs">หรือ</span>
+                        <div class="flex-1 h-px bg-rose-200"></div>
+                    </div>
+                    <button onclick="doGoogleLogin()" class="auth-btn auth-btn-google">
+                        <svg width="20" height="20" viewBox="0 0 48 48">
+                            <path fill="#EA4335"
+                                d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z" />
+                            <path fill="#4285F4"
+                                d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z" />
+                            <path fill="#FBBC05"
+                                d="M10.53 28.59a14.5 14.5 0 010-9.18l-7.98-6.19a24.01 24.01 0 000 21.56l7.98-6.19z" />
+                            <path fill="#34A853"
+                                d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z" />
+                        </svg>
+                        เข้าสู่ระบบด้วย Google
+                    </button>
+                </div>
+                <div class="flex justify-between mt-6">
+                    <span class="auth-link" onclick="showForm('register')">📝 สมัครสมาชิก</span>
+                    <span class="auth-link" onclick="showForm('forgot')">🔑 ลืมรหัสผ่าน</span>
+                </div>
+                <div class="text-center mt-4">
+                    <a href="/" class="text-rose-300 text-sm hover:text-rose-500 transition-colors">← กลับหน้าหลัก</a>
+                </div>
+            </div>
+
+            <!-- Register Form -->
+            <div id="registerForm" class="hidden">
+                <div class="text-center mb-6">
+                    <div class="text-5xl mb-2">🐱✨</div>
+                    <h1 class="text-2xl font-bold text-rose-500">สมัครเป็นเพื่อนคุมะ!</h1>
+                    <p class="text-rose-300 text-sm mt-1">กรอกข้อมูลเพื่อเข้าร่วมทีม</p>
+                </div>
+                <div class="space-y-4">
+                    <input type="text" id="regDisplayName" class="auth-input"
+                        placeholder="😸 ชื่อที่แสดง (Display Name)">
+                    <input type="email" id="regEmail" class="auth-input" placeholder="📧 อีเมล">
+                    <input type="password" id="regPassword" class="auth-input"
+                        placeholder="🔒 รหัสผ่าน (อย่างน้อย 6 ตัว)">
+                    <input type="password" id="regPasswordConfirm" class="auth-input" placeholder="🔒 ยืนยันรหัสผ่าน">
+                    <button onclick="doRegister()" class="auth-btn auth-btn-primary">สมัครสมาชิก เมี้ยว 🐾</button>
+                </div>
+                <div class="text-center mt-4">
+                    <span class="auth-link" onclick="showForm('login')">← กลับหน้า Login</span>
+                </div>
+            </div>
+
+            <!-- Forgot Password Form -->
+            <div id="forgotForm" class="hidden">
+                <div class="text-center mb-6">
+                    <div class="text-5xl mb-2">🔑😿</div>
+                    <h1 class="text-2xl font-bold text-rose-500">ลืมรหัสผ่าน</h1>
+                    <p class="text-rose-300 text-sm mt-1">กรอกอีเมลเพื่อรับลิงก์รีเซ็ตรหัสผ่าน</p>
+                </div>
+                <div class="space-y-4">
+                    <input type="email" id="forgotEmail" class="auth-input" placeholder="📧 อีเมลที่ใช้สมัคร">
+                    <button onclick="doForgotPassword()" class="auth-btn auth-btn-primary">ส่งลิงก์รีเซ็ต 📧</button>
+                </div>
+                <div class="text-center mt-4">
+                    <span class="auth-link" onclick="showForm('login')">← กลับหน้า Login</span>
+                </div>
+            </div>
+
+            <!-- Change Password Form -->
+            <div id="changePassForm" class="hidden">
+                <div class="text-center mb-6">
+                    <div class="text-5xl mb-2">🔐🔄</div>
+                    <h1 class="text-2xl font-bold text-rose-500">เปลี่ยนรหัสผ่าน</h1>
+                </div>
+                <div class="space-y-4">
+                    <input type="password" id="oldPassword" class="auth-input" placeholder="🔒 รหัสผ่านเดิม">
+                    <input type="password" id="newPassword" class="auth-input" placeholder="🔑 รหัสผ่านใหม่">
+                    <input type="password" id="newPasswordConfirm" class="auth-input"
+                        placeholder="🔑 ยืนยันรหัสผ่านใหม่">
+                    <button onclick="doChangePassword()" class="auth-btn auth-btn-primary">เปลี่ยนรหัสผ่าน 🔄</button>
+                </div>
+                <div class="text-center mt-4">
+                    <span class="auth-link" onclick="showForm('login')">← กลับหน้า Login</span>
+                </div>
+            </div>
+
+            <!-- Error/Success Message -->
+            <div id="authMessage" class="hidden mt-4 p-3 rounded-xl text-center text-sm font-medium"></div>
+        </div>
+    </div>
+
+    <!-- ==================== MEMBERS AREA (Hidden until login) ==================== -->
+    <div id="membersArea" class="hidden min-h-screen">
+        <!-- Top Bar -->
+        <div
+            class="bg-white/80 backdrop-blur-lg border-b-2 border-rose-200 px-6 py-3 flex justify-between items-center sticky top-0 z-50">
+            <div class="flex items-center gap-3">
+                <a href="/" class="text-rose-400 hover:text-rose-600 text-sm font-medium">← กลับหน้าหลัก</a>
+                <span class="text-rose-200">|</span>
+                <span class="text-lg">🐱</span>
+                <span class="font-bold text-rose-500">เพื่อนสนิทน้องคุมะ</span>
+            </div>
+            <div class="flex items-center gap-3">
+                <span id="userDisplayName" class="text-sm text-gray-600 font-medium"></span>
+                <img id="userAvatar" src="" class="w-8 h-8 rounded-full border-2 border-rose-300 hidden" alt="avatar">
+                <button onclick="doLogout()"
+                    class="bg-rose-100 text-rose-500 px-4 py-2 rounded-xl text-sm font-bold hover:bg-rose-200 transition-colors">
+                    ออกจากระบบ 🚪
+                </button>
+            </div>
+        </div>
+
+        <div class="max-w-7xl mx-auto p-6 flex gap-6">
+            <!-- Left Sidebar Nav -->
+            <div class="w-56 shrink-0">
+                <div class="member-card sticky top-20">
+                    <div class="text-center mb-4">
+                        <img id="sidebarAvatar"
+                            src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='50' fill='%23fda4af'/%3E%3Ctext x='50' y='60' text-anchor='middle' font-size='40'%3E🐱%3C/text%3E%3C/svg%3E"
+                            class="w-16 h-16 rounded-full mx-auto border-3 border-rose-300 mb-2" alt="">
+                        <p id="sidebarName" class="font-bold text-rose-500 text-sm"></p>
+                        <p id="sidebarEmail" class="text-xs text-gray-400"></p>
+                    </div>
+                    <hr class="border-rose-100 mb-3">
+                    <div class="space-y-1">
+                        <div class="nav-item active" onclick="showSection('notes')">📝 บันทึก Notes</div>
+                        <div class="nav-item" onclick="showSection('profile')">⚙️ ตั้งค่าโปรไฟล์</div>
+                        <div class="nav-item"
+                            onclick="showForm('changePass');document.getElementById('authScreen').classList.remove('hidden');document.getElementById('membersArea').classList.add('hidden');">
+                            🔐 เปลี่ยนรหัสผ่าน</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Content -->
+            <div class="flex-1">
+                <!-- Notes Section -->
+                <div id="sectionNotes">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-2xl font-bold text-rose-500">📝 บันทึก Notes ของฉัน</h2>
+                        <button onclick="createNewNote()"
+                            class="bg-gradient-to-r from-rose-400 to-orange-400 text-white px-5 py-2 rounded-xl font-bold text-sm hover:shadow-lg transition-all hover:-translate-y-0.5">
+                            ➕ สร้าง Note ใหม่
+                        </button>
+                    </div>
+
+                    <!-- Note List -->
+                    <div id="noteList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                        <div class="text-center py-10 text-rose-200 col-span-full">
+                            <div class="text-5xl mb-2">📋</div>
+                            <p>ยังไม่มี Note — สร้างอันแรกเลย!</p>
+                        </div>
+                    </div>
+
+                    <!-- Note Editor (hidden by default) -->
+                    <div id="noteEditor" class="hidden member-card">
+                        <div class="flex justify-between items-center mb-4">
+                            <input type="text" id="noteTitle" placeholder="✏️ ชื่อ Note..."
+                                class="text-xl font-bold text-rose-500 bg-transparent border-none outline-none flex-1"
+                                value="">
+                            <div class="flex gap-2">
+                                <button onclick="saveCurrentNote()"
+                                    class="bg-green-100 text-green-600 px-4 py-2 rounded-xl text-sm font-bold hover:bg-green-200 transition-colors">💾
+                                    บันทึก</button>
+                                <button onclick="closeEditor()"
+                                    class="bg-gray-100 text-gray-500 px-4 py-2 rounded-xl text-sm font-bold hover:bg-gray-200 transition-colors">✕
+                                    ปิด</button>
+                            </div>
+                        </div>
+
+                        <!-- Editor Tabs -->
+                        <div class="flex gap-2 mb-4">
+                            <button onclick="switchEditorTab('write')" id="tabWrite" class="draw-tool active">📝
+                                เขียน</button>
+                            <button onclick="switchEditorTab('draw')" id="tabDraw" class="draw-tool">🎨 วาดรูป</button>
+                            <button onclick="switchEditorTab('attach')" id="tabAttach" class="draw-tool">📎
+                                แนบไฟล์</button>
+                        </div>
+
+                        <!-- Write Tab -->
+                        <div id="editorWrite">
+                            <div id="quillEditor"></div>
+                        </div>
+
+                        <!-- Draw Tab -->
+                        <div id="editorDraw" class="hidden">
+                            <div class="flex gap-2 mb-3 flex-wrap">
+                                <button onclick="setDrawTool('pen')" class="draw-tool active" id="toolPen">✏️
+                                    ปากกา</button>
+                                <button onclick="setDrawTool('eraser')" class="draw-tool" id="toolEraser">🧹 ลบ</button>
+                                <button onclick="setDrawTool('rect')" class="draw-tool" id="toolRect">⬜
+                                    สี่เหลี่ยม</button>
+                                <button onclick="setDrawTool('circle')" class="draw-tool" id="toolCircle">⭕
+                                    วงกลม</button>
+                                <button onclick="setDrawTool('arrow')" class="draw-tool" id="toolArrow">➡️
+                                    ลูกศร</button>
+                                <button onclick="setDrawTool('text')" class="draw-tool" id="toolText">🔤
+                                    ข้อความ</button>
+                                <input type="color" id="drawColor" value="#f43f5e"
+                                    class="w-8 h-8 rounded cursor-pointer border-2 border-gray-200">
+                                <select id="drawSize" class="border-2 border-gray-200 rounded px-2 text-sm">
+                                    <option value="2">เส้นบาง</option>
+                                    <option value="4" selected>ปกติ</option>
+                                    <option value="8">หนา</option>
+                                    <option value="12">หนามาก</option>
+                                </select>
+                                <button onclick="clearCanvas()" class="draw-tool">🗑️ ล้าง</button>
+                                <button onclick="undoCanvas()" class="draw-tool">↩️ Undo</button>
+                            </div>
+                            <canvas id="drawingCanvas" width="800" height="500"></canvas>
+                        </div>
+
+                        <!-- Attach Tab -->
+                        <div id="editorAttach" class="hidden">
+                            <div class="border-2 border-dashed border-rose-200 rounded-xl p-8 text-center cursor-pointer hover:border-rose-400 transition-colors"
+                                onclick="document.getElementById('fileUploadInput').click()">
+                                <div class="text-4xl mb-2">📂</div>
+                                <p class="text-rose-400 font-medium">คลิกเพื่อเลือกไฟล์ รูปภาพ หรือวิดีโอ</p>
+                                <p class="text-rose-300 text-xs mt-1">รองรับ ไฟล์, รูปภาพ, วิดีโอ (สูงสุด 10MB)</p>
+                                <input type="file" id="fileUploadInput" class="hidden" multiple
+                                    accept="image/*,video/*,.pdf,.doc,.docx,.txt" onchange="handleFileUpload(this)">
+                            </div>
+                            <div id="attachmentList" class="mt-4 space-y-2"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Profile Section -->
+                <div id="sectionProfile" class="hidden">
+                    <h2 class="text-2xl font-bold text-rose-500 mb-6">⚙️ ตั้งค่าโปรไฟล์</h2>
+                    <div class="member-card max-w-lg">
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-rose-500 mb-1">ชื่อที่แสดง</label>
+                                <input type="text" id="profileName" class="auth-input" placeholder="ชื่อของคุณ">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-rose-500 mb-1">อีเมล</label>
+                                <input type="email" id="profileEmail" class="auth-input" disabled style="opacity:0.6">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-rose-500 mb-1">รูปโปรไฟล์ (URL)</label>
+                                <input type="text" id="profilePhoto" class="auth-input"
+                                    placeholder="https://example.com/photo.jpg">
+                            </div>
+                            <button onclick="saveProfile()" class="auth-btn auth-btn-primary">💾 บันทึกโปรไฟล์</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ==================== FIREBASE CONFIG ====================
+        const firebaseConfig = {
+            apiKey: "AIzaSyAk4mKgcX33bl-z35AB0J-2KHq7aicLnv0",
+            authDomain: "kuma-project-5d48d.firebaseapp.com",
+            projectId: "kuma-project-5d48d",
+            storageBucket: "kuma-project-5d48d.firebasestorage.app",
+            messagingSenderId: "144116159091",
+            appId: "1:144116159091:web:44ea6d2773c98b464c5006",
+            measurementId: "G-8S286PK7LT"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+        const storage = firebase.storage();
+
+        // ==================== AUTH FUNCTIONS ====================
+        function showForm(form) {
+            ['loginForm', 'registerForm', 'forgotForm', 'changePassForm'].forEach(f => document.getElementById(f).classList.add('hidden'));
+            document.getElementById(form + (form === 'login' ? 'Form' : form === 'register' ? 'Form' : form === 'forgot' ? 'Form' : 'Form')).classList.remove('hidden');
+            const formMap = { login: 'loginForm', register: 'registerForm', forgot: 'forgotForm', changePass: 'changePassForm' };
+            document.getElementById(formMap[form]).classList.remove('hidden');
+            hideAuthMessage();
+        }
+
+        function showAuthMessage(msg, isError = false) {
+            const el = document.getElementById('authMessage');
+            el.textContent = msg;
+            el.className = `mt-4 p-3 rounded-xl text-center text-sm font-medium ${isError ? 'bg-red-50 text-red-500' : 'bg-green-50 text-green-600'}`;
+            el.classList.remove('hidden');
+        }
+        function hideAuthMessage() { document.getElementById('authMessage').classList.add('hidden'); }
+
+        async function doLogin() {
+            const email = document.getElementById('loginEmail').value.trim();
+            const pass = document.getElementById('loginPassword').value;
+            if (!email || !pass) return showAuthMessage('กรุณากรอกอีเมลและรหัสผ่าน', true);
+            try {
+                await auth.signInWithEmailAndPassword(email, pass);
+                showAuthMessage('เข้าสู่ระบบสำเร็จ! เมี้ยว 🐾');
+            } catch (e) {
+                showAuthMessage(getErrorMessage(e.code), true);
+            }
+        }
+
+        async function doGoogleLogin() {
+            try {
+                const provider = new firebase.auth.GoogleAuthProvider();
+                await auth.signInWithPopup(provider);
+            } catch (e) {
+                showAuthMessage(getErrorMessage(e.code), true);
+            }
+        }
+
+        async function doRegister() {
+            const name = document.getElementById('regDisplayName').value.trim();
+            const email = document.getElementById('regEmail').value.trim();
+            const pass = document.getElementById('regPassword').value;
+            const pass2 = document.getElementById('regPasswordConfirm').value;
+            if (!name || !email || !pass) return showAuthMessage('กรุณากรอกข้อมูลให้ครบ', true);
+            if (pass !== pass2) return showAuthMessage('รหัสผ่านไม่ตรงกัน', true);
+            if (pass.length < 6) return showAuthMessage('รหัสผ่านต้องมีอย่างน้อย 6 ตัว', true);
+            try {
+                const cred = await auth.createUserWithEmailAndPassword(email, pass);
+                await cred.user.updateProfile({ displayName: name });
+                showAuthMessage('สมัครสมาชิกสำเร็จ! ยินดีต้อนรับเพื่อนใหม่ 🐱✨');
+            } catch (e) {
+                showAuthMessage(getErrorMessage(e.code), true);
+            }
+        }
+
+        async function doForgotPassword() {
+            const email = document.getElementById('forgotEmail').value.trim();
+            if (!email) return showAuthMessage('กรุณากรอกอีเมล', true);
+            try {
+                await auth.sendPasswordResetEmail(email);
+                showAuthMessage('ส่งลิงก์รีเซ็ตรหัสผ่านไปที่อีเมลแล้ว! 📧 เช็คอีเมลด้วยนะครับเมี้ยว');
+            } catch (e) {
+                showAuthMessage(getErrorMessage(e.code), true);
+            }
+        }
+
+        async function doChangePassword() {
+            const oldPass = document.getElementById('oldPassword').value;
+            const newPass = document.getElementById('newPassword').value;
+            const newPass2 = document.getElementById('newPasswordConfirm').value;
+            if (!oldPass || !newPass) return showAuthMessage('กรุณากรอกข้อมูลให้ครบ', true);
+            if (newPass !== newPass2) return showAuthMessage('รหัสผ่านใหม่ไม่ตรงกัน', true);
+            if (newPass.length < 6) return showAuthMessage('รหัสผ่านใหม่ต้องมีอย่างน้อย 6 ตัว', true);
+            try {
+                const user = auth.currentUser;
+                const cred = firebase.auth.EmailAuthProvider.credential(user.email, oldPass);
+                await user.reauthenticateWithCredential(cred);
+                await user.updatePassword(newPass);
+                showAuthMessage('เปลี่ยนรหัสผ่านสำเร็จ! 🔐✅');
+            } catch (e) {
+                showAuthMessage(getErrorMessage(e.code), true);
+            }
+        }
+
+        function doLogout() {
+            auth.signOut();
+        }
+
+        function getErrorMessage(code) {
+            const msgs = {
+                'auth/wrong-password': 'รหัสผ่านไม่ถูกต้อง',
+                'auth/user-not-found': 'ไม่พบบัญชีนี้',
+                'auth/email-already-in-use': 'อีเมลนี้ถูกใช้งานแล้ว',
+                'auth/invalid-email': 'อีเมลไม่ถูกต้อง',
+                'auth/weak-password': 'รหัสผ่านต้องมีอย่างน้อย 6 ตัว',
+                'auth/too-many-requests': 'ลองมากเกินไป กรุณารอสักครู่',
+                'auth/popup-closed-by-user': 'หน้าต่าง Google ถูกปิด',
+                'auth/invalid-credential': 'อีเมลหรือรหัสผ่านไม่ถูกต้อง',
+            };
+            return msgs[code] || 'เกิดข้อผิดพลาด: ' + code;
+        }
+
+        // ==================== AUTH STATE OBSERVER ====================
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                document.getElementById('authScreen').classList.add('hidden');
+                document.getElementById('membersArea').classList.remove('hidden');
+                // Update UI
+                document.getElementById('userDisplayName').textContent = user.displayName || user.email;
+                document.getElementById('sidebarName').textContent = user.displayName || 'เพื่อนคุมะ';
+                document.getElementById('sidebarEmail').textContent = user.email;
+                if (user.photoURL) {
+                    document.getElementById('userAvatar').src = user.photoURL;
+                    document.getElementById('userAvatar').classList.remove('hidden');
+                    document.getElementById('sidebarAvatar').src = user.photoURL;
+                }
+                document.getElementById('profileName').value = user.displayName || '';
+                document.getElementById('profileEmail').value = user.email;
+                document.getElementById('profilePhoto').value = user.photoURL || '';
+                loadNotes();
+            } else {
+                document.getElementById('authScreen').classList.remove('hidden');
+                document.getElementById('membersArea').classList.add('hidden');
+                showForm('login');
+            }
+        });
+
+        // ==================== PROFILE ====================
+        async function saveProfile() {
+            const user = auth.currentUser;
+            const name = document.getElementById('profileName').value.trim();
+            const photo = document.getElementById('profilePhoto').value.trim();
+            try {
+                await user.updateProfile({ displayName: name, photoURL: photo || null });
+                document.getElementById('userDisplayName').textContent = name;
+                document.getElementById('sidebarName').textContent = name;
+                if (photo) {
+                    document.getElementById('userAvatar').src = photo;
+                    document.getElementById('sidebarAvatar').src = photo;
+                    document.getElementById('userAvatar').classList.remove('hidden');
+                }
+                showToast('บันทึกโปรไฟล์สำเร็จ! 🐱');
+            } catch (e) {
+                showToast('เกิดข้อผิดพลาด: ' + e.message, true);
+            }
+        }
+
+        // ==================== SECTIONS NAV ====================
+        function showSection(section) {
+            document.getElementById('sectionNotes').classList.add('hidden');
+            document.getElementById('sectionProfile').classList.add('hidden');
+            document.getElementById('section' + section.charAt(0).toUpperCase() + section.slice(1)).classList.remove('hidden');
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+            event.target.closest('.nav-item').classList.add('active');
+        }
+
+        // ==================== NOTES SYSTEM ====================
+        let notes = [];
+        let currentNoteId = null;
+        let quill = null;
+        let currentAttachments = [];
+
+        // Initialize Quill
+        function initQuill() {
+            if (quill) return;
+            quill = new Quill('#quillEditor', {
+                theme: 'snow',
+                placeholder: 'เริ่มเขียน Note ที่นี่... 📝',
+                modules: {
+                    toolbar: [
+                        [{ header: [1, 2, 3, false] }],
+                        ['bold', 'italic', 'underline', 'strike'],
+                        [{ color: [] }, { background: [] }],
+                        [{ list: 'ordered' }, { list: 'bullet' }],
+                        ['blockquote', 'code-block'],
+                        ['link', 'image', 'video'],
+                        [{ align: [] }],
+                        ['clean']
+                    ]
+                }
+            });
+        }
+
+        async function loadNotes() {
+            const user = auth.currentUser;
+            if (!user) return;
+            try {
+                const snap = await db.collection('users').doc(user.uid).collection('notes')
+                    .orderBy('updatedAt', 'desc').get();
+                notes = [];
+                snap.forEach(doc => notes.push({ id: doc.id, ...doc.data() }));
+                renderNoteList();
+            } catch (e) { console.error('Load notes error:', e); }
+        }
+
+        function renderNoteList() {
+            const list = document.getElementById('noteList');
+            if (notes.length === 0) {
+                list.innerHTML = '<div class="text-center py-10 text-rose-200 col-span-full"><div class="text-5xl mb-2">📋</div><p>ยังไม่มี Note — สร้างอันแรกเลย!</p></div>';
+                return;
+            }
+            list.innerHTML = notes.map(n => `
+                <div class="note-card ${currentNoteId === n.id ? 'active' : ''}" onclick="openNote('${n.id}')">
+                    <h3 class="font-bold text-gray-700 mb-1 truncate">${escapeHtml(n.title || 'Untitled Note')}</h3>
+                    <p class="text-xs text-gray-400 mb-2">${n.updatedAt ? new Date(n.updatedAt.seconds * 1000).toLocaleString('th-TH') : ''}</p>
+                    <p class="text-sm text-gray-500 line-clamp-2">${(n.textPreview || '').substring(0, 80)}...</p>
+                    <div class="flex justify-between items-center mt-2">
+                        <div class="flex gap-1">
+                            ${n.hasDrawing ? '<span class="text-xs bg-purple-100 text-purple-500 px-2 py-0.5 rounded-full">🎨 วาด</span>' : ''}
+                            ${(n.attachments || []).length > 0 ? '<span class="text-xs bg-blue-100 text-blue-500 px-2 py-0.5 rounded-full">📎 ' + n.attachments.length + '</span>' : ''}
+                        </div>
+                        <button onclick="event.stopPropagation();deleteNote('${n.id}')" class="text-red-300 hover:text-red-500 text-xs">🗑️</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function createNewNote() {
+            initQuill();
+            currentNoteId = null;
+            currentAttachments = [];
+            document.getElementById('noteTitle').value = '';
+            quill.setContents([]);
+            clearCanvas();
+            document.getElementById('attachmentList').innerHTML = '';
+            document.getElementById('noteEditor').classList.remove('hidden');
+            switchEditorTab('write');
+        }
+
+        async function openNote(id) {
+            initQuill();
+            const note = notes.find(n => n.id === id);
+            if (!note) return;
+            currentNoteId = id;
+            currentAttachments = note.attachments || [];
+            document.getElementById('noteTitle').value = note.title || '';
+            quill.setContents(note.content ? JSON.parse(note.content) : []);
+
+            // Load drawing
+            if (note.drawingData) {
+                const canvas = document.getElementById('drawingCanvas');
+                const ctx = canvas.getContext('2d');
+                const img = new Image();
+                img.onload = () => { ctx.clearRect(0, 0, canvas.width, canvas.height); ctx.drawImage(img, 0, 0); };
+                img.src = note.drawingData;
+            } else {
+                clearCanvas();
+            }
+
+            renderAttachments();
+            document.getElementById('noteEditor').classList.remove('hidden');
+            switchEditorTab('write');
+            renderNoteList();
+        }
+
+        async function saveCurrentNote() {
+            const user = auth.currentUser;
+            if (!user) return;
+            const title = document.getElementById('noteTitle').value.trim() || 'Untitled Note';
+            const content = JSON.stringify(quill.getContents());
+            const textPreview = quill.getText().substring(0, 200);
+            const canvas = document.getElementById('drawingCanvas');
+            const drawingData = canvas.toDataURL();
+            const hasDrawing = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height).data.some((v, i) => i % 4 === 3 && v > 0);
+
+            const noteData = {
+                title, content, textPreview, drawingData: hasDrawing ? drawingData : null,
+                hasDrawing, attachments: currentAttachments,
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            };
+
+            try {
+                const ref = db.collection('users').doc(user.uid).collection('notes');
+                if (currentNoteId) {
+                    await ref.doc(currentNoteId).update(noteData);
+                } else {
+                    noteData.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+                    const docRef = await ref.add(noteData);
+                    currentNoteId = docRef.id;
+                }
+                showToast('บันทึก Note สำเร็จ! 💾🐾');
+                await loadNotes();
+            } catch (e) {
+                showToast('เกิดข้อผิดพลาด: ' + e.message, true);
+            }
+        }
+
+        async function deleteNote(id) {
+            if (!confirm('ต้องการลบ Note นี้ใช่ไหมครับ?')) return;
+            try {
+                await db.collection('users').doc(auth.currentUser.uid).collection('notes').doc(id).delete();
+                if (currentNoteId === id) closeEditor();
+                showToast('ลบ Note สำเร็จ! 🗑️');
+                await loadNotes();
+            } catch (e) { showToast('ลบไม่สำเร็จ: ' + e.message, true); }
+        }
+
+        function closeEditor() {
+            document.getElementById('noteEditor').classList.add('hidden');
+            currentNoteId = null;
+        }
+
+        // ==================== EDITOR TABS ====================
+        function switchEditorTab(tab) {
+            ['Write', 'Draw', 'Attach'].forEach(t => {
+                document.getElementById('editor' + t).classList.add('hidden');
+                document.getElementById('tab' + t).classList.remove('active');
+            });
+            document.getElementById('editor' + tab.charAt(0).toUpperCase() + tab.slice(1)).classList.remove('hidden');
+            document.getElementById('tab' + tab.charAt(0).toUpperCase() + tab.slice(1)).classList.add('active');
+
+            if (tab === 'draw') initCanvas();
+        }
+
+        // ==================== DRAWING CANVAS ====================
+        let drawCtx, isDrawing = false, drawTool = 'pen', drawHistory = [], startX, startY;
+
+        function initCanvas() {
+            const canvas = document.getElementById('drawingCanvas');
+            if (!drawCtx) {
+                drawCtx = canvas.getContext('2d');
+                canvas.addEventListener('mousedown', startDraw);
+                canvas.addEventListener('mousemove', draw);
+                canvas.addEventListener('mouseup', endDraw);
+                canvas.addEventListener('mouseleave', endDraw);
+                // Touch support
+                canvas.addEventListener('touchstart', e => { e.preventDefault(); startDraw(getTouchPos(e)); });
+                canvas.addEventListener('touchmove', e => { e.preventDefault(); draw(getTouchPos(e)); });
+                canvas.addEventListener('touchend', e => { e.preventDefault(); endDraw(); });
+            }
+        }
+
+        function getTouchPos(e) {
+            const rect = e.target.getBoundingClientRect();
+            const t = e.touches[0];
+            return { offsetX: t.clientX - rect.left, offsetY: t.clientY - rect.top };
+        }
+
+        function startDraw(e) {
+            isDrawing = true;
+            startX = e.offsetX;
+            startY = e.offsetY;
+            if (drawTool === 'pen' || drawTool === 'eraser') {
+                drawCtx.beginPath();
+                drawCtx.moveTo(startX, startY);
+            }
+            if (drawTool === 'text') {
+                const text = prompt('พิมพ์ข้อความ:');
+                if (text) {
+                    drawCtx.font = document.getElementById('drawSize').value * 4 + 'px Noto Sans Thai';
+                    drawCtx.fillStyle = document.getElementById('drawColor').value;
+                    drawCtx.fillText(text, startX, startY);
+                    saveCanvasState();
+                }
+                isDrawing = false;
+            }
+        }
+
+        function draw(e) {
+            if (!isDrawing) return;
+            const color = document.getElementById('drawColor').value;
+            const size = parseInt(document.getElementById('drawSize').value);
+
+            if (drawTool === 'pen') {
+                drawCtx.strokeStyle = color;
+                drawCtx.lineWidth = size;
+                drawCtx.lineCap = 'round';
+                drawCtx.lineJoin = 'round';
+                drawCtx.lineTo(e.offsetX, e.offsetY);
+                drawCtx.stroke();
+            } else if (drawTool === 'eraser') {
+                drawCtx.strokeStyle = 'white';
+                drawCtx.lineWidth = size * 4;
+                drawCtx.lineCap = 'round';
+                drawCtx.lineTo(e.offsetX, e.offsetY);
+                drawCtx.stroke();
+            }
+        }
+
+        function endDraw(e) {
+            if (!isDrawing) return;
+            isDrawing = false;
+
+            if (['rect', 'circle', 'arrow'].includes(drawTool) && e) {
+                const color = document.getElementById('drawColor').value;
+                const size = parseInt(document.getElementById('drawSize').value);
+                drawCtx.strokeStyle = color;
+                drawCtx.lineWidth = size;
+
+                if (drawTool === 'rect') {
+                    drawCtx.strokeRect(startX, startY, e.offsetX - startX, e.offsetY - startY);
+                } else if (drawTool === 'circle') {
+                    const rx = Math.abs(e.offsetX - startX) / 2;
+                    const ry = Math.abs(e.offsetY - startY) / 2;
+                    drawCtx.beginPath();
+                    drawCtx.ellipse(startX + (e.offsetX - startX) / 2, startY + (e.offsetY - startY) / 2, rx, ry, 0, 0, 2 * Math.PI);
+                    drawCtx.stroke();
+                } else if (drawTool === 'arrow') {
+                    drawCtx.beginPath();
+                    drawCtx.moveTo(startX, startY);
+                    drawCtx.lineTo(e.offsetX, e.offsetY);
+                    drawCtx.stroke();
+                    // Arrowhead
+                    const angle = Math.atan2(e.offsetY - startY, e.offsetX - startX);
+                    drawCtx.beginPath();
+                    drawCtx.moveTo(e.offsetX, e.offsetY);
+                    drawCtx.lineTo(e.offsetX - 15 * Math.cos(angle - 0.4), e.offsetY - 15 * Math.sin(angle - 0.4));
+                    drawCtx.moveTo(e.offsetX, e.offsetY);
+                    drawCtx.lineTo(e.offsetX - 15 * Math.cos(angle + 0.4), e.offsetY - 15 * Math.sin(angle + 0.4));
+                    drawCtx.stroke();
+                }
+            }
+            saveCanvasState();
+        }
+
+        function setDrawTool(tool) {
+            drawTool = tool;
+            document.querySelectorAll('#editorDraw .draw-tool').forEach(el => el.classList.remove('active'));
+            document.getElementById('tool' + tool.charAt(0).toUpperCase() + tool.slice(1)).classList.add('active');
+        }
+
+        function clearCanvas() {
+            const canvas = document.getElementById('drawingCanvas');
+            if (canvas) {
+                const ctx = canvas.getContext('2d');
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                drawHistory = [];
+            }
+        }
+
+        function saveCanvasState() {
+            const canvas = document.getElementById('drawingCanvas');
+            drawHistory.push(canvas.toDataURL());
+            if (drawHistory.length > 30) drawHistory.shift();
+        }
+
+        function undoCanvas() {
+            if (drawHistory.length < 2) { clearCanvas(); return; }
+            drawHistory.pop();
+            const img = new Image();
+            img.onload = () => {
+                const canvas = document.getElementById('drawingCanvas');
+                drawCtx.clearRect(0, 0, canvas.width, canvas.height);
+                drawCtx.drawImage(img, 0, 0);
+            };
+            img.src = drawHistory[drawHistory.length - 1];
+        }
+
+        // ==================== FILE ATTACHMENTS ====================
+        async function handleFileUpload(input) {
+            const user = auth.currentUser;
+            if (!user) return;
+            const files = Array.from(input.files);
+
+            for (const file of files) {
+                if (file.size > 10 * 1024 * 1024) {
+                    showToast('ไฟล์ ' + file.name + ' ใหญ่เกิน 10MB', true);
+                    continue;
+                }
+                try {
+                    showToast('กำลังอัปโหลด ' + file.name + '...');
+                    const ref = storage.ref(`users/${user.uid}/notes/${Date.now()}_${file.name}`);
+                    await ref.put(file);
+                    const url = await ref.getDownloadURL();
+                    currentAttachments.push({
+                        name: file.name,
+                        url: url,
+                        type: file.type,
+                        size: file.size
+                    });
+                    renderAttachments();
+                    showToast('อัปโหลด ' + file.name + ' สำเร็จ! 📎');
+                } catch (e) {
+                    showToast('อัปโหลดล้มเหลว: ' + e.message, true);
+                }
+            }
+            input.value = '';
+        }
+
+        function renderAttachments() {
+            const list = document.getElementById('attachmentList');
+            if (currentAttachments.length === 0) { list.innerHTML = ''; return; }
+            list.innerHTML = currentAttachments.map((a, i) => {
+                let preview = '';
+                if (a.type && a.type.startsWith('image/')) {
+                    preview = `<img src="${a.url}" class="w-full h-32 object-cover rounded-lg mb-2" alt="${escapeHtml(a.name)}">`;
+                } else if (a.type && a.type.startsWith('video/')) {
+                    preview = `<video src="${a.url}" controls class="w-full h-32 rounded-lg mb-2"></video>`;
+                }
+                return `
+                    <div class="bg-gray-50 rounded-xl p-3 border border-gray-200">
+                        ${preview}
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <p class="text-sm font-medium text-gray-700">${escapeHtml(a.name)}</p>
+                                <p class="text-xs text-gray-400">${(a.size / 1024).toFixed(1)} KB</p>
+                            </div>
+                            <div class="flex gap-2">
+                                <a href="${a.url}" target="_blank" class="text-blue-500 text-xs hover:underline">เปิด</a>
+                                <button onclick="removeAttachment(${i})" class="text-red-400 text-xs hover:text-red-600">ลบ</button>
+                            </div>
+                        </div>
+                    </div>`;
+            }).join('');
+        }
+
+        function removeAttachment(idx) {
+            currentAttachments.splice(idx, 1);
+            renderAttachments();
+        }
+
+        // ==================== UTILS ====================
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text || '';
+            return div.innerHTML;
+        }
+
+        function showToast(msg, isError = false) {
+            const t = document.createElement('div');
+            t.className = 'toast-msg';
+            if (isError) t.style.background = '#ef4444';
+            t.textContent = msg;
+            document.body.appendChild(t);
+            setTimeout(() => t.remove(), 3000);
+        }
+    </script>
+</body>
+
+</html>
