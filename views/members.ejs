@@ -297,7 +297,7 @@
                 height: 100vh;
                 z-index: 900;
                 transition: left 0.3s ease;
-                padding-top: 80px;
+                padding-top: 70px;
                 overflow-y: auto;
                 background: linear-gradient(135deg, #fdf2f8, #fff1f2);
             }
@@ -329,17 +329,160 @@
             }
 
             .member-card {
-                padding: 1rem;
-                border-radius: 1rem;
+                padding: 0.75rem;
+                border-radius: 0.75rem;
             }
 
+            /* Top header mobile */
             .top-header {
-                padding: 0.75rem 1rem !important;
+                padding: 0.5rem 0.75rem !important;
+                flex-wrap: wrap;
+                gap: 0.5rem;
             }
 
-            .top-header h1 {
-                font-size: 1rem !important;
+            .top-header .header-left {
+                gap: 0.25rem !important;
             }
+
+            .top-header .header-left .back-link {
+                display: none;
+            }
+
+            .top-header .header-left .header-sep {
+                display: none;
+            }
+
+            .top-header .header-title {
+                font-size: 0.85rem !important;
+            }
+
+            .top-header .header-right {
+                gap: 0.25rem !important;
+            }
+
+            .top-header .header-right .user-name {
+                display: none;
+            }
+
+            .top-header .logout-btn {
+                padding: 6px 10px !important;
+                font-size: 0.7rem !important;
+            }
+
+            /* Chat section mobile */
+            .chat-layout {
+                flex-direction: column !important;
+                height: auto !important;
+            }
+
+            .chat-sidebar {
+                width: 100% !important;
+                max-height: 200px;
+            }
+
+            .chat-window {
+                min-height: 350px;
+            }
+
+            /* Grids single column */
+            .grid {
+                grid-template-columns: 1fr !important;
+            }
+
+            h2 {
+                font-size: 1.3rem !important;
+            }
+        }
+
+        /* ==================== NOTIFICATION BADGES ==================== */
+        .nav-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 18px;
+            height: 18px;
+            padding: 0 5px;
+            border-radius: 9px;
+            background: #f43f5e;
+            color: white;
+            font-size: 0.65rem;
+            font-weight: 700;
+            margin-left: auto;
+            animation: badgePop 0.3s ease;
+        }
+
+        .friend-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 16px;
+            height: 16px;
+            padding: 0 4px;
+            border-radius: 8px;
+            background: #f43f5e;
+            color: white;
+            font-size: 0.6rem;
+            font-weight: 700;
+            margin-left: 4px;
+        }
+
+        @keyframes badgePop {
+            from {
+                transform: scale(0);
+            }
+
+            to {
+                transform: scale(1);
+            }
+        }
+
+        /* ==================== EMOJI PICKER ==================== */
+        .emoji-picker-panel {
+            position: absolute;
+            bottom: 100%;
+            right: 0;
+            width: 280px;
+            max-height: 200px;
+            background: white;
+            border: 2px solid #fecdd3;
+            border-radius: 1rem;
+            padding: 0.5rem;
+            overflow-y: auto;
+            z-index: 50;
+            box-shadow: 0 -4px 20px rgba(253, 164, 175, 0.2);
+            display: none;
+        }
+
+        .emoji-picker-panel.show {
+            display: block;
+        }
+
+        .emoji-picker-panel span {
+            cursor: pointer;
+            font-size: 1.3rem;
+            padding: 3px;
+            display: inline-block;
+            transition: transform 0.1s;
+        }
+
+        .emoji-picker-panel span:hover {
+            transform: scale(1.3);
+        }
+
+        /* Chat image preview */
+        .chat-img-preview {
+            max-width: 200px;
+            max-height: 150px;
+            border-radius: 0.75rem;
+            margin-top: 4px;
+            cursor: pointer;
+        }
+
+        .post-img {
+            max-width: 100%;
+            max-height: 400px;
+            border-radius: 1rem;
+            margin-top: 0.5rem;
         }
 
         /* ==================== KUMA AI FLOATING CHAT ==================== */
@@ -562,21 +705,20 @@
     <div id="membersArea" class="hidden min-h-screen">
         <!-- Top Bar -->
         <div
-            class="bg-white/80 backdrop-blur-lg border-b-2 border-rose-200 px-6 py-3 flex justify-between items-center sticky top-0 z-50">
-            <div class="flex items-center gap-3">
-                <a href="/" class="text-rose-400 hover:text-rose-600 text-sm font-medium">← กลับหน้าหลัก</a>
-                <span class="text-rose-200">|</span>
-                <span class="text-lg">🐱</span>
-                <span class="font-bold text-rose-500">เพื่อนสนิทน้องคุมะ</span>
-            </div>
-            <div class="flex items-center gap-3">
-                <!-- Mobile hamburger -->
+            class="bg-white/80 backdrop-blur-lg border-b-2 border-rose-200 px-6 py-3 flex justify-between items-center sticky top-0 z-50 top-header">
+            <div class="flex items-center gap-3 header-left">
                 <button id="hamburgerBtn" class="md:hidden text-rose-400 text-2xl p-1"
                     onclick="toggleMobileSidebar()">☰</button>
-                <span id="userDisplayName" class="text-sm text-gray-600 font-medium"></span>
+                <a href="/" class="text-rose-400 hover:text-rose-600 text-sm font-medium back-link">← กลับหน้าหลัก</a>
+                <span class="text-rose-200 header-sep">|</span>
+                <span class="text-lg">🐱</span>
+                <span class="font-bold text-rose-500 header-title">เพื่อนสนิทน้องคุมะ</span>
+            </div>
+            <div class="flex items-center gap-3 header-right">
+                <span id="userDisplayName" class="text-sm text-gray-600 font-medium user-name"></span>
                 <img id="userAvatar" src="" class="w-8 h-8 rounded-full border-2 border-rose-300 hidden" alt="avatar">
                 <button onclick="doLogout()"
-                    class="bg-rose-100 text-rose-500 px-4 py-2 rounded-xl text-sm font-bold hover:bg-rose-200 transition-colors">
+                    class="bg-rose-100 text-rose-500 px-4 py-2 rounded-xl text-sm font-bold hover:bg-rose-200 transition-colors logout-btn">
                     ออกจากระบบ 🚪
                 </button>
             </div>
@@ -597,9 +739,12 @@
                     <hr class="border-rose-100 mb-3">
                     <div class="space-y-1">
                         <div class="nav-item active" onclick="showSection('notes')">📝 Notes</div>
-                        <div class="nav-item" onclick="showSection('chat')">💬 แชท</div>
-                        <div class="nav-item" onclick="showSection('friends')">👥 เพื่อน</div>
-                        <div class="nav-item" onclick="showSection('posts')">📢 โพสต์</div>
+                        <div class="nav-item" id="navChat" onclick="showSection('chat')">💬 แชท <span id="badgeChat"
+                                class="nav-badge hidden">0</span></div>
+                        <div class="nav-item" id="navFriends" onclick="showSection('friends')">👥 เพื่อน <span
+                                id="badgeFriends" class="nav-badge hidden">0</span></div>
+                        <div class="nav-item" id="navPosts" onclick="showSection('posts')">📢 โพสต์ <span
+                                id="badgePosts" class="nav-badge hidden">0</span></div>
                         <hr class="border-rose-100 my-2">
                         <div class="nav-item" onclick="showSection('profile')">⚙️ โปรไฟล์</div>
                         <div class="nav-item" onclick="showChangePasswordModal()">
@@ -749,9 +894,9 @@
                 <!-- ==================== CHAT SECTION ==================== -->
                 <div id="sectionChat" class="hidden">
                     <h2 class="text-2xl font-bold text-rose-500 mb-4">💬 แชท</h2>
-                    <div class="flex gap-4" style="height:550px">
+                    <div class="flex gap-4 chat-layout" style="height:550px">
                         <!-- Chat List -->
-                        <div class="w-64 shrink-0 member-card overflow-hidden flex flex-col">
+                        <div class="w-64 shrink-0 member-card overflow-hidden flex flex-col chat-sidebar">
                             <div class="flex gap-2 mb-3">
                                 <button onclick="showChatTab('private')" id="chatTabPrivate"
                                     class="flex-1 text-xs font-bold py-2 rounded-lg bg-rose-500 text-white">💬
@@ -766,18 +911,30 @@
                             <div id="chatList" class="flex-1 overflow-y-auto space-y-1"></div>
                         </div>
                         <!-- Chat Window -->
-                        <div class="flex-1 member-card flex flex-col overflow-hidden">
+                        <div class="flex-1 member-card flex flex-col overflow-hidden chat-window">
                             <div id="chatHeader" class="flex items-center gap-3 pb-3 border-b border-rose-100 mb-3">
                                 <span class="text-gray-400">เลือกแชทจากรายการด้านซ้าย</span>
                             </div>
                             <div id="chatMessages" class="flex-1 overflow-y-auto space-y-3 mb-3 pr-2"
                                 style="scroll-behavior:smooth"></div>
-                            <div id="chatInputArea" class="hidden flex gap-2">
-                                <input type="text" id="chatInput" class="auth-input flex-1"
-                                    placeholder="พิมพ์ข้อความ..." onkeydown="if(event.key==='Enter')sendMessage()">
-                                <button onclick="sendMessage()"
-                                    class="bg-rose-500 text-white px-4 py-2 rounded-xl font-bold text-sm hover:bg-rose-600">ส่ง
-                                    🐾</button>
+                            <div id="chatImgPreview" class="hidden flex gap-2 mb-2 flex-wrap"></div>
+                            <div id="chatInputArea" class="hidden relative">
+                                <div id="chatEmojiPicker" class="emoji-picker-panel"></div>
+                                <div class="flex gap-2 items-end">
+                                    <button onclick="toggleChatEmoji()"
+                                        class="text-xl p-1 hover:scale-110 transition-transform"
+                                        title="อีโมจิ">😊</button>
+                                    <button onclick="document.getElementById('chatImgInput').click()"
+                                        class="text-xl p-1 hover:scale-110 transition-transform"
+                                        title="แนบรูป">🖼️</button>
+                                    <input type="file" id="chatImgInput" class="hidden" accept="image/*"
+                                        onchange="handleChatImage(this)">
+                                    <input type="text" id="chatInput" class="auth-input flex-1"
+                                        placeholder="พิมพ์ข้อความ..." onkeydown="if(event.key==='Enter')sendMessage()">
+                                    <button onclick="sendMessage()"
+                                        class="bg-rose-500 text-white px-4 py-2 rounded-xl font-bold text-sm hover:bg-rose-600 shrink-0">ส่ง
+                                        🐾</button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -814,7 +971,18 @@
                     <div class="member-card mb-6">
                         <textarea id="newPostText" class="w-full auth-input" rows="3"
                             placeholder="คุณกำลังคิดอะไรอยู่? เมี้ยว 🐱"></textarea>
-                        <div class="flex justify-end mt-2">
+                        <div id="postImgPreview" class="hidden mt-2"></div>
+                        <div class="flex justify-between items-center mt-2">
+                            <div class="flex gap-2 relative">
+                                <button onclick="togglePostEmoji()"
+                                    class="text-xl p-1 hover:scale-110 transition-transform" title="อีโมจิ">😊</button>
+                                <button onclick="document.getElementById('postImgInput').click()"
+                                    class="text-xl p-1 hover:scale-110 transition-transform" title="แนบรูป">🖼️</button>
+                                <input type="file" id="postImgInput" class="hidden" accept="image/*"
+                                    onchange="handlePostImage(this)">
+                                <div id="postEmojiPicker" class="emoji-picker-panel" style="bottom:auto; top:100%">
+                                </div>
+                            </div>
                             <button onclick="createPost()"
                                 class="bg-gradient-to-r from-rose-400 to-orange-400 text-white px-5 py-2 rounded-xl font-bold text-sm hover:shadow-lg">📢
                                 โพสต์</button>
@@ -1785,11 +1953,13 @@
                 if (friendsList.length === 0) { list.innerHTML = '<p class="text-xs text-gray-300 text-center py-4">เพิ่มเพื่อนก่อนเพื่อแชท</p>'; return; }
                 list.innerHTML = friendsList.map(f => {
                     const friendAvatar = f.photo || defaultAvatarSvg;
+                    const unread = unreadChats[f.uid] || 0;
                     return `
                     <div class="flex items-center gap-2 p-2 rounded-lg cursor-pointer hover:bg-rose-50 transition-colors ${currentChatId === getChatId(f.uid) ? 'bg-rose-100' : ''}"
                         onclick="openPrivateChat('${f.uid}','${escapeHtml(f.name)}')">
                         <img src="${friendAvatar}" class="w-8 h-8 rounded-full object-cover border border-rose-200 shrink-0" onerror="this.src='${defaultAvatarSvg}'">
-                        <span class="text-sm font-medium truncate">${escapeHtml(f.name)}</span>
+                        <span class="text-sm font-medium truncate flex-1">${escapeHtml(f.name)}</span>
+                        ${unread > 0 ? `<span class="friend-badge">${unread}</span>` : ''}
                     </div>`;
                 }).join('');
             } else {
@@ -1855,34 +2025,46 @@
                         const m = doc.data();
                         const isMe = m.senderUid === uid;
                         const senderAvatar = m.senderPhoto || defaultAvatarSvg;
+                        const imgHtml = m.image ? `<img src="${m.image}" class="chat-img-preview" onclick="window.open(this.src)">` : '';
                         msgDiv.innerHTML += `<div class="flex ${isMe ? 'justify-end' : 'justify-start'} gap-2">
                             ${!isMe ? `<img src="${senderAvatar}" class="w-8 h-8 rounded-full object-cover border border-rose-200 shrink-0 mt-1" onerror="this.src='${defaultAvatarSvg}'">` : ''}
                             <div class="max-w-xs px-4 py-2 rounded-2xl text-sm ${isMe ? 'bg-rose-500 text-white rounded-br-sm' : 'bg-gray-100 text-gray-700 rounded-bl-sm'}">
                                 ${!isMe ? `<p class="text-xs font-bold mb-1 text-rose-400">${escapeHtml(m.senderName)}</p>` : ''}
-                                <p>${escapeHtml(m.text)}</p>
+                                ${m.text ? `<p>${escapeHtml(m.text)}</p>` : ''}
+                                ${imgHtml}
                                 <p class="text-xs mt-1 ${isMe ? 'text-rose-200' : 'text-gray-400'}">${m.createdAt ? timeAgo(m.createdAt) : ''}</p>
                             </div>
                             ${isMe ? `<img src="${senderAvatar}" class="w-8 h-8 rounded-full object-cover border border-rose-200 shrink-0 mt-1" onerror="this.src='${defaultAvatarSvg}'">` : ''}
                         </div>`;
                     });
                     msgDiv.scrollTop = msgDiv.scrollHeight;
+                    // Mark as read
+                    if (currentChatType === 'private') {
+                        const otherUid = currentChatId.split('_').find(id => id !== uid);
+                        if (otherUid) { unreadChats[otherUid] = 0; updateChatBadge(); loadChatList(); }
+                    }
                 });
         }
+
+        let chatPendingImage = null;
 
         async function sendMessage() {
             const input = document.getElementById('chatInput');
             const text = input.value.trim();
-            if (!text || !currentChatId) return;
+            if (!text && !chatPendingImage) return;
+            if (!currentChatId) return;
             input.value = '';
             const user = auth.currentUser;
             const collection = currentChatType === 'private' ? 'chats' : 'groupMessages';
             try {
                 const myPhoto = document.getElementById('profilePhoto').value || null;
-                await db.collection(collection).doc(currentChatId).collection('messages').add({
-                    text, senderUid: user.uid, senderName: user.displayName || user.email,
+                const msgData = {
+                    text: text || '', senderUid: user.uid, senderName: user.displayName || user.email,
                     senderPhoto: myPhoto,
                     createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                });
+                };
+                if (chatPendingImage) { msgData.image = chatPendingImage; chatPendingImage = null; document.getElementById('chatImgPreview').classList.add('hidden'); document.getElementById('chatImgPreview').innerHTML = ''; }
+                await db.collection(collection).doc(currentChatId).collection('messages').add(msgData);
             } catch (e) { showToast('ส่งไม่สำเร็จ: ' + e.message, true); }
         }
 
@@ -1942,6 +2124,7 @@
                                 ${p.authorUid === uid ? `<button onclick="deletePost('${doc.id}')" class="ml-auto text-red-300 hover:text-red-500 text-xs">🗑️</button>` : ''}
                             </div>
                             <p class="text-gray-700 mb-3 whitespace-pre-wrap">${escapeHtml(p.text)}</p>
+                            ${p.image ? `<img src="${p.image}" class="post-img mb-3" onclick="window.open(this.src)">` : ''}
                             <hr class="border-rose-100 mb-3">
                             <div id="comments_${doc.id}" class="space-y-2 mb-3"></div>
                             <div class="flex gap-2">
@@ -1956,18 +2139,21 @@
 
         async function createPost() {
             const text = document.getElementById('newPostText').value.trim();
-            if (!text) return showToast('กรุณาพิมพ์ข้อความ', true);
+            if (!text && !postPendingImage) return showToast('กรุณาพิมพ์ข้อความหรือแนบรูป', true);
             const user = auth.currentUser;
             const myPhoto = document.getElementById('profilePhoto').value || null;
             try {
-                await db.collection('posts').add({
-                    text, authorUid: user.uid, authorName: user.displayName || user.email,
+                const postData = {
+                    text: text || '', authorUid: user.uid, authorName: user.displayName || user.email,
                     authorPhoto: myPhoto,
                     createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                });
+                };
+                if (postPendingImage) { postData.image = postPendingImage; postPendingImage = null; document.getElementById('postImgPreview').classList.add('hidden'); document.getElementById('postImgPreview').innerHTML = ''; }
+                await db.collection('posts').add(postData);
                 document.getElementById('newPostText').value = '';
                 showToast('โพสต์สำเร็จ! 📢🐾');
             } catch (e) { showToast('โพสต์ล้มเหลว: ' + e.message, true); }
+        }
         }
 
         async function deletePost(postId) {
@@ -2008,6 +2194,165 @@
                 createdAt: firebase.firestore.FieldValue.serverTimestamp()
             });
         }
+
+        // ==================== EMOJI PICKER ====================
+        const emojiList = ['😀', '😂', '🥰', '😍', '😎', '🤩', '😊', '🥺', '😢', '😭', '😤', '🤔', '🙄', '😏', '😴', '🤗', '🫶', '❤️', '🔥', '✨', '💯', '👍', '👏', '🎉', '🙏', '💪', '🐱', '🐾', '🐻', '🦊', '🌸', '🌈', '⭐', '☀️', '🍕', '🍦', '☕', '🎵', '📸', '💬', '📢', '✅', '❌', '⚡', '💖', '🥳', '😇', '🤭', '😈', '💀'];
+        let postPendingImage = null;
+        let unreadChats = {};
+
+        function buildEmojiGrid(targetInputId, pickerId) {
+            const picker = document.getElementById(pickerId);
+            picker.innerHTML = emojiList.map(e => `<span onclick="insertEmoji('${targetInputId}','${e}','${pickerId}')">${e}</span>`).join('');
+        }
+
+        function insertEmoji(inputId, emoji, pickerId) {
+            const el = document.getElementById(inputId);
+            if (el.tagName === 'TEXTAREA') { el.value += emoji; el.focus(); }
+            else if (el.tagName === 'INPUT') { el.value += emoji; el.focus(); }
+            document.getElementById(pickerId).classList.remove('show');
+        }
+
+        function toggleChatEmoji() {
+            const picker = document.getElementById('chatEmojiPicker');
+            if (!picker.innerHTML) buildEmojiGrid('chatInput', 'chatEmojiPicker');
+            picker.classList.toggle('show');
+        }
+        function togglePostEmoji() {
+            const picker = document.getElementById('postEmojiPicker');
+            if (!picker.innerHTML) buildEmojiGrid('newPostText', 'postEmojiPicker');
+            picker.classList.toggle('show');
+        }
+
+        // ==================== IMAGE UPLOAD FOR CHAT ====================
+        function handleChatImage(input) {
+            const file = input.files[0];
+            if (!file) return;
+            if (file.size > 1024 * 1024 * 2) { showToast('รูปต้องไม่เกิน 2MB', true); return; }
+            const reader = new FileReader();
+            reader.onload = () => {
+                chatPendingImage = reader.result;
+                const preview = document.getElementById('chatImgPreview');
+                preview.classList.remove('hidden');
+                preview.innerHTML = `<div class="relative"><img src="${reader.result}" class="w-20 h-20 rounded-lg object-cover border-2 border-rose-200"><button onclick="removeChatImage()" class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 text-xs flex items-center justify-center">✕</button></div>`;
+            };
+            reader.readAsDataURL(file);
+            input.value = '';
+        }
+        function removeChatImage() {
+            chatPendingImage = null;
+            document.getElementById('chatImgPreview').classList.add('hidden');
+            document.getElementById('chatImgPreview').innerHTML = '';
+        }
+
+        // ==================== IMAGE UPLOAD FOR POSTS ====================
+        function handlePostImage(input) {
+            const file = input.files[0];
+            if (!file) return;
+            if (file.size > 1024 * 1024 * 3) { showToast('รูปต้องไม่เกิน 3MB', true); return; }
+            const reader = new FileReader();
+            reader.onload = () => {
+                postPendingImage = reader.result;
+                const preview = document.getElementById('postImgPreview');
+                preview.classList.remove('hidden');
+                preview.innerHTML = `<div class="relative inline-block"><img src="${reader.result}" class="w-40 h-auto rounded-lg border-2 border-rose-200"><button onclick="removePostImage()" class="absolute top-1 right-1 bg-red-500 text-white rounded-full w-5 h-5 text-xs flex items-center justify-center">✕</button></div>`;
+            };
+            reader.readAsDataURL(file);
+            input.value = '';
+        }
+        function removePostImage() {
+            postPendingImage = null;
+            document.getElementById('postImgPreview').classList.add('hidden');
+            document.getElementById('postImgPreview').innerHTML = '';
+        }
+
+        // ==================== NOTIFICATION BADGES ====================
+        function updateBadge(badgeId, count) {
+            const badge = document.getElementById(badgeId);
+            if (!badge) return;
+            if (count > 0) { badge.textContent = count > 99 ? '99+' : count; badge.classList.remove('hidden'); }
+            else badge.classList.add('hidden');
+        }
+        function updateChatBadge() {
+            const total = Object.values(unreadChats).reduce((sum, n) => sum + n, 0);
+            updateBadge('badgeChat', total);
+        }
+
+        // Unread message listeners for each friend
+        let unreadListeners = {};
+        function listenUnreadChats() {
+            const uid = auth.currentUser.uid;
+            friendsList.forEach(f => {
+                const chatId = getChatId(f.uid);
+                if (unreadListeners[chatId]) return; // already listening
+                unreadListeners[chatId] = db.collection('chats').doc(chatId).collection('messages')
+                    .orderBy('createdAt', 'desc').limit(20)
+                    .onSnapshot(snap => {
+                        if (currentChatId === chatId) return; // already viewing
+                        let count = 0;
+                        const lastRead = parseInt(localStorage.getItem('lastRead_' + chatId) || '0');
+                        snap.forEach(doc => {
+                            const m = doc.data();
+                            if (m.senderUid !== uid && m.createdAt && m.createdAt.toMillis() > lastRead) count++;
+                        });
+                        unreadChats[f.uid] = count;
+                        updateChatBadge();
+                        loadChatList();
+                    });
+            });
+        }
+
+        // Mark chat as read when opening
+        const _origOpenChat = openPrivateChat;
+        openPrivateChat = function (otherUid, name) {
+            _origOpenChat(otherUid, name);
+            localStorage.setItem('lastRead_' + getChatId(otherUid), Date.now().toString());
+            unreadChats[otherUid] = 0;
+            updateChatBadge();
+            loadChatList();
+        };
+
+        // Friend request badge
+        function listenFriendRequestBadge() {
+            const uid = auth.currentUser.uid;
+            db.collection('friendRequests').where('toUid', '==', uid).where('status', '==', 'pending')
+                .onSnapshot(snap => { updateBadge('badgeFriends', snap.size); });
+        }
+
+        // Posts badge  
+        let lastPostsView = 0;
+        function listenPostsBadge() {
+            lastPostsView = parseInt(localStorage.getItem('lastPostsView') || '0');
+            db.collection('posts').orderBy('createdAt', 'desc').limit(50)
+                .onSnapshot(snap => {
+                    let newCount = 0;
+                    snap.forEach(doc => {
+                        const p = doc.data();
+                        if (p.createdAt && p.createdAt.toMillis() > lastPostsView && p.authorUid !== auth.currentUser.uid) newCount++;
+                    });
+                    updateBadge('badgePosts', newCount);
+                });
+        }
+
+        // Update showSection to clear badges
+        const _origShowSection = showSection;
+        showSection = function (section) {
+            _origShowSection(section);
+            if (section === 'friends') updateBadge('badgeFriends', 0);
+            if (section === 'posts') {
+                lastPostsView = Date.now();
+                localStorage.setItem('lastPostsView', lastPostsView.toString());
+                updateBadge('badgePosts', 0);
+            }
+        };
+
+        // Init badges after auth
+        setTimeout(() => {
+            if (auth.currentUser) {
+                listenFriendRequestBadge();
+                listenPostsBadge();
+                setTimeout(() => listenUnreadChats(), 2000);
+            }
+        }, 3000);
 
         // ==================== MOBILE SIDEBAR TOGGLE ====================
         function toggleMobileSidebar() {
