@@ -944,7 +944,7 @@
 
                 <!-- ==================== CHAT SECTION ==================== -->
                 <div id="sectionChat" class="hidden">
-                    <h2 class="text-2xl font-bold text-rose-500 mb-4">💬 แชท</h2>
+                    <h2 class="text-2xl font-bold text-rose-500 mb-4">💬 แชท <button onclick="playNotifSound()" class="text-xs bg-rose-100 text-rose-400 px-2 py-0.5 rounded-full ml-2 hover:bg-rose-200" title="ทดสอบเสียง">🔔 ทดสอบ</button></h2>
                     <div class="flex gap-4 chat-layout" style="height:550px">
                         <!-- Chat List -->
                         <div class="w-64 shrink-0 member-card overflow-hidden flex flex-col chat-sidebar">
@@ -1290,6 +1290,8 @@
                 loadFriends();
                 loadAllUsers();
                 loadPosts();
+                listenFriendRequestBadge();
+                // listenUnreadChats called after friends load
             } else {
                 document.getElementById('authScreen').classList.remove('hidden');
                 document.getElementById('membersArea').classList.add('hidden');
@@ -1913,6 +1915,8 @@
                     }).join('');
                     loadChatList();
                     _refreshAllUsers();
+                    listenUnreadChats();
+                    listenFriendRequestBadge();
                 });
         }
 
