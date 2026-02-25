@@ -22,7 +22,7 @@ if (apiKey) {
 
 const genAI = new GoogleGenerativeAI(apiKey);
 const model = genAI.getGenerativeModel({
-    model: "gemini-2.0-flash-lite",
+    model: "gemini-2.5-flash",
     systemInstruction: `คุณคือ "ผู้ช่วย KUMA (คุมะ)" (KUMA Assistant) ประจำโปรแกรม KUMA Test Case Builder.
 คุณมีความสามารถในการควบคุมโปรแกรมนี้ได้สมบูรณ์แบบเหมือนที่ผู้ใช้ทำ โดยการส่ง JSON command กลับมา
 
@@ -185,7 +185,7 @@ app.get('/api/template', async (req, res) => {
 // AI Chat Endpoint
 app.post('/api/chat', upload.array('files'), async (req, res) => {
     const { message } = req.body;
-    console.log(`[KUMA] Handling chat request with model: gemini-2.0-flash-lite`);
+    console.log(`[KUMA] Handling chat request with model: gemini-2.5-flash`);
     let history = [];
 
     try {
