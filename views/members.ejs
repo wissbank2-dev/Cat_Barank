@@ -620,7 +620,11 @@
                     </div>
                     <!-- Friend List -->
                     <h3 class="text-sm font-bold text-rose-400 mb-2">🐾 รายชื่อเพื่อน</h3>
-                    <div id="friendList" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
+                    <div id="friendList" class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6"></div>
+
+                    <!-- All Users Board -->
+                    <h3 class="text-sm font-bold text-purple-500 mb-2">🌐 สมาชิกทั้งหมดในระบบ</h3>
+                    <div id="allUsersList" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
                 </div>
 
                 <!-- ==================== POSTS SECTION ==================== -->
@@ -870,6 +874,7 @@
                 loadNotes();
                 initPresence(user);
                 loadFriends();
+                loadAllUsers();
                 loadPosts();
             } else {
                 document.getElementById('authScreen').classList.remove('hidden');
@@ -1486,6 +1491,60 @@
                 });
         }
 
+        // ==================== ALL USERS BOARD ====================
+        function loadAllUsers() {
+            const uid = auth.currentUser.uid;
+            db.collection('presence').onSnapshot(snap => {
+                const allList = document.getElementById('allUsersList');
+                allList.innerHTML = '';
+                snap.forEach(async doc => {
+                    const d = doc.data();
+                    if (doc.id === uid) return; // Skip self
+                    const name = escapeHtml(d.displayName || d.email || '???');
+                    const userPhoto = d.photo || defaultAvatarSvg;
+                    const isOnline = d.online;
+                    const isFriend = friendsList.some(f => f.uid === doc.id);
+                    let actionBtn = '';
+                    if (isFriend) {
+                        actionBtn = `<button onclick="openPrivateChat('${doc.id}','${name}')" class="bg-green-100 text-green-600 text-xs px-3 py-1 rounded-lg font-bold shrink-0">💬 แชท</button>`;
+                    } else {
+                        actionBtn = `<button onclick="addFriendDirect('${doc.id}','${escapeHtml(d.email)}')" class="bg-rose-500 text-white text-xs px-3 py-1 rounded-lg font-bold shrink-0 hover:bg-rose-600">➕ เพิ่มเพื่อน</button>`;
+                    }
+                    allList.innerHTML += `<div class="member-card flex items-center gap-3 p-3">
+                        <div class="relative">
+                            <img src="${userPhoto}" class="w-10 h-10 rounded-full object-cover border-2 border-rose-200" onerror="this.src='${defaultAvatarSvg}'">
+                            <span class="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-white ${isOnline ? 'bg-green-400' : 'bg-gray-300'}"></span>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="font-bold text-sm text-gray-700 truncate">${name}</p>
+                            <p class="text-xs ${isOnline ? 'text-green-500' : 'text-gray-400'}">${isOnline ? '🟢 ออนไลน์' : '⚫ ออฟไลน์'}</p>
+                        </div>
+                        ${actionBtn}
+                    </div>`;
+                });
+            });
+        }
+
+        async function addFriendDirect(targetUid, targetEmail) {
+            const user = auth.currentUser;
+            try {
+                // Check if already friends
+                const fSnap = await db.collection('friends').where('users', 'array-contains', user.uid).get();
+                const alreadyFriend = fSnap.docs.some(d => d.data().users.includes(targetUid));
+                if (alreadyFriend) return showToast('เป็นเพื่อนกันอยู่แล้ว!', true);
+                // Check if request already sent
+                const rSnap = await db.collection('friendRequests')
+                    .where('fromUid', '==', user.uid).where('toUid', '==', targetUid).where('status', '==', 'pending').get();
+                if (!rSnap.empty) return showToast('ส่งคำขอไปแล้ว รอตอบรับ 📨');
+                await db.collection('friendRequests').add({
+                    fromUid: user.uid, fromName: user.displayName || user.email, fromEmail: user.email,
+                    toUid: targetUid, toEmail: targetEmail,
+                    status: 'pending', createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                showToast('ส่งคำขอเป็นเพื่อนแล้ว! 📨');
+            } catch (e) { showToast('เกิดข้อผิดพลาด: ' + e.message, true); }
+        }
+
         async function sendFriendRequest() {
             const email = document.getElementById('addFriendEmail').value.trim();
             if (!email) return showToast('กรุณากรอกอีเมล', true);
@@ -1544,12 +1603,15 @@
             const list = document.getElementById('chatList');
             if (chatTabMode === 'private') {
                 if (friendsList.length === 0) { list.innerHTML = '<p class="text-xs text-gray-300 text-center py-4">เพิ่มเพื่อนก่อนเพื่อแชท</p>'; return; }
-                list.innerHTML = friendsList.map(f => `
+                list.innerHTML = friendsList.map(f => {
+                    const friendAvatar = f.photo || defaultAvatarSvg;
+                    return `
                     <div class="flex items-center gap-2 p-2 rounded-lg cursor-pointer hover:bg-rose-50 transition-colors ${currentChatId === getChatId(f.uid) ? 'bg-rose-100' : ''}"
                         onclick="openPrivateChat('${f.uid}','${escapeHtml(f.name)}')">
-                        <div class="w-8 h-8 rounded-full bg-rose-200 flex items-center justify-center text-sm">🐱</div>
+                        <img src="${friendAvatar}" class="w-8 h-8 rounded-full object-cover border border-rose-200 shrink-0" onerror="this.src='${defaultAvatarSvg}'">
                         <span class="text-sm font-medium truncate">${escapeHtml(f.name)}</span>
-                    </div>`).join('');
+                    </div>`;
+                }).join('');
             } else {
                 // Group chats
                 db.collection('groupChats').where('members', 'array-contains', auth.currentUser.uid)
@@ -1574,10 +1636,18 @@
         }
 
         function openPrivateChat(otherUid, name) {
+            // Navigate to Chat section
+            showSection('chat');
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(el => { if (el.textContent.includes('แชท')) el.classList.add('active'); });
             currentChatId = getChatId(otherUid);
             currentChatType = 'private';
-            document.getElementById('chatHeader').innerHTML = `<div class="w-8 h-8 rounded-full bg-rose-200 flex items-center justify-center">🐱</div><span class="font-bold text-gray-700">${escapeHtml(name)}</span>`;
+            // Find photo from friendsList or cache
+            const friend = friendsList.find(f => f.uid === otherUid);
+            const friendPhoto = friend?.photo || defaultAvatarSvg;
+            document.getElementById('chatHeader').innerHTML = `<img src="${friendPhoto}" class="w-8 h-8 rounded-full object-cover border border-rose-200" onerror="this.src='${defaultAvatarSvg}'"><span class="font-bold text-gray-700">${escapeHtml(name)}</span>`;
             document.getElementById('chatInputArea').classList.remove('hidden');
+            showChatTab('private');
             listenMessages('chats');
             loadChatList();
         }
