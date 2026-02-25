@@ -1153,6 +1153,7 @@
             if (!email || !pass) return showAuthMessage('กรุณากรอกอีเมลและรหัสผ่าน', true);
             try {
                 await auth.signInWithEmailAndPassword(email, pass);
+                setLoginTimestamp();
                 showAuthMessage('เข้าสู่ระบบสำเร็จ! เมี้ยว 🐾');
             } catch (e) {
                 showAuthMessage(getErrorMessage(e.code), true);
@@ -1164,6 +1165,7 @@
                 const provider = new firebase.auth.GoogleAuthProvider();
                 try {
                     await auth.signInWithPopup(provider);
+                        setLoginTimestamp();
                 } catch (popupErr) {
                     if (popupErr.code === 'auth/popup-blocked' || popupErr.code === 'auth/popup-closed-by-user' || popupErr.code === 'auth/cancelled-popup-request') {
                         showAuthMessage('กำลังเปลี่ยนเส้นทาง...', false);
@@ -1192,6 +1194,7 @@
             if (pass.length < 6) return showAuthMessage('รหัสผ่านต้องมีอย่างน้อย 6 ตัว', true);
             try {
                 const cred = await auth.createUserWithEmailAndPassword(email, pass);
+                setLoginTimestamp();
                 await cred.user.updateProfile({ displayName: name });
                 showAuthMessage('สมัครสมาชิกสำเร็จ! ยินดีต้อนรับเพื่อนใหม่ 🐱✨');
             } catch (e) {
@@ -1229,6 +1232,7 @@
         }
 
         function doLogout() {
+                localStorage.removeItem('loginTimestamp');
             auth.signOut();
         }
 
@@ -1289,9 +1293,37 @@
             return msgs[code] || 'เกิดข้อผิดพลาด: ' + code;
         }
 
+        // ==================== SESSION EXPIRY (30 min) ====================
+        const SESSION_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes
+
+        function setLoginTimestamp() {
+            localStorage.setItem("loginTimestamp", Date.now().toString());
+        }
+
+        function checkSessionExpiry() {
+            const loginTime = parseInt(localStorage.getItem("loginTimestamp") || "0");
+            if (!loginTime) return false;
+            const elapsed = Date.now() - loginTime;
+            if (elapsed >= SESSION_TIMEOUT_MS) {
+                localStorage.removeItem("loginTimestamp");
+                auth.signOut();
+                showToast("\u23F0 \u0E40\u0E0B\u0E2A\u0E0A\u0E31\u0E19\u0E2B\u0E21\u0E14\u0E2D\u0E32\u0E22\u0E38 (30 \u0E19\u0E32\u0E17\u0E35) \u0E01\u0E23\u0E38\u0E13\u0E32\u0E40\u0E02\u0E49\u0E32\u0E2A\u0E39\u0E48\u0E23\u0E30\u0E1A\u0E1A\u0E43\u0E2B\u0E21\u0E48", true);
+                return true;
+            }
+            return false;
+        }
+
+        // Check session expiry every minute
+        setInterval(() => {
+            if (auth.currentUser) checkSessionExpiry();
+        }, 60 * 1000);
+
         // ==================== AUTH STATE OBSERVER ====================
         auth.onAuthStateChanged(async user => {
             if (user) {
+                // Check session expiry
+                if (checkSessionExpiry()) return;
+
                 document.getElementById('authScreen').classList.add('hidden');
                 document.getElementById('membersArea').classList.remove('hidden');
                 // Update UI
