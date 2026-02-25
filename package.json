@@ -1,5 +1,5 @@
 {
-  "name": "create-testcase-test",
+  "name": "kuma-web",
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
@@ -7,10 +7,15 @@
     "dev": "node index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": [
+    "kuma",
+    "cat",
+    "social",
+    "chat"
+  ],
+  "author": "Kuma Team",
   "license": "ISC",
-  "description": "",
+  "description": "Kuma Web - Social platform with chat, friends, posts & AI assistant",
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
     "dotenv": "^17.3.1",
