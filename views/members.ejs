@@ -748,7 +748,7 @@
         }
 
         // ==================== AUTH STATE OBSERVER ====================
-        auth.onAuthStateChanged(user => {
+        auth.onAuthStateChanged(async user => {
             if (user) {
                 document.getElementById('authScreen').classList.add('hidden');
                 document.getElementById('membersArea').classList.remove('hidden');
@@ -756,17 +756,27 @@
                 document.getElementById('userDisplayName').textContent = user.displayName || user.email;
                 document.getElementById('sidebarName').textContent = user.displayName || 'เพื่อนคุมะ';
                 document.getElementById('sidebarEmail').textContent = user.email;
-                if (user.photoURL) {
-                    document.getElementById('userAvatar').src = user.photoURL;
-                    document.getElementById('userAvatar').classList.remove('hidden');
-                    document.getElementById('sidebarAvatar').src = user.photoURL;
-                }
                 document.getElementById('profileName').value = user.displayName || '';
                 document.getElementById('profileEmail').value = user.email;
-                document.getElementById('profilePhoto').value = user.photoURL || '';
-                if (user.photoURL) {
-                    document.getElementById('profilePreview').src = user.photoURL;
-                    document.getElementById('removePhotoBtn').classList.remove('hidden');
+
+                // Load photo from Firestore (Base64) or Google photo
+                try {
+                    const userDoc = await db.collection('users').doc(user.uid).get();
+                    const photo = userDoc.exists && userDoc.data().photoBase64 ? userDoc.data().photoBase64 : user.photoURL;
+                    if (photo) {
+                        document.getElementById('userAvatar').src = photo;
+                        document.getElementById('userAvatar').classList.remove('hidden');
+                        document.getElementById('sidebarAvatar').src = photo;
+                        document.getElementById('profilePreview').src = photo;
+                        document.getElementById('profilePhoto').value = photo;
+                        document.getElementById('removePhotoBtn').classList.remove('hidden');
+                    }
+                } catch (e) {
+                    if (user.photoURL) {
+                        document.getElementById('userAvatar').src = user.photoURL;
+                        document.getElementById('userAvatar').classList.remove('hidden');
+                        document.getElementById('sidebarAvatar').src = user.photoURL;
+                    }
                 }
                 loadNotes();
             } else {
@@ -779,26 +789,43 @@
         // ==================== PROFILE ====================
         let profilePhotoUrl = '';
 
+        function compressImage(file, maxSize = 200) {
+            return new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        let w = img.width, h = img.height;
+                        if (w > h) { if (w > maxSize) { h = h * maxSize / w; w = maxSize; } }
+                        else { if (h > maxSize) { w = w * maxSize / h; h = maxSize; } }
+                        canvas.width = w; canvas.height = h;
+                        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+                        resolve(canvas.toDataURL('image/jpeg', 0.7));
+                    };
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
         async function handleProfilePhoto(file) {
             if (!file || !file.type.startsWith('image/')) { showToast('กรุณาเลือกไฟล์รูปภาพ', true); return; }
-            if (file.size > 5 * 1024 * 1024) { showToast('ไฟล์ใหญ่เกิน 5MB', true); return; }
-            const user = auth.currentUser;
-            if (!user) return;
+            if (file.size > 10 * 1024 * 1024) { showToast('ไฟล์ใหญ่เกิน 10MB', true); return; }
             const statusEl = document.getElementById('photoUploadStatus');
-            statusEl.textContent = '⏳ กำลังอัปโหลด...';
+            statusEl.textContent = '⏳ กำลังย่อขนาดรูป...';
             statusEl.className = 'text-xs mt-2 text-amber-500 font-medium';
             statusEl.classList.remove('hidden');
             try {
-                const ref = storage.ref(`users/${user.uid}/profile_${Date.now()}.${file.name.split('.').pop()}`);
-                await ref.put(file);
-                profilePhotoUrl = await ref.getDownloadURL();
+                profilePhotoUrl = await compressImage(file, 200);
                 document.getElementById('profilePhoto').value = profilePhotoUrl;
                 document.getElementById('profilePreview').src = profilePhotoUrl;
                 document.getElementById('removePhotoBtn').classList.remove('hidden');
-                statusEl.textContent = '✅ อัปโหลดสำเร็จ! กดบันทึกโปรไฟล์เพื่อยืนยัน';
+                const sizeKB = (profilePhotoUrl.length * 0.75 / 1024).toFixed(1);
+                statusEl.textContent = `✅ พร้อมแล้ว! (${sizeKB} KB) กดบันทึกโปรไฟล์เพื่อยืนยัน`;
                 statusEl.className = 'text-xs mt-2 text-green-500 font-medium';
             } catch (e) {
-                statusEl.textContent = '❌ อัปโหลดล้มเหลว: ' + e.message;
+                statusEl.textContent = '❌ เกิดข้อผิดพลาด: ' + e.message;
                 statusEl.className = 'text-xs mt-2 text-red-500 font-medium';
             }
         }
@@ -846,7 +873,15 @@
             const name = document.getElementById('profileName').value.trim();
             const photo = document.getElementById('profilePhoto').value.trim();
             try {
-                await user.updateProfile({ displayName: name, photoURL: photo || null });
+                // Save photo to Firestore (Base64)
+                await db.collection('users').doc(user.uid).set({
+                    displayName: name,
+                    email: user.email,
+                    photoBase64: photo || null,
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                }, { merge: true });
+
+                await user.updateProfile({ displayName: name });
                 document.getElementById('userDisplayName').textContent = name;
                 document.getElementById('sidebarName').textContent = name;
                 if (photo) {
