@@ -274,6 +274,182 @@
         .hidden {
             display: none !important;
         }
+
+        /* ==================== MOBILE RESPONSIVE ==================== */
+        @media (max-width: 1023px) {
+            .right-sidebar {
+                display: none !important;
+            }
+        }
+
+        @media (max-width: 767px) {
+            .members-layout {
+                flex-direction: column;
+                padding: 0.75rem !important;
+                gap: 0.75rem !important;
+            }
+
+            .left-sidebar {
+                position: fixed;
+                top: 0;
+                left: -280px;
+                width: 260px;
+                height: 100vh;
+                z-index: 900;
+                transition: left 0.3s ease;
+                padding-top: 80px;
+                overflow-y: auto;
+                background: linear-gradient(135deg, #fdf2f8, #fff1f2);
+            }
+
+            .left-sidebar.open {
+                left: 0;
+            }
+
+            .left-sidebar .member-card {
+                border-radius: 0;
+                border: none;
+                border-right: 2px solid #fecdd3;
+            }
+
+            .sidebar-overlay {
+                position: fixed;
+                inset: 0;
+                background: rgba(0, 0, 0, 0.3);
+                z-index: 899;
+                display: none;
+            }
+
+            .sidebar-overlay.show {
+                display: block;
+            }
+
+            .main-content {
+                min-width: 0 !important;
+            }
+
+            .member-card {
+                padding: 1rem;
+                border-radius: 1rem;
+            }
+
+            .top-header {
+                padding: 0.75rem 1rem !important;
+            }
+
+            .top-header h1 {
+                font-size: 1rem !important;
+            }
+        }
+
+        /* ==================== KUMA AI FLOATING CHAT ==================== */
+        .kuma-fab {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #fb7185, #f43f5e);
+            color: white;
+            border: none;
+            cursor: pointer;
+            z-index: 800;
+            box-shadow: 0 6px 25px rgba(244, 63, 94, 0.4);
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+        }
+
+        .kuma-fab:hover {
+            transform: scale(1.1);
+            box-shadow: 0 8px 30px rgba(244, 63, 94, 0.5);
+        }
+
+        .kuma-chat-panel {
+            position: fixed;
+            bottom: 96px;
+            right: 24px;
+            width: 380px;
+            max-height: 500px;
+            background: white;
+            border-radius: 1.5rem;
+            border: 2px solid #fecdd3;
+            box-shadow: 0 15px 50px rgba(253, 164, 175, 0.3);
+            z-index: 801;
+            display: none;
+            flex-direction: column;
+            overflow: hidden;
+            animation: modalIn 0.3s ease;
+        }
+
+        .kuma-chat-panel.open {
+            display: flex;
+        }
+
+        @media (max-width: 500px) {
+            .kuma-chat-panel {
+                width: calc(100vw - 24px);
+                right: 12px;
+                bottom: 90px;
+                max-height: 60vh;
+            }
+
+            .kuma-fab {
+                width: 52px;
+                height: 52px;
+                font-size: 1.5rem;
+                bottom: 16px;
+                right: 16px;
+            }
+        }
+
+        .kuma-chat-bubble {
+            border-radius: 1.2rem;
+            padding: 0.6rem 0.9rem;
+            max-width: 85%;
+            font-size: 0.85rem;
+            line-height: 1.4;
+            margin-bottom: 0.4rem;
+        }
+
+        .kuma-chat-bubble.user {
+            background: #fda4af;
+            color: white;
+            border-bottom-right-radius: 0.25rem;
+            margin-left: auto;
+        }
+
+        .kuma-chat-bubble.ai {
+            background: #fff5f5;
+            color: #4b5563;
+            border: 1.5px solid #fecdd3;
+            border-bottom-left-radius: 0.25rem;
+            margin-right: auto;
+        }
+
+        .kuma-typing-dot {
+            width: 5px;
+            height: 5px;
+            background: #fda4af;
+            border-radius: 50%;
+            display: inline-block;
+            animation: typing 1s infinite alternate;
+        }
+
+        @keyframes typing {
+            from {
+                opacity: 0.3;
+                transform: translateY(0)
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(-3px)
+            }
+        }
     </style>
 </head>
 
@@ -394,6 +570,9 @@
                 <span class="font-bold text-rose-500">เพื่อนสนิทน้องคุมะ</span>
             </div>
             <div class="flex items-center gap-3">
+                <!-- Mobile hamburger -->
+                <button id="hamburgerBtn" class="md:hidden text-rose-400 text-2xl p-1"
+                    onclick="toggleMobileSidebar()">☰</button>
                 <span id="userDisplayName" class="text-sm text-gray-600 font-medium"></span>
                 <img id="userAvatar" src="" class="w-8 h-8 rounded-full border-2 border-rose-300 hidden" alt="avatar">
                 <button onclick="doLogout()"
@@ -403,9 +582,10 @@
             </div>
         </div>
 
-        <div class="max-w-7xl mx-auto p-6 flex gap-6">
+        <div class="max-w-7xl mx-auto p-6 sm:p-4 flex gap-6 members-layout"><!-- mobile hamburger -->
+            <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleMobileSidebar()"></div>
             <!-- Left Sidebar Nav -->
-            <div class="w-56 shrink-0">
+            <div class="w-56 shrink-0 left-sidebar" id="leftSidebar">
                 <div class="member-card sticky top-20">
                     <div class="text-center mb-4">
                         <img id="sidebarAvatar"
@@ -429,7 +609,7 @@
             </div>
 
             <!-- Main Content -->
-            <div class="flex-1">
+            <div class="flex-1 main-content">
                 <!-- Notes Section -->
                 <div id="sectionNotes">
                     <div class="flex justify-between items-center mb-6">
@@ -646,7 +826,7 @@
             </div>
 
             <!-- ==================== RIGHT SIDEBAR: Online Members ==================== -->
-            <div class="w-52 shrink-0 hidden lg:block">
+            <div class="w-52 shrink-0 hidden lg:block right-sidebar">
                 <div class="member-card sticky top-20">
                     <h3 class="text-sm font-bold text-rose-500 mb-3">🟢 สมาชิกออนไลน์</h3>
                     <div id="onlineList" class="space-y-2 max-h-80 overflow-y-auto"></div>
@@ -1828,7 +2008,95 @@
                 createdAt: firebase.firestore.FieldValue.serverTimestamp()
             });
         }
+
+        // ==================== MOBILE SIDEBAR TOGGLE ====================
+        function toggleMobileSidebar() {
+            const sidebar = document.getElementById('leftSidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            sidebar.classList.toggle('open');
+            overlay.classList.toggle('show');
+        }
+        // Close sidebar when clicking nav items on mobile
+        document.querySelectorAll('.nav-item').forEach(el => {
+            el.addEventListener('click', () => {
+                if (window.innerWidth < 768) {
+                    document.getElementById('leftSidebar').classList.remove('open');
+                    document.getElementById('sidebarOverlay').classList.remove('show');
+                }
+            });
+        });
+
+        // ==================== KUMA AI FLOATING CHAT ====================
+        let kumaChatHistory = [];
+        function toggleKumaChat() {
+            document.getElementById('kumaChatPanel').classList.toggle('open');
+        }
+
+        async function sendKumaMessage() {
+            const input = document.getElementById('kumaInput');
+            const msg = input.value.trim();
+            if (!msg) return;
+            addKumaBubble('user', msg);
+            input.value = '';
+
+            const formData = new FormData();
+            formData.append('message', msg);
+            formData.append('history', JSON.stringify(kumaChatHistory));
+
+            const typingId = addKumaBubble('ai', '<span class="kuma-typing-dot"></span><span class="kuma-typing-dot" style="animation-delay:0.2s"></span><span class="kuma-typing-dot" style="animation-delay:0.4s"></span>', true);
+
+            try {
+                const res = await fetch('/api/chat', { method: 'POST', body: formData });
+                const data = await res.json();
+                document.getElementById(typingId)?.remove();
+                if (data.error) {
+                    addKumaBubble('ai', '❌ ' + data.error);
+                } else {
+                    if (data.message) addKumaBubble('ai', data.message);
+                    kumaChatHistory.push({ role: 'user', parts: [{ text: msg }] });
+                    kumaChatHistory.push({ role: 'model', parts: [{ text: data.message || '' }] });
+                }
+            } catch (err) {
+                document.getElementById(typingId)?.remove();
+                addKumaBubble('ai', 'ขออภัยครับ คุมะมีปัญหาขัดข้อง... 😿');
+            }
+        }
+
+        function addKumaBubble(role, text, isRaw = false) {
+            const container = document.getElementById('kumaMessages');
+            const id = 'kuma-' + Date.now();
+            const div = document.createElement('div');
+            div.id = id;
+            div.className = `kuma-chat-bubble ${role}`;
+            if (isRaw) div.innerHTML = text;
+            else div.textContent = text;
+            container.appendChild(div);
+            container.scrollTop = container.scrollHeight;
+            return id;
+        }
     </script>
+
+    <!-- KUMA AI Floating Chat -->
+    <button class="kuma-fab" onclick="toggleKumaChat()" title="คุยกับคุมะ AI">🐱</button>
+    <div class="kuma-chat-panel" id="kumaChatPanel">
+        <div
+            style="padding:1rem 1.2rem; border-bottom:2px solid #fecdd3; display:flex; justify-content:space-between; align-items:center; background: linear-gradient(135deg,#fff1f2,#fdf2f8);">
+            <div>
+                <p class="font-bold text-rose-500">🐱 เอเจนท์น้องคุมะ</p>
+                <p class="text-xs text-gray-400">ถามอะไรก็ได้ สั่งงานก็ได้!</p>
+            </div>
+            <button onclick="toggleKumaChat()" class="text-gray-400 hover:text-rose-500 text-xl">✕</button>
+        </div>
+        <div id="kumaMessages" class="flex-1 overflow-y-auto p-3 space-y-2" style="max-height:350px; min-height:200px;">
+            <div class="kuma-chat-bubble ai">สวัสดีครับเมี้ยว! 🐾 ผมเป็นเอเจนท์น้องคุมะ ถามอะไรก็ได้นะเมี้ยว!</div>
+        </div>
+        <div style="padding:0.75rem 1rem; border-top:2px solid #fecdd3; display:flex; gap:8px;">
+            <input type="text" id="kumaInput" class="auth-input flex-1 !py-2 !text-sm" placeholder="พิมพ์คุยกับคุมะ..."
+                onkeydown="if(event.key==='Enter')sendKumaMessage()">
+            <button onclick="sendKumaMessage()"
+                class="bg-rose-500 text-white px-3 py-1 rounded-xl text-sm font-bold hover:bg-rose-600">🚀</button>
+        </div>
+    </div>
 </body>
 
 </html>
