@@ -1887,13 +1887,22 @@
                         const fUid = d.users.find(u => u !== uid);
                         const fName = d.names[fUid] || 'friend';
                         const fPhoto = d.photos ? d.photos[fUid] : await getUserPhoto(fUid);
-                        return { uid: fUid, name: fName, photo: fPhoto, docId: docSnap.id };
+                        let isOnline = false;
+                        try { const pSnap = await db.collection('presence').doc(fUid).get(); if (pSnap.exists) isOnline = pSnap.data().online || false; } catch(e){}
+                        return { uid: fUid, name: fName, photo: fPhoto, docId: docSnap.id, online: isOnline };
                     }));
                     fList.innerHTML = friendsList.map(f => {
+                        const fAvatar = f.photo || defaultAvatarSvg;
                         return `<div class="member-card flex items-center gap-3 p-3">
-                        ${avatarImg(f.photo, 10)}
-                        <div class="flex-1 min-w-0"><p class="font-bold text-sm text-gray-700 truncate">${escapeHtml(f.name)}</p></div>
-                        <button onclick="openPrivateChat('${f.uid}','${escapeHtml(f.name)}')" class="bg-rose-100 text-rose-500 text-xs px-3 py-1 rounded-lg font-bold hover:bg-rose-200">💬</button>
+                        <div class="relative">
+                            <img src="${fAvatar}" class="w-10 h-10 rounded-full object-cover border-2 border-rose-200" onerror="this.src='${defaultAvatarSvg}'">
+                            <span class="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-white ${f.online ? 'bg-green-400' : 'bg-gray-300'}"></span>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="font-bold text-sm text-gray-700 truncate">${escapeHtml(f.name)}</p>
+                            <p class="text-xs ${f.online ? 'text-green-500' : 'text-gray-400'}">${f.online ? '🟢 ออนไลน์' : '⚫ ออฟไลน์'}</p>
+                        </div>
+                        <button onclick="openPrivateChat('${f.uid}','${escapeHtml(f.name)}')" class="bg-green-100 text-green-600 text-xs px-3 py-1 rounded-lg font-bold shrink-0">💬 แชท</button>
                     </div>`;
                     }).join('');
                     loadChatList();
