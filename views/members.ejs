@@ -979,7 +979,7 @@
 
                 <!-- ==================== CHAT SECTION ==================== -->
                 <div id="sectionChat" class="hidden">
-                    <h2 class="text-2xl font-bold text-rose-500 mb-4">💬 แชท <button onclick="playNotifSound()" class="text-xs bg-rose-100 text-rose-400 px-2 py-0.5 rounded-full ml-2 hover:bg-rose-200" title="ทดสอบเสียง">🔔 ทดสอบ</button></h2>
+                    <h2 class="text-2xl font-bold text-rose-500 mb-4">💬 แชท <button id="soundToggleBtn" onclick="toggleNotifSound()" class="text-xs bg-rose-100 text-rose-400 px-2 py-0.5 rounded-full ml-2 hover:bg-rose-200 transition-all" title="เปิด/ปิดเสียง">🔔 เสียงเปิด</button></h2>
                     <div class="flex gap-4 chat-layout" style="height:550px">
                         <!-- Chat List -->
                         <div class="w-64 shrink-0 member-card overflow-hidden flex flex-col chat-sidebar">
@@ -2489,6 +2489,25 @@
             } catch(e) { console.log("Sound err:", e); }
         }
 
+
+        // Toggle notification sound on/off
+        function toggleNotifSound() {
+            notifSoundEnabled = !notifSoundEnabled;
+            const btn = document.getElementById("soundToggleBtn");
+            if (btn) {
+                if (notifSoundEnabled) {
+                    btn.innerHTML = "\uD83D\uDD14 \u0E40\u0E2A\u0E35\u0E22\u0E07\u0E40\u0E1B\u0E34\u0E14";
+                    btn.classList.remove("bg-gray-200", "text-gray-400");
+                    btn.classList.add("bg-rose-100", "text-rose-400");
+                    showToast("\uD83D\uDD14 \u0E40\u0E1B\u0E34\u0E14\u0E40\u0E2A\u0E35\u0E22\u0E07\u0E41\u0E08\u0E49\u0E07\u0E40\u0E15\u0E37\u0E2D\u0E19\u0E41\u0E25\u0E49\u0E27 \uD83D\uDC31");
+                } else {
+                    btn.innerHTML = "\uD83D\uDD15 \u0E1B\u0E34\u0E14\u0E40\u0E2A\u0E35\u0E22\u0E07";
+                    btn.classList.remove("bg-rose-100", "text-rose-400");
+                    btn.classList.add("bg-gray-200", "text-gray-400");
+                    showToast("\uD83D\uDD15 \u0E1B\u0E34\u0E14\u0E40\u0E2A\u0E35\u0E22\u0E07\u0E41\u0E08\u0E49\u0E07\u0E40\u0E15\u0E37\u0E2D\u0E19\u0E41\u0E25\u0E49\u0E27");
+                }
+            }
+        }
         // Show browser notification (works both focused and unfocused)
         function showBrowserNotif(title, body, icon) {
             if (!("Notification" in window) || Notification.permission !== "granted") return;
