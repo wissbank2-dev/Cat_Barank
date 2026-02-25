@@ -571,33 +571,36 @@
         /* ==================== KUMA AI FLOATING CHAT ==================== */
         .kuma-fab {
             position: fixed;
-            bottom: 24px;
-            right: 24px;
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #fb7185, #f43f5e);
-            color: white;
-            border: none;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 52px;
+            height: 58px;
+            border-radius: 0 1rem 1rem 0;
+            background: linear-gradient(180deg, #fff0f3, #fecdd3);
+            border: 2px solid #fda4af;
+            border-left: none;
             cursor: pointer;
             z-index: 800;
-            box-shadow: 0 6px 25px rgba(244, 63, 94, 0.4);
-            transition: all 0.3s;
+            box-shadow: 4px 4px 20px rgba(244, 63, 94, 0.25);
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
             display: flex;
             align-items: center;
             justify-content: center;
             font-size: 1.8rem;
+            color: #f43f5e;
         }
 
         .kuma-fab:hover {
-            transform: scale(1.1);
-            box-shadow: 0 8px 30px rgba(244, 63, 94, 0.5);
+            width: 60px;
+            box-shadow: 6px 6px 30px rgba(244, 63, 94, 0.4);
+            background: linear-gradient(180deg, #ffe4e8, #fda4af);
         }
 
         .kuma-chat-panel {
             position: fixed;
-            bottom: 96px;
-            right: 24px;
+            bottom: 60px;
+            left: 60px;
             width: 380px;
             max-height: 500px;
             background: white;
@@ -618,17 +621,17 @@
         @media (max-width: 500px) {
             .kuma-chat-panel {
                 width: calc(100vw - 24px);
-                right: 12px;
-                bottom: 90px;
+                left: 12px;
+                bottom: 70px;
                 max-height: 60vh;
             }
 
             .kuma-fab {
-                width: 52px;
-                height: 52px;
-                font-size: 1.5rem;
-                bottom: 16px;
-                right: 16px;
+                width: 46px;
+                height: 50px;
+                font-size: 1.4rem;
+                top: 50%;
+                left: 0;
             }
         }
 
