@@ -1075,9 +1075,23 @@
         async function doGoogleLogin() {
             try {
                 const provider = new firebase.auth.GoogleAuthProvider();
-                await auth.signInWithPopup(provider);
+                try {
+                    await auth.signInWithPopup(provider);
+                } catch (popupErr) {
+                    if (popupErr.code === 'auth/popup-blocked' || popupErr.code === 'auth/popup-closed-by-user' || popupErr.code === 'auth/cancelled-popup-request') {
+                        showAuthMessage('กำลังเปลี่ยนเส้นทาง...', false);
+                        await auth.signInWithRedirect(provider);
+                    } else {
+                        throw popupErr;
+                    }
+                }
             } catch (e) {
-                showAuthMessage(getErrorMessage(e.code), true);
+                console.error('Google Login Error:', e);
+                if (e.code === 'auth/unauthorized-domain') {
+                    showAuthMessage('โดเมนนี้ยังไม่ได้รับอนุญาต — ต้องเพิ่มโดเมนใน Firebase Console > Authentication > Settings > Authorized domains', true);
+                } else {
+                    showAuthMessage(getErrorMessage(e.code) || e.message, true);
+                }
             }
         }
 
@@ -2153,7 +2167,6 @@
                 document.getElementById('newPostText').value = '';
                 showToast('โพสต์สำเร็จ! 📢🐾');
             } catch (e) { showToast('โพสต์ล้มเหลว: ' + e.message, true); }
-        }
         }
 
         async function deletePost(postId) {
