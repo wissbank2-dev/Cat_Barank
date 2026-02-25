@@ -1878,23 +1878,24 @@
                 });
             // Listen for accepted friends
             db.collection('friends').where('users', 'array-contains', uid)
-                .onSnapshot(snap => {
+                .onSnapshot(async snap => {
                     friendsList = [];
                     const fList = document.getElementById('friendList');
                     if (snap.empty) { fList.innerHTML = '<p class="text-gray-300 text-sm">ยังไม่มีเพื่อน — ลองเพิ่มเพื่อนดูสิ!</p>'; return; }
-                    fList.innerHTML = '';
-                    snap.forEach(async doc => {
-                        const d = doc.data();
-                        const friendUid = d.users.find(u => u !== uid);
-                        const friendName = d.names[friendUid] || 'เพื่อน';
-                        const friendPhoto = d.photos ? d.photos[friendUid] : await getUserPhoto(friendUid);
-                        friendsList.push({ uid: friendUid, name: friendName, photo: friendPhoto, docId: doc.id });
-                        fList.innerHTML += `<div class="member-card flex items-center gap-3 p-3">
-                            ${avatarImg(friendPhoto, 10)}
-                            <div class="flex-1 min-w-0"><p class="font-bold text-sm text-gray-700 truncate">${escapeHtml(friendName)}</p></div>
-                            <button onclick="openPrivateChat('${friendUid}','${escapeHtml(friendName)}')" class="bg-rose-100 text-rose-500 text-xs px-3 py-1 rounded-lg font-bold hover:bg-rose-200">💬</button>
-                        </div>`;
-                    });
+                    friendsList = await Promise.all(snap.docs.map(async docSnap => {
+                        const d = docSnap.data();
+                        const fUid = d.users.find(u => u !== uid);
+                        const fName = d.names[fUid] || 'friend';
+                        const fPhoto = d.photos ? d.photos[fUid] : await getUserPhoto(fUid);
+                        return { uid: fUid, name: fName, photo: fPhoto, docId: docSnap.id };
+                    }));
+                    fList.innerHTML = friendsList.map(f => {
+                        return `<div class="member-card flex items-center gap-3 p-3">
+                        ${avatarImg(f.photo, 10)}
+                        <div class="flex-1 min-w-0"><p class="font-bold text-sm text-gray-700 truncate">${escapeHtml(f.name)}</p></div>
+                        <button onclick="openPrivateChat('${f.uid}','${escapeHtml(f.name)}')" class="bg-rose-100 text-rose-500 text-xs px-3 py-1 rounded-lg font-bold hover:bg-rose-200">💬</button>
+                    </div>`;
+                    }).join('');
                     loadChatList();
                     _refreshAllUsers();
                 });
