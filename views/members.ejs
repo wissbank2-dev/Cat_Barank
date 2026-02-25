@@ -972,6 +972,13 @@
                     photoBase64: photo || null,
                     updatedAt: firebase.firestore.FieldValue.serverTimestamp()
                 }, { merge: true });
+                // Sync photo to presence
+                await db.collection('presence').doc(user.uid).update({
+                    displayName: name,
+                    photo: photo || null
+                });
+                // Clear photo cache
+                photoCache[user.uid] = photo || null;
 
                 await user.updateProfile({ displayName: name });
                 document.getElementById('userDisplayName').textContent = name;
@@ -1367,6 +1374,24 @@
             setTimeout(() => t.remove(), 3000);
         }
 
+        const defaultAvatarSvg = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='50' fill='%23fda4af'/%3E%3Ctext x='50' y='60' text-anchor='middle' font-size='40'%3E🐱%3C/text%3E%3C/svg%3E";
+        function avatarImg(photo, size = 10) {
+            const src = photo || defaultAvatarSvg;
+            return `<img src="${src}" class="w-${size} h-${size} rounded-full object-cover border-2 border-rose-200 shrink-0" onerror="this.src='${defaultAvatarSvg}'">`;
+        }
+
+        // photo cache for lookups
+        let photoCache = {};
+        async function getUserPhoto(uid) {
+            if (photoCache[uid]) return photoCache[uid];
+            try {
+                const doc = await db.collection('users').doc(uid).get();
+                const photo = doc.exists && doc.data().photoBase64 ? doc.data().photoBase64 : null;
+                if (photo) photoCache[uid] = photo;
+                return photo;
+            } catch (e) { return null; }
+        }
+
         function timeAgo(date) {
             if (!date) return '';
             const d = date.seconds ? new Date(date.seconds * 1000) : new Date(date);
@@ -1380,12 +1405,14 @@
         // ==================== ONLINE PRESENCE ====================
         let presenceInterval;
         function initPresence(user) {
-            // Set online
+            // Set online with photo
             const presRef = db.collection('presence').doc(user.uid);
+            const photoVal = document.getElementById('profilePhoto').value || null;
             presRef.set({
                 uid: user.uid,
                 displayName: user.displayName || user.email,
                 email: user.email,
+                photo: photoVal,
                 online: true,
                 lastSeen: firebase.firestore.FieldValue.serverTimestamp()
             }, { merge: true });
@@ -1405,7 +1432,8 @@
                     const d = doc.data();
                     if (doc.id === user.uid) return;
                     const name = escapeHtml(d.displayName || d.email || '???');
-                    const item = `<div class="flex items-center gap-2 text-xs"><span class="${d.online ? 'text-green-400' : 'text-gray-300'}">●</span><span class="truncate ${d.online ? 'text-gray-700 font-medium' : 'text-gray-400'}">${name}</span></div>`;
+                    const avatarSrc = d.photo || defaultAvatarSvg;
+                    const item = `<div class="flex items-center gap-2 text-xs py-1"><img src="${avatarSrc}" class="w-6 h-6 rounded-full object-cover border border-rose-200 shrink-0" onerror="this.src='${defaultAvatarSvg}'"><span class="truncate ${d.online ? 'text-gray-700 font-medium' : 'text-gray-400'}">${name}</span></div>`;
                     if (d.online) onlineHtml += item; else offlineHtml += item;
                 });
                 onlineEl.innerHTML = onlineHtml || '<p class="text-xs text-gray-300">ไม่มีใครออนไลน์</p>';
@@ -1442,13 +1470,14 @@
                     const fList = document.getElementById('friendList');
                     if (snap.empty) { fList.innerHTML = '<p class="text-gray-300 text-sm">ยังไม่มีเพื่อน — ลองเพิ่มเพื่อนดูสิ!</p>'; return; }
                     fList.innerHTML = '';
-                    snap.forEach(doc => {
+                    snap.forEach(async doc => {
                         const d = doc.data();
                         const friendUid = d.users.find(u => u !== uid);
                         const friendName = d.names[friendUid] || 'เพื่อน';
-                        friendsList.push({ uid: friendUid, name: friendName, docId: doc.id });
+                        const friendPhoto = d.photos ? d.photos[friendUid] : await getUserPhoto(friendUid);
+                        friendsList.push({ uid: friendUid, name: friendName, photo: friendPhoto, docId: doc.id });
                         fList.innerHTML += `<div class="member-card flex items-center gap-3 p-3">
-                            <div class="w-10 h-10 rounded-full bg-rose-200 flex items-center justify-center text-lg">🐱</div>
+                            ${avatarImg(friendPhoto, 10)}
                             <div class="flex-1 min-w-0"><p class="font-bold text-sm text-gray-700 truncate">${escapeHtml(friendName)}</p></div>
                             <button onclick="openPrivateChat('${friendUid}','${escapeHtml(friendName)}')" class="bg-rose-100 text-rose-500 text-xs px-3 py-1 rounded-lg font-bold hover:bg-rose-200">💬</button>
                         </div>`;
@@ -1575,12 +1604,16 @@
                     snap.forEach(doc => {
                         const m = doc.data();
                         const isMe = m.senderUid === uid;
-                        msgDiv.innerHTML += `<div class="flex ${isMe ? 'justify-end' : 'justify-start'}">
+                        const senderAvatar = m.senderPhoto || defaultAvatarSvg;
+                        msgDiv.innerHTML += `<div class="flex ${isMe ? 'justify-end' : 'justify-start'} gap-2">
+                            ${!isMe ? `<img src="${senderAvatar}" class="w-8 h-8 rounded-full object-cover border border-rose-200 shrink-0 mt-1" onerror="this.src='${defaultAvatarSvg}'">` : ''}
                             <div class="max-w-xs px-4 py-2 rounded-2xl text-sm ${isMe ? 'bg-rose-500 text-white rounded-br-sm' : 'bg-gray-100 text-gray-700 rounded-bl-sm'}">
-                                ${!isMe ? `<p class="text-xs font-bold mb-1 ${isMe ? 'text-rose-100' : 'text-rose-400'}">${escapeHtml(m.senderName)}</p>` : ''}
+                                ${!isMe ? `<p class="text-xs font-bold mb-1 text-rose-400">${escapeHtml(m.senderName)}</p>` : ''}
                                 <p>${escapeHtml(m.text)}</p>
                                 <p class="text-xs mt-1 ${isMe ? 'text-rose-200' : 'text-gray-400'}">${m.createdAt ? timeAgo(m.createdAt) : ''}</p>
-                            </div></div>`;
+                            </div>
+                            ${isMe ? `<img src="${senderAvatar}" class="w-8 h-8 rounded-full object-cover border border-rose-200 shrink-0 mt-1" onerror="this.src='${defaultAvatarSvg}'">` : ''}
+                        </div>`;
                     });
                     msgDiv.scrollTop = msgDiv.scrollHeight;
                 });
@@ -1594,8 +1627,10 @@
             const user = auth.currentUser;
             const collection = currentChatType === 'private' ? 'chats' : 'groupMessages';
             try {
+                const myPhoto = document.getElementById('profilePhoto').value || null;
                 await db.collection(collection).doc(currentChatId).collection('messages').add({
                     text, senderUid: user.uid, senderName: user.displayName || user.email,
+                    senderPhoto: myPhoto,
                     createdAt: firebase.firestore.FieldValue.serverTimestamp()
                 });
             } catch (e) { showToast('ส่งไม่สำเร็จ: ' + e.message, true); }
@@ -1648,9 +1683,10 @@
                     snap.forEach(doc => {
                         const p = doc.data();
                         const uid = auth.currentUser.uid;
+                        const postPhoto = p.authorPhoto || defaultAvatarSvg;
                         feed.innerHTML += `<div class="member-card" id="post_${doc.id}">
                             <div class="flex items-center gap-3 mb-3">
-                                <div class="w-10 h-10 rounded-full bg-rose-200 flex items-center justify-center text-lg">🐱</div>
+                                <img src="${postPhoto}" class="w-10 h-10 rounded-full object-cover border-2 border-rose-200" onerror="this.src='${defaultAvatarSvg}'">
                                 <div><p class="font-bold text-sm text-gray-700">${escapeHtml(p.authorName)}</p>
                                 <p class="text-xs text-gray-400">${timeAgo(p.createdAt)}</p></div>
                                 ${p.authorUid === uid ? `<button onclick="deletePost('${doc.id}')" class="ml-auto text-red-300 hover:text-red-500 text-xs">🗑️</button>` : ''}
@@ -1672,9 +1708,11 @@
             const text = document.getElementById('newPostText').value.trim();
             if (!text) return showToast('กรุณาพิมพ์ข้อความ', true);
             const user = auth.currentUser;
+            const myPhoto = document.getElementById('profilePhoto').value || null;
             try {
                 await db.collection('posts').add({
                     text, authorUid: user.uid, authorName: user.displayName || user.email,
+                    authorPhoto: myPhoto,
                     createdAt: firebase.firestore.FieldValue.serverTimestamp()
                 });
                 document.getElementById('newPostText').value = '';
@@ -1697,10 +1735,12 @@
                     cDiv.innerHTML = '';
                     snap.forEach(doc => {
                         const c = doc.data();
-                        cDiv.innerHTML += `<div class="bg-gray-50 rounded-lg px-3 py-2">
-                            <span class="text-xs font-bold text-rose-400">${escapeHtml(c.authorName)}</span>
+                        const commentPhoto = c.authorPhoto || defaultAvatarSvg;
+                        cDiv.innerHTML += `<div class="bg-gray-50 rounded-lg px-3 py-2 flex gap-2">
+                            <img src="${commentPhoto}" class="w-6 h-6 rounded-full object-cover border border-rose-200 shrink-0 mt-0.5" onerror="this.src='${defaultAvatarSvg}'">
+                            <div><span class="text-xs font-bold text-rose-400">${escapeHtml(c.authorName)}</span>
                             <span class="text-xs text-gray-400 ml-2">${timeAgo(c.createdAt)}</span>
-                            <p class="text-sm text-gray-600 mt-1">${escapeHtml(c.text)}</p></div>`;
+                            <p class="text-sm text-gray-600 mt-1">${escapeHtml(c.text)}</p></div></div>`;
                     });
                 });
         }
@@ -1711,8 +1751,10 @@
             if (!text) return;
             input.value = '';
             const user = auth.currentUser;
+            const myPhoto = document.getElementById('profilePhoto').value || null;
             await db.collection('posts').doc(postId).collection('comments').add({
                 text, authorUid: user.uid, authorName: user.displayName || user.email,
+                authorPhoto: myPhoto,
                 createdAt: firebase.firestore.FieldValue.serverTimestamp()
             });
         }
