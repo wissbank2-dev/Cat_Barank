@@ -605,6 +605,173 @@
         #cat-house-btn:hover .tooltip {
             opacity: 1;
         }
+
+        /* ===== Fancy Header Effects ===== */
+        .kuma-title {
+            font-size: 2.2rem;
+            font-weight: 800;
+            background: linear-gradient(90deg, #ff6b9d, #f4a236, #ff6b9d, #c084fc, #ff6b9d);
+            background-size: 300% 100%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: gradientShift 4s ease infinite, titleFloat 3s ease-in-out infinite;
+            filter: drop-shadow(0 2px 8px rgba(255, 107, 157, 0.3));
+            position: relative;
+            display: inline-block;
+        }
+
+        .kuma-title:hover {
+            animation: gradientShift 1s ease infinite, titleBounce 0.5s ease;
+            filter: drop-shadow(0 4px 15px rgba(255, 107, 157, 0.5));
+        }
+
+        @keyframes gradientShift {
+            0% {
+                background-position: 0% 50%;
+            }
+
+            50% {
+                background-position: 100% 50%;
+            }
+
+            100% {
+                background-position: 0% 50%;
+            }
+        }
+
+        @keyframes titleFloat {
+
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-4px);
+            }
+        }
+
+        @keyframes titleBounce {
+
+            0%,
+            100% {
+                transform: scale(1);
+            }
+
+            30% {
+                transform: scale(1.05);
+            }
+
+            60% {
+                transform: scale(0.97);
+            }
+        }
+
+        .kuma-subtitle {
+            font-size: 1rem;
+            font-weight: 600;
+            background: linear-gradient(90deg, #f4a236, #fcd34d, #f4a236);
+            background-size: 200% 100%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: shimmer 3s ease-in-out infinite;
+            position: relative;
+            display: inline-block;
+            letter-spacing: 0.5px;
+        }
+
+        @keyframes shimmer {
+            0% {
+                background-position: -200% 0;
+            }
+
+            100% {
+                background-position: 200% 0;
+            }
+        }
+
+        /* Sparkle particles */
+        .sparkle-container {
+            position: relative;
+            display: inline-block;
+        }
+
+        .sparkle {
+            position: absolute;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #fcd34d;
+            pointer-events: none;
+            animation: sparkleAnim 2s ease-in-out infinite;
+        }
+
+        .sparkle:nth-child(1) {
+            top: -8px;
+            left: 10%;
+            animation-delay: 0s;
+            background: #ff6b9d;
+        }
+
+        .sparkle:nth-child(2) {
+            top: -5px;
+            right: 15%;
+            animation-delay: 0.5s;
+            background: #c084fc;
+        }
+
+        .sparkle:nth-child(3) {
+            top: 0px;
+            left: 50%;
+            animation-delay: 1s;
+            background: #fcd34d;
+        }
+
+        .sparkle:nth-child(4) {
+            top: -10px;
+            right: 30%;
+            animation-delay: 1.5s;
+            background: #f4a236;
+        }
+
+        @keyframes sparkleAnim {
+
+            0%,
+            100% {
+                opacity: 0;
+                transform: scale(0) translateY(0);
+            }
+
+            50% {
+                opacity: 1;
+                transform: scale(1) translateY(-10px);
+            }
+        }
+
+        .cat-kaomoji {
+            font-size: 2.8rem;
+            display: inline-block;
+            animation: kaomojiBounce 2s ease-in-out infinite;
+            filter: drop-shadow(0 3px 6px rgba(253, 164, 175, 0.4));
+        }
+
+        @keyframes kaomojiBounce {
+
+            0%,
+            100% {
+                transform: rotate(0deg) scale(1);
+            }
+
+            25% {
+                transform: rotate(-5deg) scale(1.05);
+            }
+
+            75% {
+                transform: rotate(5deg) scale(1.05);
+            }
+        }
     </style>
 </head>
 
@@ -661,9 +828,15 @@
 
         <!-- Header -->
         <div class="text-center mb-6">
-            <div class="text-4xl mb-2 text-rose-400">ฅ^•ﻌ•^ฅ</div>
-            <h1 class="text-3xl font-bold text-rose-500">เครื่องมือสร้างกรณีทดสอบ KUMA</h1>
-            <p class="text-rose-300">KUMA Test Case Builder</p>
+            <div class="cat-kaomoji mb-2 text-rose-400">ฅ^•ﻌ•^ฅ</div>
+            <div class="sparkle-container">
+                <span class="sparkle"></span>
+                <span class="sparkle"></span>
+                <span class="sparkle"></span>
+                <span class="sparkle"></span>
+                <h1 class="kuma-title">เครื่องมือผู้ช่วย QA น้องคุมะ</h1>
+            </div>
+            <p class="kuma-subtitle mt-2">🐾 น้องคุมะ(KUMA) ผู้แข็งแกร่งที่สุดในโลก เมี้ยว 🐾</p>
         </div>
 
         <!-- Navigation Tabs -->
