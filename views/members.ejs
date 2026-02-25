@@ -483,6 +483,51 @@
             max-height: 400px;
             border-radius: 1rem;
             margin-top: 0.5rem;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        .post-img:hover {
+            opacity: 0.85;
+        }
+
+        /* Image Lightbox */
+        .lightbox-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.85);
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            animation: modalIn 0.2s ease;
+        }
+
+        .lightbox-overlay img {
+            max-width: 92vw;
+            max-height: 90vh;
+            border-radius: 1rem;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            object-fit: contain;
+        }
+
+        .lightbox-close {
+            position: fixed;
+            top: 16px;
+            right: 20px;
+            color: white;
+            font-size: 2rem;
+            cursor: pointer;
+            z-index: 10000;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: none;
         }
 
         /* ==================== KUMA AI FLOATING CHAT ==================== */
@@ -973,21 +1018,22 @@
                             placeholder="คุณกำลังคิดอะไรอยู่? เมี้ยว 🐱"></textarea>
                         <div id="postImgPreview" class="hidden mt-2"></div>
                         <div class="flex justify-between items-center mt-2">
-                            <div class="flex gap-2 relative">
+                            <div class="flex gap-2">
                                 <button onclick="togglePostEmoji()"
                                     class="text-xl p-1 hover:scale-110 transition-transform" title="อีโมจิ">😊</button>
                                 <button onclick="document.getElementById('postImgInput').click()"
                                     class="text-xl p-1 hover:scale-110 transition-transform" title="แนบรูป">🖼️</button>
                                 <input type="file" id="postImgInput" class="hidden" accept="image/*"
                                     onchange="handlePostImage(this)">
-                                <div id="postEmojiPicker" class="emoji-picker-panel" style="bottom:auto; top:100%">
-                                </div>
                             </div>
                             <button onclick="createPost()"
                                 class="bg-gradient-to-r from-rose-400 to-orange-400 text-white px-5 py-2 rounded-xl font-bold text-sm hover:shadow-lg">📢
                                 โพสต์</button>
                         </div>
                     </div>
+                    <!-- Post Emoji Picker (outside overflow containers) -->
+                    <div id="postEmojiPicker" class="emoji-picker-panel"
+                        style="position:fixed; bottom:auto; top:auto; z-index:9000"></div>
                     <!-- Posts Feed -->
                     <div id="postsFeed" class="space-y-4"></div>
                 </div>
@@ -1850,6 +1896,7 @@
                         </div>`;
                     });
                     loadChatList();
+                    _refreshAllUsers();
                 });
         }
 
@@ -1886,6 +1933,9 @@
                 });
             });
         }
+
+        // Re-sync All Users when friends list changes
+        function _refreshAllUsers() { if (auth.currentUser) loadAllUsers(); }
 
         async function addFriendDirect(targetUid, targetEmail) {
             const user = auth.currentUser;
@@ -2039,7 +2089,7 @@
                         const m = doc.data();
                         const isMe = m.senderUid === uid;
                         const senderAvatar = m.senderPhoto || defaultAvatarSvg;
-                        const imgHtml = m.image ? `<img src="${m.image}" class="chat-img-preview" onclick="window.open(this.src)">` : '';
+                        const imgHtml = m.image ? `<img src="${m.image}" class="chat-img-preview" onclick="openLightbox(this.src)">` : '';
                         msgDiv.innerHTML += `<div class="flex ${isMe ? 'justify-end' : 'justify-start'} gap-2">
                             ${!isMe ? `<img src="${senderAvatar}" class="w-8 h-8 rounded-full object-cover border border-rose-200 shrink-0 mt-1" onerror="this.src='${defaultAvatarSvg}'">` : ''}
                             <div class="max-w-xs px-4 py-2 rounded-2xl text-sm ${isMe ? 'bg-rose-500 text-white rounded-br-sm' : 'bg-gray-100 text-gray-700 rounded-bl-sm'}">
@@ -2138,7 +2188,7 @@
                                 ${p.authorUid === uid ? `<button onclick="deletePost('${doc.id}')" class="ml-auto text-red-300 hover:text-red-500 text-xs">🗑️</button>` : ''}
                             </div>
                             <p class="text-gray-700 mb-3 whitespace-pre-wrap">${escapeHtml(p.text)}</p>
-                            ${p.image ? `<img src="${p.image}" class="post-img mb-3" onclick="window.open(this.src)">` : ''}
+                            ${p.image ? `<img src="${p.image}" class="post-img mb-3" onclick="openLightbox(this.src)">` : ''}
                             <hr class="border-rose-100 mb-3">
                             <div id="comments_${doc.id}" class="space-y-2 mb-3"></div>
                             <div class="flex gap-2">
@@ -2233,22 +2283,30 @@
         function togglePostEmoji() {
             const picker = document.getElementById('postEmojiPicker');
             if (!picker.innerHTML) buildEmojiGrid('newPostText', 'postEmojiPicker');
-            picker.classList.toggle('show');
+            if (picker.classList.contains('show')) { picker.classList.remove('show'); return; }
+            // Position near the emoji button
+            const btn = document.querySelector('[onclick="togglePostEmoji()"]');
+            if (btn) {
+                const rect = btn.getBoundingClientRect();
+                picker.style.left = rect.left + 'px';
+                picker.style.top = (rect.bottom + 5) + 'px';
+            }
+            picker.classList.add('show');
         }
 
         // ==================== IMAGE UPLOAD FOR CHAT ====================
-        function handleChatImage(input) {
+        async function handleChatImage(input) {
             const file = input.files[0];
             if (!file) return;
-            if (file.size > 1024 * 1024 * 2) { showToast('รูปต้องไม่เกิน 2MB', true); return; }
-            const reader = new FileReader();
-            reader.onload = () => {
-                chatPendingImage = reader.result;
+            try {
+                showToast('⚙️ กำลังย่อรูป...');
+                const compressed = await compressImage(file, 800);
+                chatPendingImage = compressed;
                 const preview = document.getElementById('chatImgPreview');
                 preview.classList.remove('hidden');
-                preview.innerHTML = `<div class="relative"><img src="${reader.result}" class="w-20 h-20 rounded-lg object-cover border-2 border-rose-200"><button onclick="removeChatImage()" class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 text-xs flex items-center justify-center">✕</button></div>`;
-            };
-            reader.readAsDataURL(file);
+                preview.innerHTML = `<div class="relative"><img src="${compressed}" class="w-20 h-20 rounded-lg object-cover border-2 border-rose-200"><button onclick="removeChatImage()" class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 text-xs flex items-center justify-center">✕</button></div>`;
+                showToast('✅ รูปพร้อมส่ง!');
+            } catch (e) { showToast('ไม่สามารถโหลดรูป: ' + e.message, true); }
             input.value = '';
         }
         function removeChatImage() {
@@ -2258,24 +2316,33 @@
         }
 
         // ==================== IMAGE UPLOAD FOR POSTS ====================
-        function handlePostImage(input) {
+        async function handlePostImage(input) {
             const file = input.files[0];
             if (!file) return;
-            if (file.size > 1024 * 1024 * 3) { showToast('รูปต้องไม่เกิน 3MB', true); return; }
-            const reader = new FileReader();
-            reader.onload = () => {
-                postPendingImage = reader.result;
+            try {
+                showToast('⚙️ กำลังย่อรูป...');
+                const compressed = await compressImage(file, 1200);
+                postPendingImage = compressed;
                 const preview = document.getElementById('postImgPreview');
                 preview.classList.remove('hidden');
-                preview.innerHTML = `<div class="relative inline-block"><img src="${reader.result}" class="w-40 h-auto rounded-lg border-2 border-rose-200"><button onclick="removePostImage()" class="absolute top-1 right-1 bg-red-500 text-white rounded-full w-5 h-5 text-xs flex items-center justify-center">✕</button></div>`;
-            };
-            reader.readAsDataURL(file);
+                preview.innerHTML = `<div class="relative inline-block"><img src="${compressed}" class="w-40 h-auto rounded-lg border-2 border-rose-200"><button onclick="removePostImage()" class="absolute top-1 right-1 bg-red-500 text-white rounded-full w-5 h-5 text-xs flex items-center justify-center">✕</button></div>`;
+                showToast('✅ รูปพร้อมโพสต์!');
+            } catch (e) { showToast('ไม่สามารถโหลดรูป: ' + e.message, true); }
             input.value = '';
         }
         function removePostImage() {
             postPendingImage = null;
             document.getElementById('postImgPreview').classList.add('hidden');
             document.getElementById('postImgPreview').innerHTML = '';
+        }
+
+        // ==================== IMAGE LIGHTBOX ====================
+        function openLightbox(src) {
+            const overlay = document.createElement('div');
+            overlay.className = 'lightbox-overlay';
+            overlay.onclick = () => overlay.remove();
+            overlay.innerHTML = `<button class="lightbox-close" onclick="event.stopPropagation();this.parentElement.remove()">✕</button><img src="${src}" onclick="event.stopPropagation()">`;
+            document.body.appendChild(overlay);
         }
 
         // ==================== NOTIFICATION BADGES ====================
