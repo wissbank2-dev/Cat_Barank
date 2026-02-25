@@ -531,42 +531,10 @@
         }
 
         /* Chat notification toast */
-        .chat-notif-toast {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background: linear-gradient(135deg, #fb7185, #f43f5e);
-            color: white;
-            padding: 12px 20px;
-            border-radius: 1rem;
-            box-shadow: 0 8px 30px rgba(244, 63, 94, 0.4);
-            z-index: 9999;
-            cursor: pointer;
-            animation: slideInRight 0.3s ease;
-            max-width: 320px;
-            font-size: 0.85rem;
-        }
-
-        .chat-notif-toast strong {
-            font-size: 0.9rem;
-        }
-
-        .chat-notif-toast span {
-            opacity: 0.9;
-            font-size: 0.8rem;
-        }
-
-        @keyframes slideInRight {
-            from {
-                transform: translateX(120%);
-                opacity: 0;
-            }
-
-            to {
-                transform: translateX(0);
-                opacity: 1;
-            }
-        }
+        .chat-notif-toast { position: fixed; top: 20px; right: 20px; background: linear-gradient(135deg, #fb7185, #f43f5e); color: white; padding: 12px 20px; border-radius: 1rem; box-shadow: 0 8px 30px rgba(244,63,94,0.4); z-index: 9999; cursor: pointer; animation: slideInRight 0.3s ease; max-width: 320px; font-size: 0.85rem; }
+        .chat-notif-toast strong { font-size: 0.9rem; }
+        .chat-notif-toast span { opacity: 0.9; font-size: 0.8rem; }
+        @keyframes slideInRight { from { transform: translateX(120%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
 
 
         /* Chat notification toast */
@@ -579,7 +547,7 @@
             color: #881337;
             padding: 16px 22px;
             border-radius: 1.2rem;
-            box-shadow: 0 10px 40px rgba(244, 63, 94, 0.25), 0 0 0 1px rgba(244, 63, 94, 0.1);
+            box-shadow: 0 10px 40px rgba(244,63,94,0.25), 0 0 0 1px rgba(244,63,94,0.1);
             z-index: 9998;
             cursor: pointer;
             animation: toastSlideIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -587,64 +555,19 @@
             min-width: 240px;
             backdrop-filter: blur(10px);
         }
-
-        .chat-notif-toast .toast-icon {
-            font-size: 1.8rem;
-            margin-right: 10px;
-        }
-
-        .chat-notif-toast .toast-title {
-            font-size: 1rem;
-            font-weight: 700;
-            color: #e11d48;
-            margin-bottom: 3px;
-        }
-
-        .chat-notif-toast .toast-body {
-            font-size: 0.9rem;
-            color: #6b2140;
-            opacity: 0.85;
-        }
-
-        .chat-notif-toast .toast-close {
-            position: absolute;
-            top: 8px;
-            right: 12px;
-            color: #fda4af;
-            font-size: 1rem;
-            cursor: pointer;
-            background: none;
-            border: none;
-        }
-
-        .chat-notif-toast .toast-close:hover {
-            color: #e11d48;
-        }
-
+        .chat-notif-toast .toast-icon { font-size: 1.8rem; margin-right: 10px; }
+        .chat-notif-toast .toast-title { font-size: 1rem; font-weight: 700; color: #e11d48; margin-bottom: 3px; }
+        .chat-notif-toast .toast-body { font-size: 0.9rem; color: #6b2140; opacity: 0.85; }
+        .chat-notif-toast .toast-close { position: absolute; top: 8px; right: 12px; color: #fda4af; font-size: 1rem; cursor: pointer; background: none; border: none; }
+        .chat-notif-toast .toast-close:hover { color: #e11d48; }
         @keyframes toastSlideIn {
-            from {
-                transform: translateX(120%) scale(0.8);
-                opacity: 0;
-            }
-
-            to {
-                transform: translateX(0) scale(1);
-                opacity: 1;
-            }
+            from { transform: translateX(120%) scale(0.8); opacity: 0; }
+            to { transform: translateX(0) scale(1); opacity: 1; }
         }
-
         @keyframes toastSlideOut {
-            from {
-                transform: translateX(0) scale(1);
-                opacity: 1;
-            }
-
-            to {
-                transform: translateX(120%) scale(0.8);
-                opacity: 0;
-            }
+            from { transform: translateX(0) scale(1); opacity: 1; }
+            to { transform: translateX(120%) scale(0.8); opacity: 0; }
         }
-
         /* ==================== KUMA AI FLOATING CHAT ==================== */
         .kuma-fab {
             position: fixed;
@@ -1056,10 +979,7 @@
 
                 <!-- ==================== CHAT SECTION ==================== -->
                 <div id="sectionChat" class="hidden">
-                    <h2 class="text-2xl font-bold text-rose-500 mb-4">💬 แชท <button id="soundToggleBtn"
-                            onclick="toggleNotifSound()"
-                            class="text-xs bg-rose-100 text-rose-400 px-2 py-0.5 rounded-full ml-2 hover:bg-rose-200 transition-all"
-                            title="เปิด/ปิดเสียง">🔔 เสียงเปิด</button></h2>
+                    <h2 class="text-2xl font-bold text-rose-500 mb-4">💬 แชท <button id="soundToggleBtn" onclick="toggleNotifSound()" class="text-xs bg-rose-100 text-rose-400 px-2 py-0.5 rounded-full ml-2 hover:bg-rose-200 transition-all" title="เปิด/ปิดเสียง">🔔 เสียงเปิด</button></h2>
                     <div class="flex gap-4 chat-layout" style="height:550px">
                         <!-- Chat List -->
                         <div class="w-64 shrink-0 member-card overflow-hidden flex flex-col chat-sidebar">
@@ -1245,7 +1165,7 @@
                 const provider = new firebase.auth.GoogleAuthProvider();
                 try {
                     await auth.signInWithPopup(provider);
-                    setLoginTimestamp();
+                        setLoginTimestamp();
                 } catch (popupErr) {
                     if (popupErr.code === 'auth/popup-blocked' || popupErr.code === 'auth/popup-closed-by-user' || popupErr.code === 'auth/cancelled-popup-request') {
                         showAuthMessage('กำลังเปลี่ยนเส้นทาง...', false);
@@ -1312,7 +1232,7 @@
         }
 
         function doLogout() {
-            localStorage.removeItem('loginTimestamp');
+                localStorage.removeItem('loginTimestamp');
             auth.signOut();
         }
 
@@ -1972,55 +1892,15 @@
 
         // ==================== ONLINE PRESENCE ====================
         let presenceInterval, presenceRefreshInterval;
-        let presenceStore = {}; // Global store for sync: { uid: { online, displayName, photo, lastSeen } }
         const STALE_TIMEOUT_MS = 2 * 60 * 1000; // 2 minutes
-
         function isStaleOnline(data) {
-            if (!data) return false;
-            if (!data.online) return false;
-            if (!data.lastSeen) return true;
+            if (!data.online) return false; // already offline
+            if (!data.lastSeen) return true; // no lastSeen = stale
             const lastSeenMs = data.lastSeen.toMillis ? data.lastSeen.toMillis() : 0;
             return (Date.now() - lastSeenMs) > STALE_TIMEOUT_MS;
         }
-
         function getRealOnline(data) {
-            if (!data) return false;
             return (data.online || false) && !isStaleOnline(data);
-        }
-
-        // Global refresh function for all presence-dependent UI
-        function renderAllSyncUI() {
-            const user = auth.currentUser;
-            if (!user) return;
-
-            // Sync Current User UI (for multi-tab consistency)
-            const selfData = presenceStore[user.uid];
-            if (selfData) {
-                const name = selfData.displayName || selfData.email || 'You';
-                const photo = selfData.photo || defaultAvatarSvg;
-                const nameEls = ['userDisplayName', 'sidebarName', 'profileName'];
-                nameEls.forEach(id => {
-                    const el = document.getElementById(id);
-                    if (el) {
-                        if (el.tagName === 'INPUT') el.value = name;
-                        else el.textContent = name;
-                    }
-                });
-                const avatarEls = ['userAvatar', 'sidebarAvatar', 'profileAvatarPreview'];
-                avatarEls.forEach(id => {
-                    const el = document.getElementById(id);
-                    if (el) {
-                        el.src = photo;
-                        el.classList.remove('hidden');
-                    }
-                });
-            }
-
-            renderPresenceList(); // sidebar list
-            _renderFriendsList(); // friends list
-            _renderAllUsersList(); // all users list
-            renderChatListUI(); // Current chat list
-            if (latestPostsSnap) _renderPostsList(latestPostsSnap); // Re-render posts if we have data
         }
         function initPresence(user) {
             // Set online with photo
@@ -2039,11 +1919,8 @@
             presenceInterval = setInterval(() => {
                 if (auth.currentUser) presRef.update({ lastSeen: firebase.firestore.FieldValue.serverTimestamp(), online: true });
             }, 30000);
-            // Set offline on close
-            const goOffline = () => {
-                if (!auth.currentUser) return;
-                presRef.update({ online: false, lastSeen: firebase.firestore.FieldValue.serverTimestamp() }).catch(() => { });
-            };
+            // Set offline on close — use both beforeunload + visibilitychange for reliability
+            const goOffline = () => presRef.update({ online: false, lastSeen: firebase.firestore.FieldValue.serverTimestamp() }).catch(() => {});
             window.addEventListener('beforeunload', goOffline);
             document.addEventListener('visibilitychange', () => {
                 if (document.visibilityState === 'hidden') {
@@ -2052,39 +1929,33 @@
                     presRef.update({ online: true, lastSeen: firebase.firestore.FieldValue.serverTimestamp() });
                 }
             });
-
-            // Listen to all presence
-            db.collection('presence').onSnapshot(snap => {
+            // Listen to all presence (with stale check)
+            let latestPresenceSnap = null;
+            function renderPresenceList(snap) {
+                const onlineEl = document.getElementById('onlineList');
+                const offlineEl = document.getElementById('offlineList');
+                let onlineHtml = '', offlineHtml = '';
                 snap.forEach(doc => {
-                    presenceStore[doc.id] = doc.data();
+                    const d = doc.data();
+                    if (doc.id === user.uid) return;
+                    const realOnline = getRealOnline(d);
+                    const name = escapeHtml(d.displayName || d.email || '???');
+                    const avatarSrc = d.photo || defaultAvatarSvg;
+                    const item = `<div class="flex items-center gap-2 text-xs py-1"><img src="${avatarSrc}" class="w-6 h-6 rounded-full object-cover border border-rose-200 shrink-0" onerror="this.src='${defaultAvatarSvg}'"><span class="truncate ${realOnline ? 'text-gray-700 font-medium' : 'text-gray-400'}">${name}</span></div>`;
+                    if (realOnline) onlineHtml += item; else offlineHtml += item;
                 });
-                renderAllSyncUI();
+                onlineEl.innerHTML = onlineHtml || '<p class="text-xs text-gray-300">ไม่มีใครออนไลน์</p>';
+                offlineEl.innerHTML = offlineHtml || '<p class="text-xs text-gray-300">-</p>';
+            }
+            db.collection('presence').onSnapshot(snap => {
+                latestPresenceSnap = snap;
+                renderPresenceList(snap);
             });
-
             // Periodic re-render to catch stale users (every 60s)
             clearInterval(presenceRefreshInterval);
-            presenceRefreshInterval = setInterval(renderAllSyncUI, 60000);
-        }
-
-        function renderPresenceList() {
-            const user = auth.currentUser;
-            if (!user) return;
-            const onlineEl = document.getElementById('onlineList');
-            const offlineEl = document.getElementById('offlineList');
-            if (!onlineEl || !offlineEl) return;
-
-            let onlineHtml = '', offlineHtml = '';
-            Object.keys(presenceStore).forEach(uid => {
-                if (uid === user.uid) return;
-                const d = presenceStore[uid];
-                const realOnline = getRealOnline(d);
-                const name = escapeHtml(d.displayName || d.email || '???');
-                const avatarSrc = d.photo || defaultAvatarSvg;
-                const item = `<div class="flex items-center gap-2 text-xs py-1"><img src="${avatarSrc}" class="w-6 h-6 rounded-full object-cover border border-rose-200 shrink-0" onerror="this.src='${defaultAvatarSvg}'"><span class="truncate ${realOnline ? 'text-gray-700 font-medium' : 'text-gray-400'}">${name}</span></div>`;
-                if (realOnline) onlineHtml += item; else offlineHtml += item;
-            });
-            onlineEl.innerHTML = onlineHtml || '<p class="text-xs text-gray-300">ไม่มีใครออนไลน์</p>';
-            offlineEl.innerHTML = offlineHtml || '<p class="text-xs text-gray-300">-</p>';
+            presenceRefreshInterval = setInterval(() => {
+                if (latestPresenceSnap) renderPresenceList(latestPresenceSnap);
+            }, 60000);
         }
 
         // ==================== FRIENDS ====================
@@ -2112,85 +1983,75 @@
             // Listen for accepted friends
             db.collection('friends').where('users', 'array-contains', uid)
                 .onSnapshot(async snap => {
-                    friendsList = snap.docs.map(docSnap => {
+                    friendsList = [];
+                    const fList = document.getElementById('friendList');
+                    if (snap.empty) { fList.innerHTML = '<p class="text-gray-300 text-sm">ยังไม่มีเพื่อน — ลองเพิ่มเพื่อนดูสิ!</p>'; return; }
+                    friendsList = await Promise.all(snap.docs.map(async docSnap => {
                         const d = docSnap.data();
                         const fUid = d.users.find(u => u !== uid);
-                        return { uid: fUid, docId: docSnap.id };
-                    });
-                    _renderFriendsList();
+                        const fName = d.names[fUid] || 'friend';
+                        const fPhoto = d.photos ? d.photos[fUid] : await getUserPhoto(fUid);
+                        let isOnline = false;
+                        try { const pSnap = await db.collection('presence').doc(fUid).get(); if (pSnap.exists) isOnline = getRealOnline(pSnap.data()); } catch(e){}
+                        return { uid: fUid, name: fName, photo: fPhoto, docId: docSnap.id, online: isOnline };
+                    }));
+                    fList.innerHTML = friendsList.map(f => {
+                        const fAvatar = f.photo || defaultAvatarSvg;
+                        return `<div class="member-card flex items-center gap-3 p-3">
+                        <div class="relative">
+                            <img src="${fAvatar}" class="w-10 h-10 rounded-full object-cover border-2 border-rose-200" onerror="this.src='${defaultAvatarSvg}'">
+                            <span class="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-white ${f.online ? 'bg-green-400' : 'bg-gray-300'}"></span>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="font-bold text-sm text-gray-700 truncate">${escapeHtml(f.name)}</p>
+                            <p class="text-xs ${f.online ? 'text-green-500' : 'text-gray-400'}">${f.online ? '🟢 ออนไลน์' : '⚫ ออฟไลน์'}</p>
+                        </div>
+                        <button onclick="openPrivateChat('${f.uid}','${escapeHtml(f.name)}')" class="bg-green-100 text-green-600 text-xs px-3 py-1 rounded-lg font-bold shrink-0">💬 แชท</button>
+                    </div>`;
+                    }).join('');
                     loadChatList();
-                    _renderAllUsersList();
+                    _refreshAllUsers();
                     listenUnreadChats();
                     listenFriendRequestBadge();
                 });
         }
 
-        async function _renderFriendsList() {
-            const fList = document.getElementById('friendList');
-            if (!fList) return;
-            if (friendsList.length === 0) { fList.innerHTML = '<p class="text-gray-300 text-sm">ยังไม่มีเพื่อน — ลองเพิ่มเพื่อนดูสิ!</p>'; return; }
-
-            fList.innerHTML = (await Promise.all(friendsList.map(async f => {
-                const presenceData = presenceStore[f.uid] || {};
-                const name = escapeHtml(presenceData.displayName || f.name || 'friend');
-                const photo = presenceData.photo || await getUserPhoto(f.uid) || defaultAvatarSvg;
-                const online = getRealOnline(presenceData);
-
-                return `<div class="member-card flex items-center gap-3 p-3">
-                    <div class="relative">
-                        <img src="${photo}" class="w-10 h-10 rounded-full object-cover border-2 border-rose-200" onerror="this.src='${defaultAvatarSvg}'">
-                        <span class="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-white ${online ? 'bg-green-400' : 'bg-gray-300'}"></span>
-                    </div>
-                    <div class="flex-1 min-w-0">
-                        <p class="font-bold text-sm text-gray-700 truncate">${name}</p>
-                        <p class="text-xs ${online ? 'text-green-500' : 'text-gray-400'}">${online ? '🟢 ออนไลน์' : '⚫ ออฟไลน์'}</p>
-                    </div>
-                    <button onclick="openPrivateChat('${f.uid}','${name}')" class="bg-green-100 text-green-600 text-xs px-3 py-1 rounded-lg font-bold shrink-0">💬 แชท</button>
-                </div>`;
-            }))).join('');
-        }
-
         // ==================== ALL USERS BOARD ====================
         function loadAllUsers() {
-            _renderAllUsersList(); // Initial render if data exists
-        }
-
-        function _renderAllUsersList() {
-            const uid = auth.currentUser?.uid;
-            const allList = document.getElementById('allUsersList');
-            if (!uid || !allList) return;
-
-            let html = '';
-            Object.keys(presenceStore).forEach(targetUid => {
-                if (targetUid === uid) return;
-                const d = presenceStore[targetUid];
-                const name = escapeHtml(d.displayName || d.email || '???');
-                const photo = d.photo || defaultAvatarSvg;
-                const isOnline = getRealOnline(d);
-                const isFriend = friendsList.some(f => f.uid === targetUid);
-
-                let actionBtn = isFriend
-                    ? `<button onclick="openPrivateChat('${targetUid}','${name}')" class="bg-green-100 text-green-600 text-xs px-3 py-1 rounded-lg font-bold shrink-0">💬 แชท</button>`
-                    : `<button onclick="addFriendDirect('${targetUid}','${escapeHtml(d.email)}')" class="bg-rose-500 text-white text-xs px-3 py-1 rounded-lg font-bold shrink-0 hover:bg-rose-600">➕ เพิ่มเพื่อน</button>`;
-
-                html += `<div class="member-card flex items-center gap-3 p-3">
-                    <div class="relative">
-                        <img src="${photo}" class="w-10 h-10 rounded-full object-cover border-2 border-rose-200" onerror="this.src='${defaultAvatarSvg}'">
-                        <span class="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-white ${isOnline ? 'bg-green-400' : 'bg-gray-300'}"></span>
-                    </div>
-                    <div class="flex-1 min-w-0">
-                        <p class="font-bold text-sm text-gray-700 truncate">${name}</p>
-                        <p class="text-xs ${isOnline ? 'text-green-500' : 'text-gray-400'}">${isOnline ? '🟢 ออนไลน์' : '⚫ ออฟไลน์'}</p>
-                    </div>
-                    ${actionBtn}
-                </div>`;
+            const uid = auth.currentUser.uid;
+            db.collection('presence').onSnapshot(snap => {
+                const allList = document.getElementById('allUsersList');
+                allList.innerHTML = '';
+                snap.forEach(async doc => {
+                    const d = doc.data();
+                    if (doc.id === uid) return; // Skip self
+                    const name = escapeHtml(d.displayName || d.email || '???');
+                    const userPhoto = d.photo || defaultAvatarSvg;
+                    const isOnline = getRealOnline(d);
+                    const isFriend = friendsList.some(f => f.uid === doc.id);
+                    let actionBtn = '';
+                    if (isFriend) {
+                        actionBtn = `<button onclick="openPrivateChat('${doc.id}','${name}')" class="bg-green-100 text-green-600 text-xs px-3 py-1 rounded-lg font-bold shrink-0">💬 แชท</button>`;
+                    } else {
+                        actionBtn = `<button onclick="addFriendDirect('${doc.id}','${escapeHtml(d.email)}')" class="bg-rose-500 text-white text-xs px-3 py-1 rounded-lg font-bold shrink-0 hover:bg-rose-600">➕ เพิ่มเพื่อน</button>`;
+                    }
+                    allList.innerHTML += `<div class="member-card flex items-center gap-3 p-3">
+                        <div class="relative">
+                            <img src="${userPhoto}" class="w-10 h-10 rounded-full object-cover border-2 border-rose-200" onerror="this.src='${defaultAvatarSvg}'">
+                            <span class="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-white ${isOnline ? 'bg-green-400' : 'bg-gray-300'}"></span>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="font-bold text-sm text-gray-700 truncate">${name}</p>
+                            <p class="text-xs ${isOnline ? 'text-green-500' : 'text-gray-400'}">${isOnline ? '🟢 ออนไลน์' : '⚫ ออฟไลน์'}</p>
+                        </div>
+                        ${actionBtn}
+                    </div>`;
+                });
             });
-            allList.innerHTML = html;
         }
-
 
         // Re-sync All Users when friends list changes
-        function _refreshAllUsers() { _renderAllUsersList(); }
+        function _refreshAllUsers() { if (auth.currentUser) loadAllUsers(); }
 
         async function addFriendDirect(targetUid, targetEmail) {
             const user = auth.currentUser;
@@ -2261,47 +2122,41 @@
 
         function showChatTab(tab) {
             chatTabMode = tab;
-            document.getElementById('chatTabPrivate').className = `flex - 1 text - xs font - bold py - 2 rounded - lg ${tab === 'private' ? 'bg-rose-500 text-white' : 'bg-gray-100 text-gray-500'} `;
-            document.getElementById('chatTabGroup').className = `flex - 1 text - xs font - bold py - 2 rounded - lg ${tab === 'group' ? 'bg-rose-500 text-white' : 'bg-gray-100 text-gray-500'} `;
+            document.getElementById('chatTabPrivate').className = `flex-1 text-xs font-bold py-2 rounded-lg ${tab === 'private' ? 'bg-rose-500 text-white' : 'bg-gray-100 text-gray-500'}`;
+            document.getElementById('chatTabGroup').className = `flex-1 text-xs font-bold py-2 rounded-lg ${tab === 'group' ? 'bg-rose-500 text-white' : 'bg-gray-100 text-gray-500'}`;
             loadChatList();
         }
 
-        let latestChatListSnap = null, latestGroupChatListSnap = null;
         function loadChatList() {
-            const uid = auth.currentUser.uid;
-            db.collection('chats').where('users', 'array-contains', uid)
-                .onSnapshot(snap => { latestChatListSnap = snap; renderChatListUI(); });
-            db.collection('groupChats').where('members', 'array-contains', uid)
-                .onSnapshot(snap => { latestGroupChatListSnap = snap; renderChatListUI(); });
-        }
-
-        function renderChatListUI() {
             const list = document.getElementById('chatList');
-            if (!list) return;
             if (chatTabMode === 'private') {
                 if (friendsList.length === 0) { list.innerHTML = '<p class="text-xs text-gray-300 text-center py-4">เพิ่มเพื่อนก่อนเพื่อแชท</p>'; return; }
                 list.innerHTML = friendsList.map(f => {
-                    const presenceData = presenceStore[f.uid] || {};
-                    const name = escapeHtml(presenceData.displayName || f.name || 'friend');
-                    const friendAvatar = presenceData.photo || defaultAvatarSvg;
+                    const friendAvatar = f.photo || defaultAvatarSvg;
                     const unread = unreadChats[f.uid] || 0;
-                    return `<div class="flex items-center gap-2 p-2 rounded-lg cursor-pointer hover:bg-rose-50 transition-colors ${currentChatId === getChatId(f.uid) ? 'bg-rose-100' : ''}" onclick="openPrivateChat('${f.uid}','${name}')">
+                    return `
+                    <div class="flex items-center gap-2 p-2 rounded-lg cursor-pointer hover:bg-rose-50 transition-colors ${currentChatId === getChatId(f.uid) ? 'bg-rose-100' : ''}"
+                        onclick="openPrivateChat('${f.uid}','${escapeHtml(f.name)}')">
                         <img src="${friendAvatar}" class="w-8 h-8 rounded-full object-cover border border-rose-200 shrink-0" onerror="this.src='${defaultAvatarSvg}'">
-                        <span class="text-sm font-medium truncate flex-1">${name}</span>
+                        <span class="text-sm font-medium truncate flex-1">${escapeHtml(f.name)}</span>
                         ${unread > 0 ? `<span class="friend-badge">${unread}</span>` : ''}
                     </div>`;
                 }).join('');
             } else {
-                if (!latestGroupChatListSnap || latestGroupChatListSnap.empty) { list.innerHTML = '<p class="text-xs text-gray-300 text-center py-4">ยังไม่มีกรุ๊ป</p>'; return; }
-                list.innerHTML = latestGroupChatListSnap.docs.map(doc => {
-                    const d = doc.data();
-                    const unread = unreadChats[doc.id] || 0;
-                    return `<div class="flex items-center gap-2 p-2 rounded-lg cursor-pointer hover:bg-rose-50 ${currentChatId === doc.id ? 'bg-rose-100' : ''}" onclick="openGroupChat('${doc.id}','${escapeHtml(d.name)}')">
-                        <div class="w-8 h-8 rounded-full bg-purple-200 flex items-center justify-center text-sm">👥</div>
-                        <span class="text-sm font-medium truncate flex-1">${escapeHtml(d.name)}</span>
-                        ${unread > 0 ? `<span class="friend-badge">${unread}</span>` : ''}
-                    </div>`;
-                }).join('');
+                // Group chats
+                db.collection('groupChats').where('members', 'array-contains', auth.currentUser.uid)
+                    .get().then(snap => {
+                        if (snap.empty) { list.innerHTML = '<p class="text-xs text-gray-300 text-center py-4">ยังไม่มีกรุ๊ป</p>'; return; }
+                        list.innerHTML = '';
+                        snap.forEach(doc => {
+                            const d = doc.data();
+                            list.innerHTML += `<div class="flex items-center gap-2 p-2 rounded-lg cursor-pointer hover:bg-rose-50 ${currentChatId === doc.id ? 'bg-rose-100' : ''}"
+                                onclick="openGroupChat('${doc.id}','${escapeHtml(d.name)}')">
+                                <div class="w-8 h-8 rounded-full bg-purple-200 flex items-center justify-center text-sm">👥</div>
+                                <span class="text-sm font-medium truncate">${escapeHtml(d.name)}</span>
+                            </div>`;
+                        });
+                    });
             }
         }
 
@@ -2317,11 +2172,10 @@
             document.querySelectorAll('.nav-item').forEach(el => { if (el.textContent.includes('แชท')) el.classList.add('active'); });
             currentChatId = getChatId(otherUid);
             currentChatType = 'private';
-            // Find photo/name from store for current header
-            const pData = presenceStore[otherUid] || {};
-            const friendPhoto = pData.photo || defaultAvatarSvg;
-            const friendName = pData.displayName || name;
-            document.getElementById('chatHeader').innerHTML = `< img src = "${friendPhoto}" class="w-8 h-8 rounded-full object-cover border border-rose-200" onerror = "this.src='${defaultAvatarSvg}'" > <span class="font-bold text-gray-700">${escapeHtml(friendName)}</span>`;
+            // Find photo from friendsList or cache
+            const friend = friendsList.find(f => f.uid === otherUid);
+            const friendPhoto = friend?.photo || defaultAvatarSvg;
+            document.getElementById('chatHeader').innerHTML = `<img src="${friendPhoto}" class="w-8 h-8 rounded-full object-cover border border-rose-200" onerror="this.src='${defaultAvatarSvg}'"><span class="font-bold text-gray-700">${escapeHtml(name)}</span>`;
             document.getElementById('chatInputArea').classList.remove('hidden');
             showChatTab('private');
             listenMessages('chats');
@@ -2331,7 +2185,7 @@
         function openGroupChat(groupId, name) {
             currentChatId = groupId;
             currentChatType = 'group';
-            document.getElementById('chatHeader').innerHTML = `< div class="w-8 h-8 rounded-full bg-purple-200 flex items-center justify-center" >👥</div > <span class="font-bold text-gray-700">${escapeHtml(name)}</span>`;
+            document.getElementById('chatHeader').innerHTML = `<div class="w-8 h-8 rounded-full bg-purple-200 flex items-center justify-center">👥</div><span class="font-bold text-gray-700">${escapeHtml(name)}</span>`;
             document.getElementById('chatInputArea').classList.remove('hidden');
             listenMessages('groupMessages');
             loadChatList();
@@ -2351,17 +2205,17 @@
                         const m = doc.data();
                         const isMe = m.senderUid === uid;
                         const senderAvatar = m.senderPhoto || defaultAvatarSvg;
-                        const imgHtml = m.image ? `< img src = "${m.image}" class="chat-img-preview" onclick = "openLightbox(this.src)" > ` : '';
-                        msgDiv.innerHTML += `< div class="flex ${isMe ? 'justify-end' : 'justify-start'} gap-2" >
-            ${!isMe ? `<img src="${senderAvatar}" class="w-8 h-8 rounded-full object-cover border border-rose-200 shrink-0 mt-1" onerror="this.src='${defaultAvatarSvg}'">` : ''}
-        <div class="max-w-xs px-4 py-2 rounded-2xl text-sm ${isMe ? 'bg-rose-500 text-white rounded-br-sm' : 'bg-gray-100 text-gray-700 rounded-bl-sm'}">
-            ${!isMe ? `<p class="text-xs font-bold mb-1 text-rose-400">${escapeHtml(m.senderName)}</p>` : ''}
-            ${m.text ? `<p>${escapeHtml(m.text)}</p>` : ''}
-            ${imgHtml}
-            <p class="text-xs mt-1 ${isMe ? 'text-rose-200' : 'text-gray-400'}">${m.createdAt ? timeAgo(m.createdAt) : ''}</p>
-        </div>
+                        const imgHtml = m.image ? `<img src="${m.image}" class="chat-img-preview" onclick="openLightbox(this.src)">` : '';
+                        msgDiv.innerHTML += `<div class="flex ${isMe ? 'justify-end' : 'justify-start'} gap-2">
+                            ${!isMe ? `<img src="${senderAvatar}" class="w-8 h-8 rounded-full object-cover border border-rose-200 shrink-0 mt-1" onerror="this.src='${defaultAvatarSvg}'">` : ''}
+                            <div class="max-w-xs px-4 py-2 rounded-2xl text-sm ${isMe ? 'bg-rose-500 text-white rounded-br-sm' : 'bg-gray-100 text-gray-700 rounded-bl-sm'}">
+                                ${!isMe ? `<p class="text-xs font-bold mb-1 text-rose-400">${escapeHtml(m.senderName)}</p>` : ''}
+                                ${m.text ? `<p>${escapeHtml(m.text)}</p>` : ''}
+                                ${imgHtml}
+                                <p class="text-xs mt-1 ${isMe ? 'text-rose-200' : 'text-gray-400'}">${m.createdAt ? timeAgo(m.createdAt) : ''}</p>
+                            </div>
                             ${isMe ? `<img src="${senderAvatar}" class="w-8 h-8 rounded-full object-cover border border-rose-200 shrink-0 mt-1" onerror="this.src='${defaultAvatarSvg}'">` : ''}
-                        </div > `;
+                        </div>`;
                     });
                     // Play sound for new messages from others in active chat
                     const lastMsg = snap.docs[snap.docs.length - 1]?.data();
@@ -2407,11 +2261,11 @@
         // Group Chat Modal
         function showNewGroupModal() {
             if (friendsList.length === 0) return showToast('ต้องมีเพื่อนก่อนจึงจะสร้างกรุ๊ปได้', true);
-            const memberCheckboxes = friendsList.map(f => `< label class="flex items-center gap-2 text-sm" > <input type="checkbox" value="${f.uid}" data-name="${escapeHtml(f.name)}"> ${escapeHtml(f.name)}</label>`).join('');
+            const memberCheckboxes = friendsList.map(f => `<label class="flex items-center gap-2 text-sm"><input type="checkbox" value="${f.uid}" data-name="${escapeHtml(f.name)}"> ${escapeHtml(f.name)}</label>`).join('');
             const modal = document.createElement('div');
             modal.className = 'modal-overlay';
             modal.id = 'newGroupModal';
-            modal.innerHTML = `< div class="modal-content" >
+            modal.innerHTML = `<div class="modal-content">
                 <h2 class="text-xl font-bold text-rose-500 mb-4">👥 สร้างกรุ๊ปใหม่</h2>
                 <input type="text" id="groupNameInput" class="auth-input mb-4" placeholder="ชื่อกรุ๊ป...">
                 <p class="text-sm font-medium text-gray-600 mb-2">เลือกสมาชิก:</p>
@@ -2442,45 +2296,35 @@
         }
 
         // ==================== POSTS ====================
-        let latestPostsSnap = null;
         function loadPosts() {
             db.collection('posts').orderBy('createdAt', 'desc').limit(50)
                 .onSnapshot(snap => {
-                    latestPostsSnap = snap;
-                    _renderPostsList(snap);
+                    const feed = document.getElementById('postsFeed');
+                    if (snap.empty) { feed.innerHTML = '<p class="text-center text-gray-300 py-10">ยังไม่มีโพสต์ — เป็นคนแรกเลย! 📢</p>'; return; }
+                    feed.innerHTML = '';
+                    snap.forEach(doc => {
+                        const p = doc.data();
+                        const uid = auth.currentUser.uid;
+                        const postPhoto = p.authorPhoto || defaultAvatarSvg;
+                        feed.innerHTML += `<div class="member-card" id="post_${doc.id}">
+                            <div class="flex items-center gap-3 mb-3">
+                                <img src="${postPhoto}" class="w-10 h-10 rounded-full object-cover border-2 border-rose-200" onerror="this.src='${defaultAvatarSvg}'">
+                                <div><p class="font-bold text-sm text-gray-700">${escapeHtml(p.authorName)}</p>
+                                <p class="text-xs text-gray-400">${timeAgo(p.createdAt)}</p></div>
+                                ${p.authorUid === uid ? `<button onclick="deletePost('${doc.id}')" class="ml-auto text-red-300 hover:text-red-500 text-xs">🗑️</button>` : ''}
+                            </div>
+                            <p class="text-gray-700 mb-3 whitespace-pre-wrap">${escapeHtml(p.text)}</p>
+                            ${p.image ? `<img src="${p.image}" class="post-img mb-3" onclick="openLightbox(this.src)">` : ''}
+                            <hr class="border-rose-100 mb-3">
+                            <div id="comments_${doc.id}" class="space-y-2 mb-3"></div>
+                            <div class="flex gap-2">
+                                <input type="text" id="commentInput_${doc.id}" class="auth-input flex-1 !py-2 !text-sm" placeholder="แสดงความคิดเห็น... 💬" onkeydown="if(event.key==='Enter')addComment('${doc.id}')">
+                                <button onclick="addComment('${doc.id}')" class="bg-rose-100 text-rose-500 px-3 py-1 rounded-lg text-sm font-bold hover:bg-rose-200">💬</button>
+                            </div></div>`;
+                        // Load comments
+                        loadComments(doc.id);
+                    });
                 });
-        }
-
-        function _renderPostsList(snap) {
-            const feed = document.getElementById('postsFeed');
-            if (!feed) return;
-            if (snap.empty) { feed.innerHTML = '<p class="text-center text-gray-300 py-10">ยังไม่มีโพสต์ — เป็นคนแรกเลย! 📢</p>'; return; }
-            feed.innerHTML = '';
-            snap.forEach(doc => {
-                const p = doc.data();
-                const uid = auth.currentUser?.uid;
-                const pData = presenceStore[p.authorUid] || {};
-                const authorName = escapeHtml(pData.displayName || p.authorName || '???');
-                const authorPhoto = pData.photo || p.authorPhoto || defaultAvatarSvg;
-
-                feed.innerHTML += `<div class="member-card" id="post_${doc.id}">
-                    <div class="flex items-center gap-3 mb-3">
-                        <img src="${authorPhoto}" class="w-10 h-10 rounded-full object-cover border-2 border-rose-200" onerror="this.src='${defaultAvatarSvg}'">
-                        <div><p class="font-bold text-sm text-gray-700">${authorName}</p>
-                        <p class="text-xs text-gray-400">${timeAgo(p.createdAt)}</p></div>
-                        ${p.authorUid === uid ? `<button onclick="deletePost('${doc.id}')" class="ml-auto text-red-300 hover:text-red-500 text-xs">🗑️</button>` : ''}
-                    </div>
-                    <p class="text-gray-700 mb-3 whitespace-pre-wrap">${escapeHtml(p.text)}</p>
-                    ${p.image ? `<img src="${p.image}" class="post-img mb-3" onclick="openLightbox(this.src)">` : ''}
-<hr class="border-rose-100 mb-3">
-    <div id="comments_${doc.id}" class="space-y-2 mb-3"></div>
-    <div class="flex gap-2">
-        <input type="text" id="commentInput_${doc.id}" class="auth-input flex-1 !py-2 !text-sm" placeholder="แสดงความคิดเห็น... 💬" onkeydown="if(event.key==='Enter')addComment('${doc.id}')">
-            <button onclick="addComment('${doc.id}')" class="bg-rose-100 text-rose-500 px-3 py-1 rounded-lg text-sm font-bold hover:bg-rose-200">💬</button>
-    </div></div>`;
-                // Load comments (onSnapshot inside will handle its own refresh)
-                loadComments(doc.id);
-            });
         }
 
         async function createPost() {
@@ -2516,15 +2360,12 @@
                     cDiv.innerHTML = '';
                     snap.forEach(doc => {
                         const c = doc.data();
-                        const cData = presenceStore[c.authorUid] || {};
-                        const authorName = escapeHtml(cData.displayName || c.authorName || '???');
-                        const authorPhoto = cData.photo || c.authorPhoto || defaultAvatarSvg;
-
+                        const commentPhoto = c.authorPhoto || defaultAvatarSvg;
                         cDiv.innerHTML += `<div class="bg-gray-50 rounded-lg px-3 py-2 flex gap-2">
-            <img src="${authorPhoto}" class="w-6 h-6 rounded-full object-cover border border-rose-200 shrink-0 mt-0.5" onerror="this.src='${defaultAvatarSvg}'">
-                <div><span class="text-xs font-bold text-rose-400">${authorName}</span>
-                    <span class="text-xs text-gray-400 ml-2">${timeAgo(c.createdAt)}</span>
-                    <p class="text-sm text-gray-600 mt-1">${escapeHtml(c.text)}</p></div></div>`;
+                            <img src="${commentPhoto}" class="w-6 h-6 rounded-full object-cover border border-rose-200 shrink-0 mt-0.5" onerror="this.src='${defaultAvatarSvg}'">
+                            <div><span class="text-xs font-bold text-rose-400">${escapeHtml(c.authorName)}</span>
+                            <span class="text-xs text-gray-400 ml-2">${timeAgo(c.createdAt)}</span>
+                            <p class="text-sm text-gray-600 mt-1">${escapeHtml(c.text)}</p></div></div>`;
                     });
                 });
         }
@@ -2550,7 +2391,7 @@
 
         function buildEmojiGrid(targetInputId, pickerId) {
             const picker = document.getElementById(pickerId);
-            picker.innerHTML = emojiList.map(e => `< span onclick = "insertEmoji('${targetInputId}','${e}','${pickerId}')" > ${e}</span > `).join('');
+            picker.innerHTML = emojiList.map(e => `<span onclick="insertEmoji('${targetInputId}','${e}','${pickerId}')">${e}</span>`).join('');
         }
 
         function insertEmoji(inputId, emoji, pickerId) {
@@ -2589,7 +2430,7 @@
                 chatPendingImage = compressed;
                 const preview = document.getElementById('chatImgPreview');
                 preview.classList.remove('hidden');
-                preview.innerHTML = `< div class="relative" > <img src="${compressed}" class="w-20 h-20 rounded-lg object-cover border-2 border-rose-200"><button onclick="removeChatImage()" class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 text-xs flex items-center justify-center">✕</button></div>`;
+                preview.innerHTML = `<div class="relative"><img src="${compressed}" class="w-20 h-20 rounded-lg object-cover border-2 border-rose-200"><button onclick="removeChatImage()" class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 text-xs flex items-center justify-center">✕</button></div>`;
                 showToast('✅ รูปพร้อมส่ง!');
             } catch (e) { showToast('ไม่สามารถโหลดรูป: ' + e.message, true); }
             input.value = '';
@@ -2610,7 +2451,7 @@
                 postPendingImage = compressed;
                 const preview = document.getElementById('postImgPreview');
                 preview.classList.remove('hidden');
-                preview.innerHTML = `< div class="relative inline-block" > <img src="${compressed}" class="w-40 h-auto rounded-lg border-2 border-rose-200"><button onclick="removePostImage()" class="absolute top-1 right-1 bg-red-500 text-white rounded-full w-5 h-5 text-xs flex items-center justify-center">✕</button></div>`;
+                preview.innerHTML = `<div class="relative inline-block"><img src="${compressed}" class="w-40 h-auto rounded-lg border-2 border-rose-200"><button onclick="removePostImage()" class="absolute top-1 right-1 bg-red-500 text-white rounded-full w-5 h-5 text-xs flex items-center justify-center">✕</button></div>`;
                 showToast('✅ รูปพร้อมโพสต์!');
             } catch (e) { showToast('ไม่สามารถโหลดรูป: ' + e.message, true); }
             input.value = '';
@@ -2626,7 +2467,7 @@
             const overlay = document.createElement('div');
             overlay.className = 'lightbox-overlay';
             overlay.onclick = () => overlay.remove();
-            overlay.innerHTML = `< button class="lightbox-close" onclick = "event.stopPropagation();this.parentElement.remove()" >✕</button > <img src="${src}" onclick="event.stopPropagation()">`;
+            overlay.innerHTML = `<button class="lightbox-close" onclick="event.stopPropagation();this.parentElement.remove()">✕</button><img src="${src}" onclick="event.stopPropagation()">`;
             document.body.appendChild(overlay);
         }
 
@@ -2706,7 +2547,7 @@
                 osc3.connect(gain3); gain3.connect(ctx.destination);
                 osc3.start(now + 0.5); osc3.stop(now + 0.75);
 
-            } catch (e) { console.log("Sound err:", e); }
+            } catch(e) { console.log("Sound err:", e); }
         }
 
 
@@ -2740,7 +2581,7 @@
                 });
                 n.onclick = () => { window.focus(); n.close(); };
                 setTimeout(() => n.close(), 6000);
-            } catch (e) { console.log("Notif err:", e); }
+            } catch(e) { console.log("Notif err:", e); }
         }
 
         // Show in-page toast notification (cute cat style) 🐱
@@ -2750,14 +2591,14 @@
             const toast = document.createElement("div");
             toast.className = "chat-notif-toast";
             toast.innerHTML = `
-            <button class="toast-close" onclick="event.stopPropagation();this.parentElement.remove()">\u2715</button>
-            <div style="display:flex;align-items:center">
-                <span class="toast-icon">\uD83D\uDC31</span>
-                <div>
-                    <div class="toast-title">\uD83D\uDCAC ${senderName}</div>
-                    <div class="toast-body">${text || "\u0e2a\u0e48\u0e07\u0e02\u0e49\u0e2d\u0e04\u0e27\u0e32\u0e21\u0e43\u0e2b\u0e21\u0e48"}</div>
+                <button class="toast-close" onclick="event.stopPropagation();this.parentElement.remove()">\u2715</button>
+                <div style="display:flex;align-items:center">
+                    <span class="toast-icon">\uD83D\uDC31</span>
+                    <div>
+                        <div class="toast-title">\uD83D\uDCAC ${senderName}</div>
+                        <div class="toast-body">${text || "\u0e2a\u0e48\u0e07\u0e02\u0e49\u0e2d\u0e04\u0e27\u0e32\u0e21\u0e43\u0e2b\u0e21\u0e48"}</div>
+                    </div>
                 </div>
-            </div>
             `;
             toast.onclick = () => { toast.remove(); showSection("chat"); };
             document.body.appendChild(toast);
