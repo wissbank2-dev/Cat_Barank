@@ -21,9 +21,9 @@ if (apiKey) {
 }
 
 const genAI = new GoogleGenerativeAI(apiKey);
-const model = genAI.getGenerativeModel({
-    model: "gemini-2.5-flash",
-    systemInstruction: `คุณคือ "ผู้ช่วย KUMA (คุมะ)" (KUMA Assistant) ประจำโปรแกรม KUMA Test Case Builder.
+
+// System instruction shared across all models
+const KUMA_INSTRUCTION = `คุณคือ "ผู้ช่วย KUMA (คุมะ)" (KUMA Assistant) ประจำโปรแกรม KUMA Test Case Builder.
 คุณมีความสามารถในการควบคุมโปรแกรมนี้ได้สมบูรณ์แบบเหมือนที่ผู้ใช้ทำ โดยการส่ง JSON command กลับมา
 
 ความสามารถและคำสั่งที่คุณต้องใช้:
@@ -46,8 +46,21 @@ const model = genAI.getGenerativeModel({
   "message": "ข้อความตอบกลับสไตล์แมวผู้ชาย (ครับ, เมี้ยว, 🐾)"
 }
 
-จงจำไว้ว่าคุณเป็นเอเจนท์ที่ช่วยเหลือเก่งที่สุด ทำได้ทุกอย่างที่ผู้ใช้ขออย่างรวดเร็วและน่ารัก!`
-});
+จงจำไว้ว่าคุณเป็นเอเจนท์ที่ช่วยเหลือเก่งที่สุด ทำได้ทุกอย่างที่ผู้ใช้ขออย่างรวดเร็วและน่ารัก!`;
+
+// Multi-model fallback chain (each model has its own 20 req/day free quota)
+const MODEL_CHAIN = [
+    'gemini-2.5-flash',
+    'gemini-2.0-flash',
+    'gemini-2.5-flash-lite',
+    'gemini-2.0-flash-lite'
+];
+let currentModelIndex = 0;
+
+function getModel(modelName) {
+    return genAI.getGenerativeModel({ model: modelName, systemInstruction: KUMA_INSTRUCTION });
+}
+console.log(`[KUMA] Model fallback chain: ${MODEL_CHAIN.join(' → ')}`);
 
 // Set EJS as the template engine
 app.set('view engine', 'ejs');
@@ -185,7 +198,6 @@ app.get('/api/template', async (req, res) => {
 // AI Chat Endpoint
 app.post('/api/chat', upload.array('files'), async (req, res) => {
     const { message } = req.body;
-    console.log(`[KUMA] Handling chat request with model: gemini-2.5-flash`);
     let history = [];
 
     try {
@@ -203,10 +215,6 @@ app.post('/api/chat', upload.array('files'), async (req, res) => {
     }
 
     try {
-        const chat = model.startChat({
-            history: history || [],
-        });
-
         // Prepare message parts (text + files)
         const parts = [message];
 
@@ -247,7 +255,38 @@ app.post('/api/chat', upload.array('files'), async (req, res) => {
             }
         }
 
-        const result = await chat.sendMessage(parts);
+        // Multi-model fallback: try each model in chain
+        let result;
+        let lastError;
+        const startIdx = currentModelIndex;
+
+        for (let i = 0; i < MODEL_CHAIN.length; i++) {
+            const idx = (startIdx + i) % MODEL_CHAIN.length;
+            const modelName = MODEL_CHAIN[idx];
+            console.log(`[KUMA] Trying model: ${modelName}`);
+
+            try {
+                const currentModel = getModel(modelName);
+                const chat = currentModel.startChat({ history: history || [] });
+                result = await chat.sendMessage(parts);
+                currentModelIndex = idx; // Remember which model worked
+                console.log(`[KUMA] ✅ Success with ${modelName}`);
+                break;
+            } catch (modelError) {
+                lastError = modelError;
+                if (modelError.status === 429 || (modelError.message && modelError.message.includes('429'))) {
+                    console.log(`[KUMA] ⚠️ ${modelName} quota exceeded, trying next model...`);
+                    continue;
+                }
+                // Non-quota error, still try next model
+                console.log(`[KUMA] ⚠️ ${modelName} error: ${modelError.message.substring(0, 80)}, trying next...`);
+            }
+        }
+
+        if (!result) {
+            throw lastError; // All models failed
+        }
+
         const responseText = result.response.text();
 
         // Try to parse if it's a JSON command
