@@ -1891,7 +1891,17 @@
         }
 
         // ==================== ONLINE PRESENCE ====================
-        let presenceInterval;
+        let presenceInterval, presenceRefreshInterval;
+        const STALE_TIMEOUT_MS = 2 * 60 * 1000; // 2 minutes
+        function isStaleOnline(data) {
+            if (!data.online) return false; // already offline
+            if (!data.lastSeen) return true; // no lastSeen = stale
+            const lastSeenMs = data.lastSeen.toMillis ? data.lastSeen.toMillis() : 0;
+            return (Date.now() - lastSeenMs) > STALE_TIMEOUT_MS;
+        }
+        function getRealOnline(data) {
+            return (data.online || false) && !isStaleOnline(data);
+        }
         function initPresence(user) {
             // Set online with photo
             const presRef = db.collection('presence').doc(user.uid);
@@ -1909,24 +1919,43 @@
             presenceInterval = setInterval(() => {
                 if (auth.currentUser) presRef.update({ lastSeen: firebase.firestore.FieldValue.serverTimestamp(), online: true });
             }, 30000);
-            // Set offline on close
-            window.addEventListener('beforeunload', () => presRef.update({ online: false }));
-            // Listen to all presence
-            db.collection('presence').onSnapshot(snap => {
+            // Set offline on close — use both beforeunload + visibilitychange for reliability
+            const goOffline = () => presRef.update({ online: false, lastSeen: firebase.firestore.FieldValue.serverTimestamp() }).catch(() => {});
+            window.addEventListener('beforeunload', goOffline);
+            document.addEventListener('visibilitychange', () => {
+                if (document.visibilityState === 'hidden') {
+                    goOffline();
+                } else if (document.visibilityState === 'visible' && auth.currentUser) {
+                    presRef.update({ online: true, lastSeen: firebase.firestore.FieldValue.serverTimestamp() });
+                }
+            });
+            // Listen to all presence (with stale check)
+            let latestPresenceSnap = null;
+            function renderPresenceList(snap) {
                 const onlineEl = document.getElementById('onlineList');
                 const offlineEl = document.getElementById('offlineList');
                 let onlineHtml = '', offlineHtml = '';
                 snap.forEach(doc => {
                     const d = doc.data();
                     if (doc.id === user.uid) return;
+                    const realOnline = getRealOnline(d);
                     const name = escapeHtml(d.displayName || d.email || '???');
                     const avatarSrc = d.photo || defaultAvatarSvg;
-                    const item = `<div class="flex items-center gap-2 text-xs py-1"><img src="${avatarSrc}" class="w-6 h-6 rounded-full object-cover border border-rose-200 shrink-0" onerror="this.src='${defaultAvatarSvg}'"><span class="truncate ${d.online ? 'text-gray-700 font-medium' : 'text-gray-400'}">${name}</span></div>`;
-                    if (d.online) onlineHtml += item; else offlineHtml += item;
+                    const item = `<div class="flex items-center gap-2 text-xs py-1"><img src="${avatarSrc}" class="w-6 h-6 rounded-full object-cover border border-rose-200 shrink-0" onerror="this.src='${defaultAvatarSvg}'"><span class="truncate ${realOnline ? 'text-gray-700 font-medium' : 'text-gray-400'}">${name}</span></div>`;
+                    if (realOnline) onlineHtml += item; else offlineHtml += item;
                 });
                 onlineEl.innerHTML = onlineHtml || '<p class="text-xs text-gray-300">ไม่มีใครออนไลน์</p>';
                 offlineEl.innerHTML = offlineHtml || '<p class="text-xs text-gray-300">-</p>';
+            }
+            db.collection('presence').onSnapshot(snap => {
+                latestPresenceSnap = snap;
+                renderPresenceList(snap);
             });
+            // Periodic re-render to catch stale users (every 60s)
+            clearInterval(presenceRefreshInterval);
+            presenceRefreshInterval = setInterval(() => {
+                if (latestPresenceSnap) renderPresenceList(latestPresenceSnap);
+            }, 60000);
         }
 
         // ==================== FRIENDS ====================
@@ -1963,7 +1992,7 @@
                         const fName = d.names[fUid] || 'friend';
                         const fPhoto = d.photos ? d.photos[fUid] : await getUserPhoto(fUid);
                         let isOnline = false;
-                        try { const pSnap = await db.collection('presence').doc(fUid).get(); if (pSnap.exists) isOnline = pSnap.data().online || false; } catch(e){}
+                        try { const pSnap = await db.collection('presence').doc(fUid).get(); if (pSnap.exists) isOnline = getRealOnline(pSnap.data()); } catch(e){}
                         return { uid: fUid, name: fName, photo: fPhoto, docId: docSnap.id, online: isOnline };
                     }));
                     fList.innerHTML = friendsList.map(f => {
@@ -1998,7 +2027,7 @@
                     if (doc.id === uid) return; // Skip self
                     const name = escapeHtml(d.displayName || d.email || '???');
                     const userPhoto = d.photo || defaultAvatarSvg;
-                    const isOnline = d.online;
+                    const isOnline = getRealOnline(d);
                     const isFriend = friendsList.some(f => f.uid === doc.id);
                     let actionBtn = '';
                     if (isFriend) {
