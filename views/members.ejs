@@ -416,10 +416,14 @@
                     </div>
                     <hr class="border-rose-100 mb-3">
                     <div class="space-y-1">
-                        <div class="nav-item active" onclick="showSection('notes')">📝 บันทึก Notes</div>
-                        <div class="nav-item" onclick="showSection('profile')">⚙️ ตั้งค่าโปรไฟล์</div>
+                        <div class="nav-item active" onclick="showSection('notes')">📝 Notes</div>
+                        <div class="nav-item" onclick="showSection('chat')">💬 แชท</div>
+                        <div class="nav-item" onclick="showSection('friends')">👥 เพื่อน</div>
+                        <div class="nav-item" onclick="showSection('posts')">📢 โพสต์</div>
+                        <hr class="border-rose-100 my-2">
+                        <div class="nav-item" onclick="showSection('profile')">⚙️ โปรไฟล์</div>
                         <div class="nav-item" onclick="showChangePasswordModal()">
-                            🔐 เปลี่ยนรหัสผ่าน</div>
+                            🔐 เปลี่ยนรหัส</div>
                     </div>
                 </div>
             </div>
@@ -560,6 +564,91 @@
                             <button onclick="saveProfile()" class="auth-btn auth-btn-primary">💾 บันทึกโปรไฟล์</button>
                         </div>
                     </div>
+                </div>
+
+                <!-- ==================== CHAT SECTION ==================== -->
+                <div id="sectionChat" class="hidden">
+                    <h2 class="text-2xl font-bold text-rose-500 mb-4">💬 แชท</h2>
+                    <div class="flex gap-4" style="height:550px">
+                        <!-- Chat List -->
+                        <div class="w-64 shrink-0 member-card overflow-hidden flex flex-col">
+                            <div class="flex gap-2 mb-3">
+                                <button onclick="showChatTab('private')" id="chatTabPrivate"
+                                    class="flex-1 text-xs font-bold py-2 rounded-lg bg-rose-500 text-white">💬
+                                    ส่วนตัว</button>
+                                <button onclick="showChatTab('group')" id="chatTabGroup"
+                                    class="flex-1 text-xs font-bold py-2 rounded-lg bg-gray-100 text-gray-500">👥
+                                    กรุ๊ป</button>
+                            </div>
+                            <button onclick="showNewGroupModal()"
+                                class="w-full text-xs font-bold py-2 rounded-lg bg-orange-100 text-orange-500 mb-3 hover:bg-orange-200">➕
+                                สร้างกรุ๊ปใหม่</button>
+                            <div id="chatList" class="flex-1 overflow-y-auto space-y-1"></div>
+                        </div>
+                        <!-- Chat Window -->
+                        <div class="flex-1 member-card flex flex-col overflow-hidden">
+                            <div id="chatHeader" class="flex items-center gap-3 pb-3 border-b border-rose-100 mb-3">
+                                <span class="text-gray-400">เลือกแชทจากรายการด้านซ้าย</span>
+                            </div>
+                            <div id="chatMessages" class="flex-1 overflow-y-auto space-y-3 mb-3 pr-2"
+                                style="scroll-behavior:smooth"></div>
+                            <div id="chatInputArea" class="hidden flex gap-2">
+                                <input type="text" id="chatInput" class="auth-input flex-1"
+                                    placeholder="พิมพ์ข้อความ..." onkeydown="if(event.key==='Enter')sendMessage()">
+                                <button onclick="sendMessage()"
+                                    class="bg-rose-500 text-white px-4 py-2 rounded-xl font-bold text-sm hover:bg-rose-600">ส่ง
+                                    🐾</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ==================== FRIENDS SECTION ==================== -->
+                <div id="sectionFriends" class="hidden">
+                    <h2 class="text-2xl font-bold text-rose-500 mb-4">👥 เพื่อน</h2>
+                    <div class="flex gap-2 mb-4">
+                        <input type="email" id="addFriendEmail" class="auth-input flex-1"
+                            placeholder="📧 พิมพ์อีเมลเพื่อนที่ต้องการเพิ่ม...">
+                        <button onclick="sendFriendRequest()"
+                            class="bg-rose-500 text-white px-5 py-2 rounded-xl font-bold text-sm hover:bg-rose-600 shrink-0">➕
+                            เพิ่มเพื่อน</button>
+                    </div>
+                    <!-- Pending Requests -->
+                    <div id="pendingRequests" class="mb-6 hidden">
+                        <h3 class="text-sm font-bold text-amber-500 mb-2">📨 คำขอเป็นเพื่อน</h3>
+                        <div id="pendingList" class="space-y-2"></div>
+                    </div>
+                    <!-- Friend List -->
+                    <h3 class="text-sm font-bold text-rose-400 mb-2">🐾 รายชื่อเพื่อน</h3>
+                    <div id="friendList" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
+                </div>
+
+                <!-- ==================== POSTS SECTION ==================== -->
+                <div id="sectionPosts" class="hidden">
+                    <h2 class="text-2xl font-bold text-rose-500 mb-4">📢 โพสต์</h2>
+                    <!-- New Post -->
+                    <div class="member-card mb-6">
+                        <textarea id="newPostText" class="w-full auth-input" rows="3"
+                            placeholder="คุณกำลังคิดอะไรอยู่? เมี้ยว 🐱"></textarea>
+                        <div class="flex justify-end mt-2">
+                            <button onclick="createPost()"
+                                class="bg-gradient-to-r from-rose-400 to-orange-400 text-white px-5 py-2 rounded-xl font-bold text-sm hover:shadow-lg">📢
+                                โพสต์</button>
+                        </div>
+                    </div>
+                    <!-- Posts Feed -->
+                    <div id="postsFeed" class="space-y-4"></div>
+                </div>
+            </div>
+
+            <!-- ==================== RIGHT SIDEBAR: Online Members ==================== -->
+            <div class="w-52 shrink-0 hidden lg:block">
+                <div class="member-card sticky top-20">
+                    <h3 class="text-sm font-bold text-rose-500 mb-3">🟢 สมาชิกออนไลน์</h3>
+                    <div id="onlineList" class="space-y-2 max-h-80 overflow-y-auto"></div>
+                    <hr class="border-rose-100 my-3">
+                    <h3 class="text-sm font-bold text-gray-400 mb-3">⚫ ออฟไลน์</h3>
+                    <div id="offlineList" class="space-y-2 max-h-40 overflow-y-auto"></div>
                 </div>
             </div>
         </div>
@@ -779,6 +868,9 @@
                     }
                 }
                 loadNotes();
+                initPresence(user);
+                loadFriends();
+                loadPosts();
             } else {
                 document.getElementById('authScreen').classList.remove('hidden');
                 document.getElementById('membersArea').classList.add('hidden');
@@ -896,12 +988,12 @@
         }
 
         // ==================== SECTIONS NAV ====================
+        const allSections = ['Notes', 'Chat', 'Friends', 'Posts', 'Profile'];
         function showSection(section) {
-            document.getElementById('sectionNotes').classList.add('hidden');
-            document.getElementById('sectionProfile').classList.add('hidden');
+            allSections.forEach(s => document.getElementById('section' + s).classList.add('hidden'));
             document.getElementById('section' + section.charAt(0).toUpperCase() + section.slice(1)).classList.remove('hidden');
             document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-            event.target.closest('.nav-item').classList.add('active');
+            if (event && event.target) event.target.closest('.nav-item')?.classList.add('active');
         }
 
         // ==================== NOTES SYSTEM ====================
@@ -1273,6 +1365,356 @@
             t.textContent = msg;
             document.body.appendChild(t);
             setTimeout(() => t.remove(), 3000);
+        }
+
+        function timeAgo(date) {
+            if (!date) return '';
+            const d = date.seconds ? new Date(date.seconds * 1000) : new Date(date);
+            const diff = (Date.now() - d.getTime()) / 1000;
+            if (diff < 60) return 'เมื่อสักครู่';
+            if (diff < 3600) return Math.floor(diff / 60) + ' นาทีที่แล้ว';
+            if (diff < 86400) return Math.floor(diff / 3600) + ' ชั่วโมงที่แล้ว';
+            return Math.floor(diff / 86400) + ' วันที่แล้ว';
+        }
+
+        // ==================== ONLINE PRESENCE ====================
+        let presenceInterval;
+        function initPresence(user) {
+            // Set online
+            const presRef = db.collection('presence').doc(user.uid);
+            presRef.set({
+                uid: user.uid,
+                displayName: user.displayName || user.email,
+                email: user.email,
+                online: true,
+                lastSeen: firebase.firestore.FieldValue.serverTimestamp()
+            }, { merge: true });
+            // Heartbeat every 30s
+            clearInterval(presenceInterval);
+            presenceInterval = setInterval(() => {
+                if (auth.currentUser) presRef.update({ lastSeen: firebase.firestore.FieldValue.serverTimestamp(), online: true });
+            }, 30000);
+            // Set offline on close
+            window.addEventListener('beforeunload', () => presRef.update({ online: false }));
+            // Listen to all presence
+            db.collection('presence').onSnapshot(snap => {
+                const onlineEl = document.getElementById('onlineList');
+                const offlineEl = document.getElementById('offlineList');
+                let onlineHtml = '', offlineHtml = '';
+                snap.forEach(doc => {
+                    const d = doc.data();
+                    if (doc.id === user.uid) return;
+                    const name = escapeHtml(d.displayName || d.email || '???');
+                    const item = `<div class="flex items-center gap-2 text-xs"><span class="${d.online ? 'text-green-400' : 'text-gray-300'}">●</span><span class="truncate ${d.online ? 'text-gray-700 font-medium' : 'text-gray-400'}">${name}</span></div>`;
+                    if (d.online) onlineHtml += item; else offlineHtml += item;
+                });
+                onlineEl.innerHTML = onlineHtml || '<p class="text-xs text-gray-300">ไม่มีใครออนไลน์</p>';
+                offlineEl.innerHTML = offlineHtml || '<p class="text-xs text-gray-300">-</p>';
+            });
+        }
+
+        // ==================== FRIENDS ====================
+        let friendsList = [];
+        function loadFriends() {
+            const uid = auth.currentUser.uid;
+            // Listen for friend requests TO me
+            db.collection('friendRequests').where('toUid', '==', uid).where('status', '==', 'pending')
+                .onSnapshot(snap => {
+                    const pDiv = document.getElementById('pendingRequests');
+                    const pList = document.getElementById('pendingList');
+                    if (snap.empty) { pDiv.classList.add('hidden'); return; }
+                    pDiv.classList.remove('hidden');
+                    pList.innerHTML = '';
+                    snap.forEach(doc => {
+                        const d = doc.data();
+                        pList.innerHTML += `<div class="flex justify-between items-center bg-amber-50 p-3 rounded-xl border border-amber-200">
+                            <span class="text-sm font-medium">${escapeHtml(d.fromName || d.fromEmail)}</span>
+                            <div class="flex gap-2">
+                                <button onclick="acceptFriend('${doc.id}','${d.fromUid}')" class="bg-green-500 text-white text-xs px-3 py-1 rounded-lg font-bold">✅ รับ</button>
+                                <button onclick="rejectFriend('${doc.id}')" class="bg-red-100 text-red-500 text-xs px-3 py-1 rounded-lg font-bold">❌</button>
+                            </div></div>`;
+                    });
+                });
+            // Listen for accepted friends
+            db.collection('friends').where('users', 'array-contains', uid)
+                .onSnapshot(snap => {
+                    friendsList = [];
+                    const fList = document.getElementById('friendList');
+                    if (snap.empty) { fList.innerHTML = '<p class="text-gray-300 text-sm">ยังไม่มีเพื่อน — ลองเพิ่มเพื่อนดูสิ!</p>'; return; }
+                    fList.innerHTML = '';
+                    snap.forEach(doc => {
+                        const d = doc.data();
+                        const friendUid = d.users.find(u => u !== uid);
+                        const friendName = d.names[friendUid] || 'เพื่อน';
+                        friendsList.push({ uid: friendUid, name: friendName, docId: doc.id });
+                        fList.innerHTML += `<div class="member-card flex items-center gap-3 p-3">
+                            <div class="w-10 h-10 rounded-full bg-rose-200 flex items-center justify-center text-lg">🐱</div>
+                            <div class="flex-1 min-w-0"><p class="font-bold text-sm text-gray-700 truncate">${escapeHtml(friendName)}</p></div>
+                            <button onclick="openPrivateChat('${friendUid}','${escapeHtml(friendName)}')" class="bg-rose-100 text-rose-500 text-xs px-3 py-1 rounded-lg font-bold hover:bg-rose-200">💬</button>
+                        </div>`;
+                    });
+                    loadChatList();
+                });
+        }
+
+        async function sendFriendRequest() {
+            const email = document.getElementById('addFriendEmail').value.trim();
+            if (!email) return showToast('กรุณากรอกอีเมล', true);
+            const user = auth.currentUser;
+            if (email === user.email) return showToast('ไม่สามารถเพิ่มตัวเองได้', true);
+            try {
+                // Find user by email in presence
+                const snap = await db.collection('presence').where('email', '==', email).get();
+                if (snap.empty) return showToast('ไม่พบสมาชิกที่ใช้อีเมลนี้', true);
+                const targetDoc = snap.docs[0];
+                // Check if already friends
+                const fSnap = await db.collection('friends').where('users', 'array-contains', user.uid).get();
+                const alreadyFriend = fSnap.docs.some(d => d.data().users.includes(targetDoc.id));
+                if (alreadyFriend) return showToast('เป็นเพื่อนกันอยู่แล้ว!', true);
+                await db.collection('friendRequests').add({
+                    fromUid: user.uid, fromName: user.displayName || user.email, fromEmail: user.email,
+                    toUid: targetDoc.id, toEmail: email,
+                    status: 'pending', createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                document.getElementById('addFriendEmail').value = '';
+                showToast('ส่งคำขอเป็นเพื่อนแล้ว! 📨');
+            } catch (e) { showToast('เกิดข้อผิดพลาด: ' + e.message, true); }
+        }
+
+        async function acceptFriend(reqId, fromUid) {
+            const user = auth.currentUser;
+            try {
+                const reqDoc = await db.collection('friendRequests').doc(reqId).get();
+                const reqData = reqDoc.data();
+                await db.collection('friends').add({
+                    users: [user.uid, fromUid],
+                    names: { [user.uid]: user.displayName || user.email, [fromUid]: reqData.fromName || reqData.fromEmail },
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                await db.collection('friendRequests').doc(reqId).update({ status: 'accepted' });
+                showToast('เพิ่มเพื่อนสำเร็จ! 🐱✨');
+            } catch (e) { showToast('เกิดข้อผิดพลาด', true); }
+        }
+
+        async function rejectFriend(reqId) {
+            await db.collection('friendRequests').doc(reqId).update({ status: 'rejected' });
+            showToast('ปฏิเสธคำขอแล้ว');
+        }
+
+        // ==================== CHAT ====================
+        let currentChatId = null, currentChatType = 'private', chatListener = null, chatTabMode = 'private';
+
+        function showChatTab(tab) {
+            chatTabMode = tab;
+            document.getElementById('chatTabPrivate').className = `flex-1 text-xs font-bold py-2 rounded-lg ${tab === 'private' ? 'bg-rose-500 text-white' : 'bg-gray-100 text-gray-500'}`;
+            document.getElementById('chatTabGroup').className = `flex-1 text-xs font-bold py-2 rounded-lg ${tab === 'group' ? 'bg-rose-500 text-white' : 'bg-gray-100 text-gray-500'}`;
+            loadChatList();
+        }
+
+        function loadChatList() {
+            const list = document.getElementById('chatList');
+            if (chatTabMode === 'private') {
+                if (friendsList.length === 0) { list.innerHTML = '<p class="text-xs text-gray-300 text-center py-4">เพิ่มเพื่อนก่อนเพื่อแชท</p>'; return; }
+                list.innerHTML = friendsList.map(f => `
+                    <div class="flex items-center gap-2 p-2 rounded-lg cursor-pointer hover:bg-rose-50 transition-colors ${currentChatId === getChatId(f.uid) ? 'bg-rose-100' : ''}"
+                        onclick="openPrivateChat('${f.uid}','${escapeHtml(f.name)}')">
+                        <div class="w-8 h-8 rounded-full bg-rose-200 flex items-center justify-center text-sm">🐱</div>
+                        <span class="text-sm font-medium truncate">${escapeHtml(f.name)}</span>
+                    </div>`).join('');
+            } else {
+                // Group chats
+                db.collection('groupChats').where('members', 'array-contains', auth.currentUser.uid)
+                    .get().then(snap => {
+                        if (snap.empty) { list.innerHTML = '<p class="text-xs text-gray-300 text-center py-4">ยังไม่มีกรุ๊ป</p>'; return; }
+                        list.innerHTML = '';
+                        snap.forEach(doc => {
+                            const d = doc.data();
+                            list.innerHTML += `<div class="flex items-center gap-2 p-2 rounded-lg cursor-pointer hover:bg-rose-50 ${currentChatId === doc.id ? 'bg-rose-100' : ''}"
+                                onclick="openGroupChat('${doc.id}','${escapeHtml(d.name)}')">
+                                <div class="w-8 h-8 rounded-full bg-purple-200 flex items-center justify-center text-sm">👥</div>
+                                <span class="text-sm font-medium truncate">${escapeHtml(d.name)}</span>
+                            </div>`;
+                        });
+                    });
+            }
+        }
+
+        function getChatId(otherUid) {
+            const uid = auth.currentUser.uid;
+            return [uid, otherUid].sort().join('_');
+        }
+
+        function openPrivateChat(otherUid, name) {
+            currentChatId = getChatId(otherUid);
+            currentChatType = 'private';
+            document.getElementById('chatHeader').innerHTML = `<div class="w-8 h-8 rounded-full bg-rose-200 flex items-center justify-center">🐱</div><span class="font-bold text-gray-700">${escapeHtml(name)}</span>`;
+            document.getElementById('chatInputArea').classList.remove('hidden');
+            listenMessages('chats');
+            loadChatList();
+        }
+
+        function openGroupChat(groupId, name) {
+            currentChatId = groupId;
+            currentChatType = 'group';
+            document.getElementById('chatHeader').innerHTML = `<div class="w-8 h-8 rounded-full bg-purple-200 flex items-center justify-center">👥</div><span class="font-bold text-gray-700">${escapeHtml(name)}</span>`;
+            document.getElementById('chatInputArea').classList.remove('hidden');
+            listenMessages('groupMessages');
+            loadChatList();
+        }
+
+        function listenMessages(collection) {
+            if (chatListener) chatListener();
+            const msgDiv = document.getElementById('chatMessages');
+            msgDiv.innerHTML = '<p class="text-center text-gray-300 text-sm">กำลังโหลด...</p>';
+            chatListener = db.collection(collection).doc(currentChatId).collection('messages')
+                .orderBy('createdAt', 'asc').limitToLast(100)
+                .onSnapshot(snap => {
+                    const uid = auth.currentUser.uid;
+                    msgDiv.innerHTML = '';
+                    if (snap.empty) { msgDiv.innerHTML = '<p class="text-center text-gray-300 text-sm py-10">เริ่มแชทกันเลย! 🐾</p>'; return; }
+                    snap.forEach(doc => {
+                        const m = doc.data();
+                        const isMe = m.senderUid === uid;
+                        msgDiv.innerHTML += `<div class="flex ${isMe ? 'justify-end' : 'justify-start'}">
+                            <div class="max-w-xs px-4 py-2 rounded-2xl text-sm ${isMe ? 'bg-rose-500 text-white rounded-br-sm' : 'bg-gray-100 text-gray-700 rounded-bl-sm'}">
+                                ${!isMe ? `<p class="text-xs font-bold mb-1 ${isMe ? 'text-rose-100' : 'text-rose-400'}">${escapeHtml(m.senderName)}</p>` : ''}
+                                <p>${escapeHtml(m.text)}</p>
+                                <p class="text-xs mt-1 ${isMe ? 'text-rose-200' : 'text-gray-400'}">${m.createdAt ? timeAgo(m.createdAt) : ''}</p>
+                            </div></div>`;
+                    });
+                    msgDiv.scrollTop = msgDiv.scrollHeight;
+                });
+        }
+
+        async function sendMessage() {
+            const input = document.getElementById('chatInput');
+            const text = input.value.trim();
+            if (!text || !currentChatId) return;
+            input.value = '';
+            const user = auth.currentUser;
+            const collection = currentChatType === 'private' ? 'chats' : 'groupMessages';
+            try {
+                await db.collection(collection).doc(currentChatId).collection('messages').add({
+                    text, senderUid: user.uid, senderName: user.displayName || user.email,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+            } catch (e) { showToast('ส่งไม่สำเร็จ: ' + e.message, true); }
+        }
+
+        // Group Chat Modal
+        function showNewGroupModal() {
+            if (friendsList.length === 0) return showToast('ต้องมีเพื่อนก่อนจึงจะสร้างกรุ๊ปได้', true);
+            const memberCheckboxes = friendsList.map(f => `<label class="flex items-center gap-2 text-sm"><input type="checkbox" value="${f.uid}" data-name="${escapeHtml(f.name)}"> ${escapeHtml(f.name)}</label>`).join('');
+            const modal = document.createElement('div');
+            modal.className = 'modal-overlay';
+            modal.id = 'newGroupModal';
+            modal.innerHTML = `<div class="modal-content">
+                <h2 class="text-xl font-bold text-rose-500 mb-4">👥 สร้างกรุ๊ปใหม่</h2>
+                <input type="text" id="groupNameInput" class="auth-input mb-4" placeholder="ชื่อกรุ๊ป...">
+                <p class="text-sm font-medium text-gray-600 mb-2">เลือกสมาชิก:</p>
+                <div class="space-y-2 max-h-40 overflow-y-auto mb-4">${memberCheckboxes}</div>
+                <div class="flex gap-2"><button onclick="createGroup()" class="auth-btn auth-btn-primary flex-1">สร้างกรุ๊ป 🐾</button>
+                <button onclick="document.getElementById('newGroupModal').remove()" class="auth-btn flex-1 bg-gray-100 text-gray-500">ยกเลิก</button></div></div>`;
+            document.body.appendChild(modal);
+        }
+
+        async function createGroup() {
+            const name = document.getElementById('groupNameInput').value.trim();
+            if (!name) return showToast('กรุณาตั้งชื่อกรุ๊ป', true);
+            const checks = document.querySelectorAll('#newGroupModal input[type=checkbox]:checked');
+            if (checks.length === 0) return showToast('เลือกสมาชิกอย่างน้อย 1 คน', true);
+            const user = auth.currentUser;
+            const members = [user.uid];
+            const names = { [user.uid]: user.displayName || user.email };
+            checks.forEach(c => { members.push(c.value); names[c.value] = c.dataset.name; });
+            try {
+                await db.collection('groupChats').add({
+                    name, members, names, createdBy: user.uid,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                document.getElementById('newGroupModal').remove();
+                showToast('สร้างกรุ๊ปสำเร็จ! 👥');
+                showChatTab('group');
+            } catch (e) { showToast('เกิดข้อผิดพลาด', true); }
+        }
+
+        // ==================== POSTS ====================
+        function loadPosts() {
+            db.collection('posts').orderBy('createdAt', 'desc').limit(50)
+                .onSnapshot(snap => {
+                    const feed = document.getElementById('postsFeed');
+                    if (snap.empty) { feed.innerHTML = '<p class="text-center text-gray-300 py-10">ยังไม่มีโพสต์ — เป็นคนแรกเลย! 📢</p>'; return; }
+                    feed.innerHTML = '';
+                    snap.forEach(doc => {
+                        const p = doc.data();
+                        const uid = auth.currentUser.uid;
+                        feed.innerHTML += `<div class="member-card" id="post_${doc.id}">
+                            <div class="flex items-center gap-3 mb-3">
+                                <div class="w-10 h-10 rounded-full bg-rose-200 flex items-center justify-center text-lg">🐱</div>
+                                <div><p class="font-bold text-sm text-gray-700">${escapeHtml(p.authorName)}</p>
+                                <p class="text-xs text-gray-400">${timeAgo(p.createdAt)}</p></div>
+                                ${p.authorUid === uid ? `<button onclick="deletePost('${doc.id}')" class="ml-auto text-red-300 hover:text-red-500 text-xs">🗑️</button>` : ''}
+                            </div>
+                            <p class="text-gray-700 mb-3 whitespace-pre-wrap">${escapeHtml(p.text)}</p>
+                            <hr class="border-rose-100 mb-3">
+                            <div id="comments_${doc.id}" class="space-y-2 mb-3"></div>
+                            <div class="flex gap-2">
+                                <input type="text" id="commentInput_${doc.id}" class="auth-input flex-1 !py-2 !text-sm" placeholder="แสดงความคิดเห็น... 💬" onkeydown="if(event.key==='Enter')addComment('${doc.id}')">
+                                <button onclick="addComment('${doc.id}')" class="bg-rose-100 text-rose-500 px-3 py-1 rounded-lg text-sm font-bold hover:bg-rose-200">💬</button>
+                            </div></div>`;
+                        // Load comments
+                        loadComments(doc.id);
+                    });
+                });
+        }
+
+        async function createPost() {
+            const text = document.getElementById('newPostText').value.trim();
+            if (!text) return showToast('กรุณาพิมพ์ข้อความ', true);
+            const user = auth.currentUser;
+            try {
+                await db.collection('posts').add({
+                    text, authorUid: user.uid, authorName: user.displayName || user.email,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                document.getElementById('newPostText').value = '';
+                showToast('โพสต์สำเร็จ! 📢🐾');
+            } catch (e) { showToast('โพสต์ล้มเหลว: ' + e.message, true); }
+        }
+
+        async function deletePost(postId) {
+            if (!confirm('ลบโพสต์นี้?')) return;
+            await db.collection('posts').doc(postId).delete();
+            showToast('ลบโพสต์แล้ว 🗑️');
+        }
+
+        function loadComments(postId) {
+            db.collection('posts').doc(postId).collection('comments')
+                .orderBy('createdAt', 'asc').limit(20)
+                .onSnapshot(snap => {
+                    const cDiv = document.getElementById('comments_' + postId);
+                    if (!cDiv) return;
+                    cDiv.innerHTML = '';
+                    snap.forEach(doc => {
+                        const c = doc.data();
+                        cDiv.innerHTML += `<div class="bg-gray-50 rounded-lg px-3 py-2">
+                            <span class="text-xs font-bold text-rose-400">${escapeHtml(c.authorName)}</span>
+                            <span class="text-xs text-gray-400 ml-2">${timeAgo(c.createdAt)}</span>
+                            <p class="text-sm text-gray-600 mt-1">${escapeHtml(c.text)}</p></div>`;
+                    });
+                });
+        }
+
+        async function addComment(postId) {
+            const input = document.getElementById('commentInput_' + postId);
+            const text = input.value.trim();
+            if (!text) return;
+            input.value = '';
+            const user = auth.currentUser;
+            await db.collection('posts').doc(postId).collection('comments').add({
+                text, authorUid: user.uid, authorName: user.displayName || user.email,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
         }
     </script>
 </body>
