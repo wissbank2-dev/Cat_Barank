@@ -1568,6 +1568,22 @@
                                     showToast(`คุมะลบข้อที่เลือกให้แล้วครับ ${data.data.join(', ')}! 🐾`);
                                 }
                                 break;
+                            case 'edit_testcases':
+                                if (data.data && Array.isArray(data.data)) {
+                                    let editCount = 0;
+                                    data.data.forEach(edit => {
+                                        const idx = parseInt(edit.index) - 1; // 1-based → 0-based
+                                        if (idx >= 0 && idx < testCases.length) {
+                                            if (edit.name !== undefined) testCases[idx].name = edit.name;
+                                            if (edit.step !== undefined) testCases[idx].step = edit.step;
+                                            if (edit.expected !== undefined) testCases[idx].expected = edit.expected;
+                                            editCount++;
+                                        }
+                                    });
+                                    renderTable();
+                                    showToast(`คุมะแก้ไข Test Case ${editCount} รายการให้แล้วครับ! ✏️🐾`);
+                                }
+                                break;
                             case 'switch_page':
                                 if (data.page) {
                                     switchPage(data.page);
