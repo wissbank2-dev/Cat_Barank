@@ -278,41 +278,54 @@ app.get('/api/youtube-search', async (req, res) => {
         const data = JSON.parse(jsonMatch[1]);
         const videos = [];
         
-        try {
-            const contents = data.contents.twoColumnSearchResultRenderer.primaryContents.sectionListRenderer.contents;
-            const items = contents.find(c => c.itemSectionRenderer)?.itemSectionRenderer.contents || [];
-            
-            for (const item of items) {
-                if (item.videoRenderer) {
-                    const vr = item.videoRenderer;
-                    const videoId = vr.videoId;
-                    
-                    // Safe parsing helper
-                    const getTitleText = () => {
-                        if (vr.title && vr.title.runs && vr.title.runs[0]) return vr.title.runs[0].text;
-                        if (vr.title && vr.title.simpleText) return vr.title.simpleText;
-                        return 'Video';
-                    };
-                    
-                    const getChannelText = () => {
-                        if (vr.ownerText && vr.ownerText.runs && vr.ownerText.runs[0]) return vr.ownerText.runs[0].text;
-                        if (vr.longBylineText && vr.longBylineText.runs && vr.longBylineText.runs[0]) return vr.longBylineText.runs[0].text;
-                        return 'Channel';
-                    };
-
-                    const getThumbnailUrl = () => {
-                        if (vr.thumbnail && vr.thumbnail.thumbnails && vr.thumbnail.thumbnails[0]) return vr.thumbnail.thumbnails[0].url;
-                        return '';
-                    };
-
-                    videos.push({
-                        id: videoId,
-                        title: getTitleText(),
-                        thumbnail: getThumbnailUrl(),
-                        duration: vr.lengthText?.simpleText || 'N/A',
-                        channel: getChannelText()
-                    });
+        // Recursive helper to find all videoRenderers in the nested object
+        function findVideoRenderers(obj) {
+            let results = [];
+            if (!obj || typeof obj !== 'object') return results;
+            if (obj.videoRenderer) results.push(obj.videoRenderer);
+            for (const key in obj) {
+                if (Object.prototype.hasOwnProperty.call(obj, key)) {
+                    results = results.concat(findVideoRenderers(obj[key]));
                 }
+            }
+            return results;
+        }
+
+        try {
+            const renderers = findVideoRenderers(data);
+            for (const vr of renderers) {
+                const videoId = vr.videoId;
+                if (!videoId) continue;
+                
+                const getTitleText = () => {
+                    if (vr.title && vr.title.runs && vr.title.runs[0]) return vr.title.runs[0].text;
+                    if (vr.title && vr.title.simpleText) return vr.title.simpleText;
+                    return 'Video';
+                };
+                
+                const getChannelText = () => {
+                    if (vr.ownerText && vr.ownerText.runs && vr.ownerText.runs[0]) return vr.ownerText.runs[0].text;
+                    if (vr.longBylineText && vr.longBylineText.runs && vr.longBylineText.runs[0]) return vr.longBylineText.runs[0].text;
+                    return 'Channel';
+                };
+
+                const getThumbnailUrl = () => {
+                    if (vr.thumbnail && vr.thumbnail.thumbnails && vr.thumbnail.thumbnails[0]) return vr.thumbnail.thumbnails[0].url;
+                    return '';
+                };
+
+                const getDurationText = () => {
+                    if (vr.lengthText && vr.lengthText.simpleText) return vr.lengthText.simpleText;
+                    return 'N/A';
+                };
+
+                videos.push({
+                    id: videoId,
+                    title: getTitleText(),
+                    thumbnail: getThumbnailUrl(),
+                    duration: getDurationText(),
+                    channel: getChannelText()
+                });
             }
         } catch (err) {
             console.error('Error parsing YouTube data:', err);
