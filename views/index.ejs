@@ -2916,24 +2916,26 @@ ${matrixTestCases.map((tc, i) => `${i + 1}. ${tc}`).join('\n')}`;
     <!-- KUMA Desktop Pet -->
     <div id="kuma-pet" class="hidden-cat">
         <div class="kuma-bubble">เหมียว~ 🐾</div>
-        <div class="kuma-body">
-            <div class="head">
-                <div class="ear left"></div>
-                <div class="ear right"></div>
-                <div class="eye left"></div>
-                <div class="eye right"></div>
-                <div class="blush left"></div>
-                <div class="blush right"></div>
-                <div class="nose"></div>
-                <div class="mouth"></div>
+        <div class="kuma-wrapper" style="width: 70px; height: 55px; position: relative; transition: transform 0.2s ease;">
+            <div class="kuma-body">
+                <div class="head">
+                    <div class="ear left"></div>
+                    <div class="ear right"></div>
+                    <div class="eye left"></div>
+                    <div class="eye right"></div>
+                    <div class="blush left"></div>
+                    <div class="blush right"></div>
+                    <div class="nose"></div>
+                    <div class="mouth"></div>
+                </div>
+                <div class="body"></div>
+                <div class="tail"></div>
+                <div class="leg fl"></div>
+                <div class="leg fr"></div>
+                <div class="leg bl"></div>
+                <div class="leg br"></div>
+                <span class="zzz">💤</span>
             </div>
-            <div class="body"></div>
-            <div class="tail"></div>
-            <div class="leg fl"></div>
-            <div class="leg fr"></div>
-            <div class="leg bl"></div>
-            <div class="leg br"></div>
-            <span class="zzz">💤</span>
         </div>
     </div>
 
@@ -3068,7 +3070,8 @@ ${matrixTestCases.map((tc, i) => `${i + 1}. ${tc}`).join('\n')}`;
                     if (posX >= maxX) { posX = maxX; dirX = -1; }
 
                     pet.style.left = posX + 'px';
-                    pet.style.transform = dirX < 0 ? 'scaleX(1)' : 'scaleX(-1)';
+                    const wrapper = pet.querySelector('.kuma-wrapper');
+                    if (wrapper) wrapper.style.transform = dirX < 0 ? 'scaleX(1)' : 'scaleX(-1)';
                 }, 30);
 
                 // Randomly change direction
