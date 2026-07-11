@@ -1851,19 +1851,20 @@
                 if (data.error) {
                     addChatMessage('ai', '❌ ' + data.error);
                 } else {
-                    if (data.action) {
-                        switch (data.action) {
+                    const executeAction = (actionObj) => {
+                        if (!actionObj || !actionObj.action) return;
+                        switch (actionObj.action) {
                             case 'add_testcases':
-                                if (data.data) {
-                                    testCases = [...testCases, ...data.data];
+                                if (actionObj.data) {
+                                    testCases = [...testCases, ...actionObj.data];
                                     renderTable();
                                     showToast('คุมะเพิ่ม Test Case ให้แล้วครับ! 🐾');
                                 }
                                 break;
                             case 'delete_testcases':
-                                if (data.data && Array.isArray(data.data)) {
+                                if (actionObj.data && Array.isArray(actionObj.data)) {
                                     // Sort indices descending to avoid shifting issues
-                                    const sortedIndices = [...data.data]
+                                    const sortedIndices = [...actionObj.data]
                                         .map(i => parseInt(i) - 1)
                                         .filter(i => i >= 0 && i < testCases.length)
                                         .sort((a, b) => b - a);
@@ -1872,13 +1873,13 @@
                                         testCases.splice(idx, 1);
                                     });
                                     renderTable();
-                                    showToast(`คุมะลบข้อที่เลือกให้แล้วครับ ${data.data.join(', ')}! 🐾`);
+                                    showToast(`คุมะลบข้อที่เลือกให้แล้วครับ ${actionObj.data.join(', ')}! 🐾`);
                                 }
                                 break;
                             case 'edit_testcases':
-                                if (data.data && Array.isArray(data.data)) {
+                                if (actionObj.data && Array.isArray(actionObj.data)) {
                                     let editCount = 0;
-                                    data.data.forEach(edit => {
+                                    actionObj.data.forEach(edit => {
                                         const idx = parseInt(edit.index) - 1; // 1-based → 0-based
                                         if (idx >= 0 && idx < testCases.length) {
                                             if (edit.name !== undefined) testCases[idx].name = edit.name;
@@ -1892,9 +1893,9 @@
                                 }
                                 break;
                             case 'switch_page':
-                                if (data.page) {
-                                    switchPage(data.page);
-                                    showToast(`คุมะเปลี่ยนหน้าไปหน้า ${data.page} ให้แล้วครับ! 🐻`);
+                                if (actionObj.page) {
+                                    switchPage(actionObj.page);
+                                    showToast(`คุมะเปลี่ยนหน้าไปหน้า ${actionObj.page} ให้แล้วครับ! 🐻`);
                                 }
                                 break;
                             case 'export_excel':
@@ -1931,8 +1932,8 @@
                                 showToast('คุมะล้างข้อมูลให้เกลี้ยงเลยครับ! 🧼');
                                 break;
                             case 'add_payloads':
-                                if (data.data) {
-                                    const payloads = Array.isArray(data.data) ? data.data : [data.data];
+                                if (actionObj.data) {
+                                    const payloads = Array.isArray(actionObj.data) ? actionObj.data : [actionObj.data];
                                     payloads.forEach(p => {
                                         const entry = {
                                             sheetName: p.sheetName || 'AI Generated',
@@ -1964,35 +1965,35 @@
                                 }
                                 break;
                             case 'copy_text':
-                                if (data.data) {
-                                    navigator.clipboard.writeText(data.data).then(() => {
+                                if (actionObj.data) {
+                                    navigator.clipboard.writeText(actionObj.data).then(() => {
                                         showToast('คุมะคัดลอกข้อความเป็น Clipboard ให้แล้วครับ! 📋');
                                     });
                                 }
                                 break;
                             case 'load_history':
-                                if (typeof data.data === 'number') {
+                                if (typeof actionObj.data === 'number') {
                                     const currentPage = document.getElementById('page1').classList.contains('hidden') ? (document.getElementById('page2').classList.contains('hidden') ? 3 : 2) : 1;
                                     if (currentPage === 1) {
                                         const history = JSON.parse(localStorage.getItem(TESTCASE_HISTORY_KEY) || '[]');
-                                        if (history[data.data]) {
-                                            testCases = [...history[data.data].data];
+                                        if (history[actionObj.data]) {
+                                            testCases = [...history[actionObj.data].data];
                                             renderTable();
                                             showToast('คุมะดึงประวัติ Test Case มาให้แล้วครับ! 📂');
                                         }
                                     } else if (currentPage === 2) {
                                         const history = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
-                                        if (history[data.data]) {
-                                            generatedPayloads = [...history[data.data].payloads];
+                                        if (history[actionObj.data]) {
+                                            generatedPayloads = [...history[actionObj.data].payloads];
                                             renderPayloads();
                                             showToast('คุมะดึงประวัติ Payload มาให้แล้วครับ! 📂');
                                         }
                                     } else {
                                         const history = JSON.parse(localStorage.getItem(MATRIX_HISTORY_KEY) || '[]');
-                                        if (history[data.data]) {
-                                            matrixRequirements = [...history[data.data].requirements];
-                                            matrixTestCases = [...history[data.data].testcases];
-                                            matrixMapping = JSON.parse(JSON.stringify(history[data.data].mapping));
+                                        if (history[actionObj.data]) {
+                                            matrixRequirements = [...history[actionObj.data].requirements];
+                                            matrixTestCases = [...history[actionObj.data].testcases];
+                                            matrixMapping = JSON.parse(JSON.stringify(history[actionObj.data].mapping));
                                             renderMatrix();
                                             showToast('คุมะดึงประวัติ Matrix มาให้แล้วครับ! 📂');
                                         }
@@ -2000,16 +2001,24 @@
                                 }
                                 break;
                             case 'update_matrix':
-                                if (data.data) {
-                                    matrixRequirements = data.data.requirements || [];
-                                    matrixTestCases = data.data.testcases || [];
-                                    matrixMapping = data.data.mapping || {};
+                                if (actionObj.data) {
+                                    matrixRequirements = actionObj.data.requirements || [];
+                                    matrixTestCases = actionObj.data.testcases || [];
+                                    matrixMapping = actionObj.data.mapping || {};
                                     switchPage(3);
                                     renderMatrix();
                                     showToast('คุมะสร้าง Test Coverage Matrix ให้แล้วครับ! 📊🐾');
                                 }
                                 break;
                         }
+                    };
+
+                    if (data.actions && Array.isArray(data.actions)) {
+                        data.actions.forEach(act => {
+                            executeAction(act);
+                        });
+                    } else if (data.action) {
+                        executeAction(data);
                     }
                     if (data.message) addChatMessage('ai', data.message);
 

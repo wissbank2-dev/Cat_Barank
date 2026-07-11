@@ -214,6 +214,45 @@ app.get('/api/template', async (req, res) => {
     }
 });
 
+// Helper to extract all valid JSON objects from a text string
+function extractJsonObjects(text) {
+    const jsonObjects = [];
+    let braceCount = 0;
+    let insideString = false;
+    let startIdx = -1;
+
+    for (let i = 0; i < text.length; i++) {
+        const char = text[i];
+        
+        // Handle string literals to ignore braces inside strings
+        if (char === '"' && text[i - 1] !== '\\') {
+            insideString = !insideString;
+        }
+
+        if (!insideString) {
+            if (char === '{') {
+                if (braceCount === 0) {
+                    startIdx = i;
+                }
+                braceCount++;
+            } else if (char === '}') {
+                braceCount--;
+                if (braceCount === 0 && startIdx !== -1) {
+                    const candidate = text.substring(startIdx, i + 1);
+                    try {
+                        const parsed = JSON.parse(candidate);
+                        jsonObjects.push(parsed);
+                    } catch (e) {
+                        // Not a valid JSON block, ignore
+                    }
+                    startIdx = -1;
+                }
+            }
+        }
+    }
+    return jsonObjects;
+}
+
 // AI Chat Endpoint
 app.post('/api/chat', upload.array('files'), async (req, res) => {
     const { message } = req.body;
@@ -279,15 +318,23 @@ app.post('/api/chat', upload.array('files'), async (req, res) => {
         const result = await chat.sendMessage(parts);
         const responseText = result.response.text();
 
-        // Try to parse if it's a JSON command
+        // Try to parse all JSON commands
         try {
-            const jsonMatch = responseText.match(/\{[\s\S]*\}/);
-            if (jsonMatch) {
-                const jsonObj = JSON.parse(jsonMatch[0]);
-                return res.json(jsonObj);
+            const jsonObjects = extractJsonObjects(responseText);
+            const actions = jsonObjects.filter(obj => obj && obj.action);
+            if (actions.length > 0) {
+                const combinedMessage = actions.map(act => act.message).filter(Boolean).join('\n\n') || responseText;
+                return res.json({
+                    action: actions[0].action,
+                    data: actions[0].data,
+                    page: actions[0].page,
+                    actions: actions,
+                    message: combinedMessage,
+                    instanceId
+                });
             }
         } catch (e) {
-            // Not a JSON command, just a normal text response
+            console.error('JSON actions parsing failed:', e);
         }
 
         res.json({ message: responseText, instanceId });
