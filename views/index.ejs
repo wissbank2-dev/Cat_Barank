@@ -979,30 +979,38 @@
         <div id="pageHome">
             <div class="cat-card p-8 shadow-2xl relative mb-10 text-center">
                 <h2 class="text-2xl font-bold text-rose-500 mb-2 flex items-center justify-center gap-2">
-                    📺 หน้าหลักน้องคุมะ & YouTube Center
+                    📺 ค้นหาและดูวิดีโอ YouTube ในนี้ได้เลย!
                 </h2>
                 <p class="text-sm text-gray-500 mb-6">
-                    ยินดีต้อนรับเข้าสู่เครื่องมือช่วยเขียนเทสของคุมะครับ! สามารถนั่งฟังเพลง Lofi ทำงานชิลๆ หรือวางลิงก์ YouTube เพื่อเปิดดูวิดีโอที่คุณต้องการได้ที่นี่เลยเมี้ยว~ 🐾
+                    คุณแม่มนุษย์สามารถพิมพ์ค้นหาเพลง คลิป หรืออะไรก็ได้บน YouTube แล้วเปิดเล่นสดผ่านเครื่องเล่นด้านล่างนี้ได้ทันทีเลยเมี้ยว! 🐾
                 </p>
 
-                <!-- Input to load custom YouTube Video -->
-                <div class="max-w-md mx-auto mb-6 flex gap-2">
-                    <input type="text" id="ytUrlInput" placeholder="วางลิงก์ YouTube เช่น https://www.youtube.com/watch?v=..." 
-                        class="flex-1 px-4 py-2 border-2 border-rose-50 rounded-xl text-sm focus:border-rose-300 focus:outline-none transition-all">
-                    <button onclick="loadCustomYoutubeVideo()" 
-                        class="bg-rose-500 text-white px-5 py-2 rounded-xl text-sm font-medium hover:bg-rose-600 transition-colors shadow-md">
-                        เปิดวิดีโอ 📺
-                    </button>
+                <!-- YouTube Search Box -->
+                <div class="max-w-xl mx-auto mb-6">
+                    <div class="flex gap-2">
+                        <input type="text" id="ytSearchInput" placeholder="🔍 ค้นหาวิดีโอ เช่น เพลงเพราะๆ, สอนเขียนโค้ด, การ์ตูน..." 
+                            class="flex-1 px-4 py-2 border-2 border-rose-50 rounded-xl text-sm focus:border-rose-300 focus:outline-none transition-all"
+                            onkeydown="if(event.key==='Enter') searchYoutube()">
+                        <button onclick="searchYoutube()" 
+                            class="bg-rose-500 text-white px-6 py-2 rounded-xl text-sm font-medium hover:bg-rose-600 transition-colors shadow-md flex items-center gap-1">
+                            ค้นหา 🔍
+                        </button>
+                    </div>
                 </div>
 
                 <!-- YouTube Player Container -->
                 <div class="relative w-full overflow-hidden rounded-2xl border-4 border-rose-100 shadow-lg mx-auto" style="padding-top: 56.25%; max-width: 720px;">
                     <iframe id="ytPlayer" class="absolute top-0 left-0 w-full h-full"
-                        src="https://www.youtube.com/embed/5qap5aO4i9A" 
+                        src="https://www.youtube.com/embed/1Jgq2Z_8W-c" 
                         title="YouTube video player" frameborder="0" 
                         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
                         allowfullscreen>
                     </iframe>
+                </div>
+
+                <!-- YouTube Search Results -->
+                <div id="ytResults" class="grid grid-cols-2 sm:grid-cols-3 gap-4 mt-6 max-h-[300px] overflow-y-auto pr-2 hidden">
+                    <!-- Dynamic Search Results -->
                 </div>
             </div>
         </div>
@@ -1346,31 +1354,58 @@
             }
         }
 
-        window.loadCustomYoutubeVideo = function() {
-            const input = document.getElementById('ytUrlInput');
-            const player = document.getElementById('ytPlayer');
-            if (!input || !player) return;
+        window.searchYoutube = async function() {
+            const input = document.getElementById('ytSearchInput');
+            const resultsDiv = document.getElementById('ytResults');
+            if (!input || !resultsDiv) return;
             
-            const url = input.value.trim();
-            if (!url) {
-                alert('โปรดระบุลิงก์ YouTube ก่อนนะแง้ว! 😿');
+            const query = input.value.trim();
+            if (!query) {
+                alert('กรุณากรอกคำค้นหาก่อนนะแง้ว! 😿');
                 return;
             }
             
-            const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
-            const match = url.match(regExp);
+            resultsDiv.innerHTML = '<div class="col-span-full text-center py-4 text-rose-400">🐾 กำลังค้นหาคลิปบน YouTube ให้รอแป๊บนึงนะเมี้ยว...</div>';
+            resultsDiv.classList.remove('hidden');
             
-            if (match && match[2].length === 11) {
-                const videoId = match[2];
-                player.src = `https://www.youtube.com/embed/${videoId}?autoplay=1`;
-                showToast('โหลดวิดีโอสำเร็จ! ขอให้มีความสุขกับการรับชมครับ 🐱📺');
-            } else {
-                if (url.length === 11) {
-                    player.src = `https://www.youtube.com/embed/${url}?autoplay=1`;
-                    showToast('โหลดวิดีโอสำเร็จ! ขอให้มีความสุขกับการรับชมครับ 🐱📺');
-                } else {
-                    alert('ลิงก์ YouTube ไม่ถูกต้อง กรุณาตรวจสอบอีกครั้งครับเมี้ยว! 😿');
+            try {
+                const res = await fetch(`/api/youtube-search?q=${encodeURIComponent(query)}`);
+                const data = await res.json();
+                
+                if (!data.items || data.items.length === 0) {
+                    resultsDiv.innerHTML = '<div class="col-span-full text-center py-4 text-gray-400">ไม่พบวิดีโอที่ค้นหาครับ ลองเปลี่ยนคำค้นดูนะแง้ว 😿</div>';
+                    return;
                 }
+                
+                resultsDiv.innerHTML = '';
+                data.items.forEach(video => {
+                    const card = document.createElement('div');
+                    card.className = 'bg-rose-50/20 border border-rose-100/50 rounded-xl p-2 cursor-pointer hover:bg-rose-50/50 hover:shadow-md transition-all text-left flex flex-col gap-2';
+                    card.onclick = () => playYoutubeVideo(video.id, video.title);
+                    
+                    card.innerHTML = `
+                        <div class="relative w-full overflow-hidden rounded-lg" style="padding-top: 56.25%;">
+                            <img src="${video.thumbnail}" class="absolute top-0 left-0 w-full h-full object-cover">
+                            <span class="absolute bottom-1 right-1 bg-black/75 text-white text-[10px] px-1 rounded font-bold">${video.duration}</span>
+                        </div>
+                        <div class="flex-1 flex flex-col justify-between">
+                            <p class="font-bold text-gray-700 text-xs line-clamp-2 leading-tight" title="${video.title}">${escapeHtml(video.title)}</p>
+                            <p class="text-[10px] text-gray-400 mt-1 truncate">${escapeHtml(video.channel)}</p>
+                        </div>
+                    `;
+                    resultsDiv.appendChild(card);
+                });
+            } catch (err) {
+                console.error('YouTube search failed:', err);
+                resultsDiv.innerHTML = '<div class="col-span-full text-center py-4 text-red-400">เกิดข้อผิดพลาดในการค้นหา ลองอีกครั้งนะแง้ว! 😿</div>';
+            }
+        };
+
+        window.playYoutubeVideo = function(videoId, title) {
+            const player = document.getElementById('ytPlayer');
+            if (player) {
+                player.src = `https://www.youtube.com/embed/${videoId}?autoplay=1`;
+                showToast(`กำลังเล่น: ${title} 🐾📺`);
             }
         };
 

@@ -253,6 +253,78 @@ function extractJsonObjects(text) {
     return jsonObjects;
 }
 
+// YouTube No-Key Search Endpoint
+app.get('/api/youtube-search', async (req, res) => {
+    const query = req.query.q;
+    if (!query) {
+        return res.status(400).json({ error: 'Query is required' });
+    }
+    
+    try {
+        const response = await fetch(`https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`, {
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36',
+                'Accept-Language': 'th-TH,th;q=0.9,en;q=0.8'
+            }
+        });
+        const html = await response.text();
+        
+        // Extract ytInitialData JSON object
+        const jsonMatch = html.match(/var ytInitialData = ({[\s\S]*?});<\/script>/);
+        if (!jsonMatch) {
+            return res.json({ items: [] });
+        }
+        
+        const data = JSON.parse(jsonMatch[1]);
+        const videos = [];
+        
+        try {
+            const contents = data.contents.twoColumnSearchResultRenderer.primaryContents.sectionListRenderer.contents;
+            const items = contents.find(c => c.itemSectionRenderer)?.itemSectionRenderer.contents || [];
+            
+            for (const item of items) {
+                if (item.videoRenderer) {
+                    const vr = item.videoRenderer;
+                    const videoId = vr.videoId;
+                    
+                    // Safe parsing helper
+                    const getTitleText = () => {
+                        if (vr.title && vr.title.runs && vr.title.runs[0]) return vr.title.runs[0].text;
+                        if (vr.title && vr.title.simpleText) return vr.title.simpleText;
+                        return 'Video';
+                    };
+                    
+                    const getChannelText = () => {
+                        if (vr.ownerText && vr.ownerText.runs && vr.ownerText.runs[0]) return vr.ownerText.runs[0].text;
+                        if (vr.longBylineText && vr.longBylineText.runs && vr.longBylineText.runs[0]) return vr.longBylineText.runs[0].text;
+                        return 'Channel';
+                    };
+
+                    const getThumbnailUrl = () => {
+                        if (vr.thumbnail && vr.thumbnail.thumbnails && vr.thumbnail.thumbnails[0]) return vr.thumbnail.thumbnails[0].url;
+                        return '';
+                    };
+
+                    videos.push({
+                        id: videoId,
+                        title: getTitleText(),
+                        thumbnail: getThumbnailUrl(),
+                        duration: vr.lengthText?.simpleText || 'N/A',
+                        channel: getChannelText()
+                    });
+                }
+            }
+        } catch (err) {
+            console.error('Error parsing YouTube data:', err);
+        }
+        
+        res.json({ items: videos.slice(0, 10) });
+    } catch (error) {
+        console.error('YouTube search error:', error);
+        res.status(500).json({ error: 'Search failed' });
+    }
+});
+
 // AI Chat Endpoint
 app.post('/api/chat', upload.array('files'), async (req, res) => {
     const { message } = req.body;
