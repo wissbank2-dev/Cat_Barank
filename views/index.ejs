@@ -561,6 +561,114 @@
             }
         }
 
+        /* Rosy cheeks and mouth */
+        .kuma-body .blush {
+            position: absolute;
+            width: 5px;
+            height: 3px;
+            background: rgba(244, 63, 94, 0.4); /* rose-500 pink blush */
+            border-radius: 50%;
+            top: 17px;
+            z-index: 3;
+        }
+        .kuma-body .blush.left {
+            left: 5px;
+        }
+        .kuma-body .blush.right {
+            left: 24px;
+        }
+        
+        .kuma-body .mouth {
+            position: absolute;
+            width: 6px;
+            height: 4px;
+            border: 1.5px solid #c2410c;
+            border-top: none;
+            border-radius: 0 0 3px 3px;
+            top: 18px;
+            left: 14px;
+            z-index: 3;
+        }
+
+        /* Dizzy eyes when dragging */
+        #kuma-pet.dragging .eye {
+            height: 5px !important;
+            width: 5px !important;
+            border-radius: 50% !important;
+            background: transparent !important;
+            border: 1.5px solid #333 !important;
+        }
+        
+        /* Happy state closed eyes */
+        #kuma-pet.happy .eye {
+            height: 3px !important;
+            border-radius: 3px 3px 0 0 !important;
+            background: transparent !important;
+            border: 1.5px solid #333 !important;
+            border-bottom: none !important;
+            top: 14px !important;
+        }
+
+        /* Happy bounce animation on body */
+        #kuma-pet.happy .kuma-body {
+            animation: happyBounce 0.5s ease-in-out 2;
+        }
+        
+        @keyframes happyBounce {
+            0%, 100% { transform: translateY(0) scaleY(1); }
+            50% { transform: translateY(-12px) scaleY(0.9) scaleX(1.05); }
+        }
+
+        /* Speech bubble */
+        .kuma-bubble {
+            position: absolute;
+            top: -45px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: white;
+            color: #db2777; /* pink-600 */
+            border: 2px solid #fecdd3; /* rose-200 */
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            white-space: nowrap;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.3s ease;
+            z-index: 9999;
+        }
+        .kuma-bubble::after {
+            content: '';
+            position: absolute;
+            bottom: -6px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-width: 6px 6px 0;
+            border-style: solid;
+            border-color: white transparent;
+            display: block;
+            width: 0;
+        }
+        .kuma-bubble::before {
+            content: '';
+            position: absolute;
+            bottom: -8px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-width: 8px 8px 0;
+            border-style: solid;
+            border-color: #fecdd3 transparent;
+            display: block;
+            width: 0;
+            z-index: -1;
+        }
+        #kuma-pet.saying .kuma-bubble {
+            opacity: 1;
+            transform: translateX(-50%) translateY(-5px);
+        }
+
         /* Cat House Button */
         #cat-house-btn {
             position: fixed;
@@ -2807,13 +2915,17 @@ ${matrixTestCases.map((tc, i) => `${i + 1}. ${tc}`).join('\n')}`;
 
     <!-- KUMA Desktop Pet -->
     <div id="kuma-pet" class="hidden-cat">
+        <div class="kuma-bubble">เหมียว~ 🐾</div>
         <div class="kuma-body">
             <div class="head">
                 <div class="ear left"></div>
                 <div class="ear right"></div>
                 <div class="eye left"></div>
                 <div class="eye right"></div>
+                <div class="blush left"></div>
+                <div class="blush right"></div>
                 <div class="nose"></div>
+                <div class="mouth"></div>
             </div>
             <div class="body"></div>
             <div class="tail"></div>
@@ -2834,15 +2946,86 @@ ${matrixTestCases.map((tc, i) => `${i + 1}. ${tc}`).join('\n')}`;
         (function () {
             const pet = document.getElementById('kuma-pet');
             const houseBtn = document.getElementById('cat-house-btn');
+            const bubble = pet.querySelector('.kuma-bubble');
             let catOut = false;
             let isDragging = false;
             let walkInterval = null;
             let idleTimeout = null;
             let sleepTimeout = null;
+            let bubbleTimeout = null;
+            let happyTimeout = null;
+            let dragMoved = false;
             let posX = 100, posY = 60;
             let dirX = 1; // 1 = right, -1 = left
             let speed = 1.5;
             let dragOffsetX = 0, dragOffsetY = 0;
+
+            function sayBubble(text, duration = 3000) {
+                if (bubbleTimeout) clearTimeout(bubbleTimeout);
+                bubble.textContent = text;
+                pet.classList.add('saying');
+                
+                bubbleTimeout = setTimeout(() => {
+                    pet.classList.remove('saying');
+                }, duration);
+            }
+
+            function createFloatingEmoji(emoji) {
+                const el = document.createElement('span');
+                el.textContent = emoji;
+                el.style.position = 'absolute';
+                el.style.top = '-10px';
+                el.style.left = '50%';
+                el.style.transform = 'translateX(-50%)';
+                el.style.fontSize = '18px';
+                el.style.pointerEvents = 'none';
+                el.style.zIndex = '9999';
+                el.style.transition = 'all 1s ease-out';
+                pet.appendChild(el);
+                
+                setTimeout(() => {
+                    el.style.transform = 'translate(-50%, -45px) scale(1.4)';
+                    el.style.opacity = '0';
+                }, 50);
+                
+                setTimeout(() => {
+                    el.remove();
+                }, 1000);
+            }
+
+            window.petCat = function () {
+                if (isDragging) return;
+                
+                // Wake up if sleeping
+                if (pet.classList.contains('sleeping')) {
+                    pet.classList.remove('sleeping');
+                    startWalking();
+                    sayBubble('ฮ้าววว~ ตื่นแล้วครับคุณแม่มนุษย์! 🥱🐾');
+                    return;
+                }
+                
+                // Stop walking briefly
+                stopWalking();
+                pet.classList.remove('walking');
+                pet.classList.add('happy');
+                
+                const quotes = [
+                    'เหมียว~ 🐾',
+                    'คุมะรักคุณแม่มนุษย์นะเหมียว~ ❤️',
+                    'วันนี้ทำเก่งมากเลยครับ! 💻',
+                    'คุมะสแตนด์บายตรวจเทสอยู่ครับ! 🔎🐾',
+                    'เกาพุงคุมะอีกๆ เมี้ยว~ 🥰',
+                    'มีอะไรให้คุมะช่วยเขียนเทสบอกได้เลยครับแง้ว! 🦊'
+                ];
+                const randQuote = quotes[Math.floor(Math.random() * quotes.length)];
+                sayBubble(randQuote);
+                
+                if (happyTimeout) clearTimeout(happyTimeout);
+                happyTimeout = setTimeout(() => {
+                    pet.classList.remove('happy');
+                    if (catOut && !isDragging) startWalking();
+                }, 1500);
+            };
 
             // Toggle cat house
             window.toggleCatHouse = function () {
@@ -2885,7 +3068,7 @@ ${matrixTestCases.map((tc, i) => `${i + 1}. ${tc}`).join('\n')}`;
                     if (posX >= maxX) { posX = maxX; dirX = -1; }
 
                     pet.style.left = posX + 'px';
-                    pet.style.transform = dirX < 0 ? 'scaleX(-1)' : 'scaleX(1)';
+                    pet.style.transform = dirX < 0 ? 'scaleX(1)' : 'scaleX(-1)';
                 }, 30);
 
                 // Randomly change direction
@@ -2917,24 +3100,47 @@ ${matrixTestCases.map((tc, i) => `${i + 1}. ${tc}`).join('\n')}`;
                 if (walkInterval) { clearInterval(walkInterval); walkInterval = null; }
             }
 
+            function showRandomMascotState() {
+                if (!catOut || isDragging || pet.classList.contains('sleeping') || pet.classList.contains('happy')) return;
+                const idleQuotes = [
+                    'ฮึบๆ เดินออกกำลังกายซะหน่อย 🐾',
+                    'คุมะพร้อมตรวจงานแล้วครับ! 🔎',
+                    'แอบมองคุณแม่มนุษย์อยู่นะแง้ว~ 👀',
+                    'สู้ๆ นะครับ! คุมะเป็นกำลังใจให้ 💖',
+                    'คัดลอกตารางไปวางใน Google Sheets ได้เลยนะเหมียว! 🟢'
+                ];
+                const randQuote = idleQuotes[Math.floor(Math.random() * idleQuotes.length)];
+                sayBubble(randQuote, 2500);
+            }
+
             function resetIdleTimer() {
                 if (idleTimeout) clearTimeout(idleTimeout);
                 if (sleepTimeout) clearTimeout(sleepTimeout);
                 pet.classList.remove('sleeping');
 
+                // Periodically show thoughts when walking
+                idleTimeout = setInterval(() => {
+                    if (Math.random() < 0.4) {
+                        showRandomMascotState();
+                    }
+                }, 12000);
+
                 sleepTimeout = setTimeout(() => {
                     if (!isDragging && catOut) {
                         stopWalking();
+                        if (idleTimeout) clearInterval(idleTimeout);
                         pet.classList.remove('walking');
                         pet.classList.add('sleeping');
+                        sayBubble('ฟี้... ครอก... 😴', 4000);
                     }
-                }, 15000 + Math.random() * 10000);
+                }, 20000 + Math.random() * 10000);
             }
 
             // ---- Drag & Drop ----
             function startDrag(e) {
                 if (!catOut) return;
                 isDragging = true;
+                dragMoved = false;
                 pet.classList.add('dragging');
                 pet.classList.remove('walking', 'sleeping');
                 stopWalking();
@@ -2950,6 +3156,7 @@ ${matrixTestCases.map((tc, i) => `${i + 1}. ${tc}`).join('\n')}`;
 
             function moveDrag(e) {
                 if (!isDragging) return;
+                dragMoved = true;
                 const clientX = e.touches ? e.touches[0].clientX : e.clientX;
                 const clientY = e.touches ? e.touches[0].clientY : e.clientY;
 
@@ -2981,12 +3188,35 @@ ${matrixTestCases.map((tc, i) => `${i + 1}. ${tc}`).join('\n')}`;
             document.addEventListener('touchmove', moveDrag, { passive: false });
             document.addEventListener('touchend', endDrag);
 
-            // Wake up sleeping cat on click
             pet.addEventListener('click', () => {
-                if (pet.classList.contains('sleeping')) {
-                    pet.classList.remove('sleeping');
-                    startWalking();
-                }
+                if (dragMoved) return;
+                petCat();
+            });
+
+            pet.addEventListener('dblclick', () => {
+                if (isDragging) return;
+                
+                stopWalking();
+                pet.classList.remove('walking', 'sleeping');
+                pet.classList.add('happy');
+                
+                const fishQuotes = [
+                    'ง่ำๆๆๆ! อร่อยสุดยอดเลยเหมียว! 🐟❤️',
+                    'ปลาทูตัวนี้หวานเจี๊ยบ! ขอบคุณนะเหมี้ยว~ 🥰',
+                    'งับ! คุมะอิ่มแปร้ พร้อมรันเทสแล้วครับ! ⚡',
+                    'แง๊ววว~ ของโปรดคุมะเลย! 😻🐾'
+                ];
+                const randQuote = fishQuotes[Math.floor(Math.random() * fishQuotes.length)];
+                sayBubble(randQuote);
+                
+                createFloatingEmoji('🐟');
+                setTimeout(() => createFloatingEmoji('❤️'), 300);
+                
+                if (happyTimeout) clearTimeout(happyTimeout);
+                happyTimeout = setTimeout(() => {
+                    pet.classList.remove('happy');
+                    if (catOut && !isDragging) startWalking();
+                }, 2000);
             });
         })();
     </script>
