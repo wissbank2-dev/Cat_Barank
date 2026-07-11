@@ -3355,12 +3355,17 @@ ${matrixTestCases.map((tc, i) => `${i + 1}. ${tc}`).join('\n')}`;
     <script>
         // ==================== Visitor Statistics Heartbeat ====================
         (function() {
-            let visitorId = sessionStorage.getItem('kuma_visitor_id');
-            let isNewSession = false;
-            
+            // Use localStorage so the same browser/device shares the same ID across tabs
+            let visitorId = localStorage.getItem('kuma_visitor_id');
             if (!visitorId) {
                 visitorId = 'visitor_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-                sessionStorage.setItem('kuma_visitor_id', visitorId);
+                localStorage.setItem('kuma_visitor_id', visitorId);
+            }
+            
+            // Use sessionStorage to detect a new browser session/tab launch for counting
+            let isNewSession = false;
+            if (!sessionStorage.getItem('kuma_session_active')) {
+                sessionStorage.setItem('kuma_session_active', 'true');
                 isNewSession = true;
             }
             
