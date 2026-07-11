@@ -1012,6 +1012,90 @@
                 <div id="ytResults" class="grid grid-cols-2 sm:grid-cols-3 gap-4 mt-6 max-h-[300px] overflow-y-auto pr-2 hidden">
                     <!-- Dynamic Search Results -->
                 </div>
+
+                <!-- 3 New Quick Menus (Fortune, Offline Game, Online Game) -->
+                <div class="flex justify-center gap-4 mt-8 flex-wrap border-t border-rose-50 pt-6">
+                    <button onclick="toggleHomeSection('fortune')" class="bg-gradient-to-r from-purple-400 to-indigo-500 hover:from-purple-500 hover:to-indigo-600 text-white font-bold px-6 py-3 rounded-2xl shadow-md transition-all flex items-center gap-2 hover:-translate-y-0.5">
+                        🔮 ดูดวงกับน้องคุมะ
+                    </button>
+                    <button onclick="toggleHomeSection('offlineGame')" class="bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-500 hover:to-orange-600 text-white font-bold px-6 py-3 rounded-2xl shadow-md transition-all flex items-center gap-2 hover:-translate-y-0.5">
+                        🎮 เล่นเกมออฟไลน์
+                    </button>
+                    <button onclick="toggleHomeSection('onlineGame')" class="bg-gradient-to-r from-teal-400 to-emerald-500 hover:from-teal-500 hover:to-emerald-600 text-white font-bold px-6 py-3 rounded-2xl shadow-md transition-all flex items-center gap-2 hover:-translate-y-0.5">
+                        🌐 เล่นเกมออนไลน์
+                    </button>
+                </div>
+
+                <!-- Interactive Sections (Initially Hidden) -->
+                <div id="homeSectionsContainer" class="mt-8 max-w-2xl mx-auto hidden">
+                    
+                    <!-- Section 1: Fortune Telling -->
+                    <div id="sectionFortune" class="bg-white border-2 border-purple-100 rounded-3xl p-6 shadow-xl relative hidden text-center animate-fade-in">
+                        <h3 class="text-xl font-bold text-purple-600 mb-2 flex items-center justify-center gap-1">🔮 ดูดวงความแม่นยำสูงกับน้องคุมะ</h3>
+                        <p class="text-xs text-gray-400 mb-4">อยากรู้อนาคตเรื่องอะไร ถามคุมะได้เลยเมี้ยว~</p>
+                        
+                        <div class="flex gap-2 max-w-xs mx-auto mb-4">
+                            <select id="fortuneCategory" class="flex-1 px-4 py-2 border-2 border-purple-50 rounded-xl text-sm focus:border-purple-300 focus:outline-none bg-white">
+                                <option value="love">❤️ ความรักความสัมพันธ์</option>
+                                <option value="work">💼 การเรียนและการงาน</option>
+                                <option value="money">💰 การเงินและโชคลาภ</option>
+                                <option value="health">🍀 สุขภาพร่างกาย</option>
+                            </select>
+                            <button onclick="getFortune()" class="bg-purple-500 text-white px-4 py-2 rounded-xl text-sm font-semibold hover:bg-purple-600 transition-colors shadow">
+                                ทำนายดวง
+                            </button>
+                        </div>
+                        
+                        <!-- Prediction Display Area -->
+                        <div id="fortuneResult" class="hidden bg-purple-50/50 border border-purple-100/50 rounded-2xl p-4 mt-4 text-left relative min-h-[100px] flex flex-col justify-center">
+                            <!-- Dynamic Content -->
+                        </div>
+                    </div>
+
+                    <!-- Section 2: Offline Game (Catch the Fish) -->
+                    <div id="sectionOfflineGame" class="bg-white border-2 border-amber-100 rounded-3xl p-6 shadow-xl hidden text-center animate-fade-in">
+                        <h3 class="text-xl font-bold text-amber-600 mb-1 flex items-center justify-center gap-1">🐟 เกมคุมะตะปบปลาทู (Offline)</h3>
+                        <p class="text-xs text-gray-400 mb-4">ใช้เมาส์หรือการทัชขยับคุมะซ้ายขวาเพื่อจับปลา ระวังลูกระเบิดและศัตรูนะแง้ว! 💣</p>
+                        
+                        <div class="flex justify-between items-center mb-2 max-w-[400px] mx-auto text-sm font-bold text-gray-700">
+                            <div>คะแนน: <span id="gameScore">0</span></div>
+                            <div>ชีวิต: <span id="gameLives" class="text-red-500">❤️❤️❤️</span></div>
+                        </div>
+                        
+                        <canvas id="offlineGameCanvas" width="400" height="400" class="border-4 border-amber-100 rounded-2xl bg-amber-50/30 mx-auto max-w-full cursor-none shadow-md"></canvas>
+                        
+                        <div class="mt-4">
+                            <button id="startGameBtn" onclick="initOfflineGame()" class="bg-amber-500 text-white font-bold px-6 py-2 rounded-xl hover:bg-amber-600 transition-colors shadow">
+                                เริ่มเกม 🎮
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Section 3: Online Game (Iframe embed list) -->
+                    <div id="sectionOnlineGame" class="bg-white border-2 border-teal-100 rounded-3xl p-6 shadow-xl hidden text-center animate-fade-in">
+                        <h3 class="text-xl font-bold text-teal-600 mb-1 flex items-center justify-center gap-1">🌐 ศูนย์รวมเกมออนไลน์สุดฮิต</h3>
+                        <p class="text-xs text-gray-400 mb-4">เลือกเกมที่อยากเล่นด้านล่างแล้วสนุกกันเลยเมี้ยว~</p>
+                        
+                        <div class="flex justify-center gap-2 mb-4">
+                            <button onclick="loadOnlineGame('2048')" class="bg-teal-500 text-white text-xs font-semibold px-4 py-2 rounded-lg hover:bg-teal-600 transition-colors shadow">2048 🔢</button>
+                            <button onclick="loadOnlineGame('hextris')" class="bg-teal-500 text-white text-xs font-semibold px-4 py-2 rounded-lg hover:bg-teal-600 transition-colors shadow">Hextris 📐</button>
+                            <button onclick="loadOnlineGame('pacman')" class="bg-teal-500 text-white text-xs font-semibold px-4 py-2 rounded-lg hover:bg-teal-600 transition-colors shadow">Pac-Man 🟡</button>
+                        </div>
+                        
+                        <div class="relative w-full overflow-hidden rounded-2xl border-4 border-teal-50 shadow-md mx-auto" style="height: 480px; max-width: 480px;">
+                            <iframe id="onlineGameIframe" class="absolute top-0 left-0 w-full h-full"
+                                src="" 
+                                frameborder="0" 
+                                allowfullscreen>
+                            </iframe>
+                            <div id="onlineGameEmptyState" class="absolute inset-0 bg-teal-50/50 flex flex-col items-center justify-center text-teal-500">
+                                <div class="text-5xl mb-2">🌐</div>
+                                กรุณาเลือกเกมด้านบนเพื่อเริ่มเล่นครับเมี้ยว!
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
             </div>
         </div>
 
@@ -3395,6 +3479,315 @@ ${matrixTestCases.map((tc, i) => `${i + 1}. ${tc}`).join('\n')}`;
             sendHeartbeat();
             setInterval(sendHeartbeat, 20000);
         })();
+    </script>
+
+    <!-- Home Interactive Sections (Games & Fortune Telling) -->
+    <script>
+        // ==================== Home Interactive Sections ====================
+        window.toggleHomeSection = function(section) {
+            const container = document.getElementById('homeSectionsContainer');
+            const fortune = document.getElementById('sectionFortune');
+            const offline = document.getElementById('sectionOfflineGame');
+            const online = document.getElementById('sectionOnlineGame');
+            
+            container.classList.remove('hidden');
+            fortune.classList.add('hidden');
+            offline.classList.add('hidden');
+            online.classList.add('hidden');
+            
+            // Stop offline game loop if active
+            if (window.stopOfflineGame) window.stopOfflineGame();
+            
+            if (section === 'fortune') {
+                fortune.classList.remove('hidden');
+            } else if (section === 'offlineGame') {
+                offline.classList.remove('hidden');
+            } else if (section === 'onlineGame') {
+                online.classList.remove('hidden');
+            }
+            
+            // Scroll smoothly to section
+            setTimeout(() => {
+                container.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }, 100);
+        };
+        
+        // --- Fortune Telling Code ---
+        const fortunes = {
+            love: [
+                "ความรักช่วงนี้เหมือนขนมแมวเลีย! หอมหวาน ยั่วยวนใจ มีแต่คนอยากวิ่งเข้าหา ใครโสดอยู่จะมีคนมาอ้อนดั่งลูกแมวตัวน้อย 🥰",
+                "วันนี้ถ้าคุยกับแฟน ให้พูดลงท้ายด้วยคำว่า 'เมี้ยว~' หรือ 'แง้ว~' แล้วแฟนจะรักแฟนจะหลงตามใจทุกอย่างเลยเหมียว ❤️",
+                "ดวงความรักสัปดาห์นี้ให้ระวังอาการขี้อ้อนเกินเหตุจนแฟนหมั่นเขี้ยว แฟนอาจจะแกล้งหยิกแก้มหรือกอดแน่นๆ จนหายใจไม่ออกนะแง้ว!",
+                "คนโสดมีเกณฑ์เจอเนื้อคู่ในที่ทำงานหรือร้านกาแฟ ลองสบตาเขาสัก 3 วินาทีแล้วกระพริบตาช้าๆ แบบแมวส่งรักดูนะเหมียว! 😉"
+            ],
+            work: [
+                "การเรียนการงานวันนี้พุ่งกระฉูดเหมือนแมวตอนตีสอง! สมองแล่นปรี๊ด เขียนโค้ดไม่มีติดบั๊ก ส่งงานผ่านฉลุยดั่งสายฟ้าฟาด ⚡💻",
+                "งานที่ยากจะสำเร็จได้ง่ายๆ วันนี้คุมะแผ่พลังงานความโชคดีให้แล้ว ลุยเลยเหมียว! หัวหน้าจะเอ็นดูเหมือนทาสแมวเอ็นดูเจ้านาย",
+                "ช่วงนี้อาจจะรู้สึกเบื่อและอยากนอนเฉยๆ ตลอดวัน (ดั่งวิถีแมวส้ม) แนะนำให้พักสักนิดแล้วหาขนมอร่อยๆ ทาน สมองจะแล่นขึ้นนะแง้ว!",
+                "มีเกณฑ์ได้รับมอบหมายงานใหม่ที่ท้าทายความสามารถ แต่อย่ากลัวไปเลยครับ! คุมะการันตีว่าคุณแม่มนุษย์ทำได้ยอดเยี่ยมแน่นอน ✨"
+            ],
+            money: [
+                "ดวงการเงินโดดเด่นมากกก! มีโชคลาภลอยแบบไม่คาดฝัน เลขนำโชคของคุณวันนี้คือเลขตีนแมว! ลองเสี่ยงโชคดูนะเหมียว 💵🎰",
+                "มีเกณฑ์เสียทรัพย์ให้กับของน่ารักๆ หรืออาหารแมวอร่อยๆ แต่ไม่ต้องห่วง! กระเป๋าเงินคุณจะได้รับการเติมเต็มในเร็ววัน เมี้ยว!",
+                "วันนี้กระเป๋าเงินตุง! เงินไหลเข้าดั่งกระแสน้ำวน แต่อย่าเพิ่งช็อปปิ้งออนไลน์ตอนดึกๆ นะแง้ว ไม่งั้นเงินจะปลิวไปดั่งใบไม้ร่วง 🍂",
+                "ลาภลอยวันนี้ลองขอพรจากรูปปั้นแมวกวักหรือเกาพุงคุมะ 3 ที ท่องนะโม 3 จบดวงจะเฮงคูณสองเลยเหมียว! 🔮"
+            ],
+            health: [
+                "สุขภาพแข็งแรงกระปรี้กระเปร่าดั่งแมวหนุ่ม! แต่ให้ระวังอาการปวดหลัง/ออฟฟิศซินโดรมจากการนั่งหลังขดหลังแข็งเขียนโค้ดนานๆ 🍀",
+                "วันนี้ดวงสุขภาพดีมาก แต่ต้องดื่มน้ำเยอะๆ และอย่าลืมยืดเส้นยืดสาย บิดขี้เกียจเหมือนท่าแมวโยคะสัก 2 นาทีนะเหมียว 🧘‍♀️",
+                "ระวังการนอนดึกจนตาเป็นแพนด้า! พักผ่อนให้เพียงพอเหมือนน้องคุมะที่หลับวันละ 16 ชั่วโมง แล้วผิวพรรณจะเปล่งปลั่งมีออร่าแง้ว 💤",
+                "ระบบย่อยอาหารดีเลิศ แต่ระวังอาการกินจุเพราะความเครียด หากหิวให้เคี้ยวช้าๆ และหลีกเลี่ยงของมันของทอดนะเมี้ยว 🐟"
+            ]
+        };
+        
+        window.getFortune = function() {
+            const cat = document.getElementById('fortuneCategory').value;
+            const display = document.getElementById('fortuneResult');
+            if (!display) return;
+            
+            display.classList.remove('hidden');
+            display.innerHTML = `
+                <div class="text-center py-4 text-purple-400">
+                    <span class="inline-block animate-bounce text-2xl">🔮</span> คุมะกำลังเพ่งกระแสจิตเสี่ยงทายดวงชะตาให้...
+                </div>
+            `;
+            
+            // Play happy animation on Kuma mascot temporarily if available
+            const pet = document.getElementById('kuma-pet');
+            if (pet) {
+                pet.classList.remove('walking', 'sleeping');
+                pet.classList.add('happy');
+                setTimeout(() => pet.classList.remove('happy'), 1500);
+            }
+            
+            setTimeout(() => {
+                const list = fortunes[cat];
+                const randIdx = Math.floor(Math.random() * list.length);
+                const prediction = list[randIdx];
+                const luckyNumber = Math.floor(Math.random() * 9) + 1;
+                const colors = ["ชมพูพาสเทล 🌸", "ส้มคุมะ 🍊", "ฟ้าสดใส 🐬", "ทองร่ำรวย 💰", "แดงโชคดี 🎈", "เขียวเหนี่ยวทรัพย์ 🍀"];
+                const luckyColor = colors[Math.floor(Math.random() * colors.length)];
+                
+                display.innerHTML = `
+                    <div class="flex items-start gap-3">
+                        <div class="text-3xl">🔮</div>
+                        <div>
+                            <p class="font-semibold text-purple-700 text-sm leading-relaxed">${prediction}</p>
+                            <div class="grid grid-cols-2 gap-2 mt-3 pt-3 border-t border-purple-100/50 text-xs text-gray-500 font-bold text-left">
+                                <div>🍀 เลขนำโชค: <span class="text-purple-600 text-sm">${luckyNumber}</span></div>
+                                <div>🎨 สีนำโชค: <span class="text-purple-600">${luckyColor}</span></div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }, 1200);
+        };
+        
+        // --- Offline Game: Catch the Fish ---
+        let gameCanvas, ctx;
+        let gameActive = false;
+        let gameLoopId = null;
+        let basketX = 175;
+        const basketWidth = 60;
+        const basketHeight = 40;
+        let score = 0;
+        let lives = 3;
+        let gameItems = [];
+        let spawnTimer = 0;
+        
+        function drawKumaBasket(x, y) {
+            ctx.fillStyle = '#f59e0b';
+            ctx.beginPath();
+            ctx.ellipse(x + basketWidth/2, y + basketHeight/2, basketWidth/2, basketHeight/2, 0, 0, 2 * Math.PI);
+            ctx.fill();
+            
+            ctx.fillStyle = '#f59e0b';
+            ctx.beginPath();
+            ctx.arc(x + 10, y + 5, 8, 0, 2 * Math.PI);
+            ctx.arc(x + basketWidth - 10, y + 5, 8, 0, 2 * Math.PI);
+            ctx.fill();
+            
+            ctx.fillStyle = '#fee2e2';
+            ctx.beginPath();
+            ctx.arc(x + 10, y + 5, 4, 0, 2 * Math.PI);
+            ctx.arc(x + basketWidth - 10, y + 5, 4, 0, 2 * Math.PI);
+            ctx.fill();
+            
+            ctx.fillStyle = '#1f2937';
+            ctx.beginPath();
+            ctx.arc(x + 20, y + 18, 3, 0, 2 * Math.PI);
+            ctx.arc(x + basketWidth - 20, y + 18, 3, 0, 2 * Math.PI);
+            ctx.fill();
+            
+            ctx.fillStyle = '#1f2937';
+            ctx.beginPath();
+            ctx.arc(x + basketWidth/2, y + 23, 2, 0, 2 * Math.PI);
+            ctx.fill();
+        }
+        
+        window.initOfflineGame = function() {
+            gameCanvas = document.getElementById('offlineGameCanvas');
+            if (!gameCanvas) return;
+            ctx = gameCanvas.getContext('2d');
+            
+            gameCanvas.addEventListener('mousemove', (e) => {
+                const rect = gameCanvas.getBoundingClientRect();
+                const mouseX = e.clientX - rect.left;
+                basketX = mouseX - basketWidth / 2;
+                if (basketX < 0) basketX = 0;
+                if (basketX > gameCanvas.width - basketWidth) basketX = gameCanvas.width - basketWidth;
+            });
+            
+            gameCanvas.addEventListener('touchmove', (e) => {
+                const rect = gameCanvas.getBoundingClientRect();
+                const touchX = e.touches[0].clientX - rect.left;
+                basketX = touchX - basketWidth / 2;
+                if (basketX < 0) basketX = 0;
+                if (basketX > gameCanvas.width - basketWidth) basketX = gameCanvas.width - basketWidth;
+                e.preventDefault();
+            });
+
+            score = 0;
+            lives = 3;
+            gameItems = [];
+            gameActive = true;
+            document.getElementById('gameScore').textContent = score;
+            document.getElementById('gameLives').textContent = '❤️❤️❤️';
+            document.getElementById('startGameBtn').textContent = 'เริ่มใหม่ 🎮';
+            
+            window.stopOfflineGame();
+            gameLoop();
+        };
+        
+        window.stopOfflineGame = function() {
+            gameActive = false;
+            if (gameLoopId) {
+                cancelAnimationFrame(gameLoopId);
+                gameLoopId = null;
+            }
+        };
+        
+        function spawnItem() {
+            if (!gameCanvas) return;
+            const types = ['fish', 'fish', 'fish', 'bomb', 'crab'];
+            const randType = types[Math.floor(Math.random() * types.length)];
+            gameItems.push({
+                x: Math.random() * (gameCanvas.width - 30) + 15,
+                y: -20,
+                speed: 2 + Math.random() * 3 + (score / 150),
+                type: randType,
+                size: 20
+            });
+        }
+        
+        function gameLoop() {
+            if (!gameActive) return;
+            
+            ctx.clearRect(0, 0, gameCanvas.width, gameCanvas.height);
+            
+            spawnTimer++;
+            if (spawnTimer > 35) {
+                spawnItem();
+                spawnTimer = 0;
+            }
+            
+            drawKumaBasket(basketX, gameCanvas.height - basketHeight - 10);
+            
+            for (let i = gameItems.length - 1; i >= 0; i--) {
+                const item = gameItems[i];
+                item.y += item.speed;
+                
+                ctx.beginPath();
+                if (item.type === 'fish') {
+                    ctx.fillStyle = '#60a5fa';
+                    ctx.ellipse(item.x, item.y, 12, 6, 0, 0, 2 * Math.PI);
+                    ctx.fill();
+                    ctx.beginPath();
+                    ctx.moveTo(item.x - 12, item.y);
+                    ctx.lineTo(item.x - 18, item.y - 6);
+                    ctx.lineTo(item.x - 18, item.y + 6);
+                    ctx.fill();
+                } else if (item.type === 'bomb') {
+                    ctx.fillStyle = '#374151';
+                    ctx.arc(item.x, item.y, 10, 0, 2 * Math.PI);
+                    ctx.fill();
+                    ctx.strokeStyle = '#ef4444';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.moveTo(item.x, item.y - 10);
+                    ctx.quadraticCurveTo(item.x + 5, item.y - 15, item.x + 3, item.y - 18);
+                    ctx.stroke();
+                } else if (item.type === 'crab') {
+                    ctx.fillStyle = '#f87171';
+                    ctx.arc(item.x, item.y, 10, 0, Math.PI, true);
+                    ctx.fill();
+                    ctx.lineWidth = 2;
+                    ctx.strokeStyle = '#f87171';
+                    ctx.beginPath();
+                    ctx.moveTo(item.x - 8, item.y); ctx.lineTo(item.x - 14, item.y + 6);
+                    ctx.moveTo(item.x + 8, item.y); ctx.lineTo(item.x + 14, item.y + 6);
+                    ctx.stroke();
+                }
+                
+                const basketY = gameCanvas.height - basketHeight - 10;
+                if (item.y + 10 >= basketY && item.y - 10 <= basketY + basketHeight &&
+                    item.x + 10 >= basketX && item.x - 10 <= basketX + basketWidth) {
+                    
+                    if (item.type === 'fish') {
+                        score += 10;
+                        document.getElementById('gameScore').textContent = score;
+                    } else {
+                        lives--;
+                        let hearts = '';
+                        for (let j = 0; j < lives; j++) hearts += '❤️';
+                        if (hearts === '') hearts = 'ไม่มีชีวิตเหลือแล้ว 😭';
+                        document.getElementById('gameLives').textContent = hearts;
+                        
+                        if (lives <= 0) {
+                            gameActive = false;
+                            ctx.fillStyle = 'rgba(0,0,0,0.6)';
+                            ctx.fillRect(0, 0, gameCanvas.width, gameCanvas.height);
+                            
+                            ctx.fillStyle = '#ffffff';
+                            ctx.font = 'bold 24px inherit';
+                            ctx.textAlign = 'center';
+                            ctx.fillText('เกมจบแล้วแง้ว! 😿', gameCanvas.width / 2, gameCanvas.height / 2 - 20);
+                            
+                            ctx.font = '16px inherit';
+                            ctx.fillText(`คะแนนของพี่คนเก่ง: ${score} คะแนน`, gameCanvas.width / 2, gameCanvas.height / 2 + 15);
+                            return;
+                        }
+                    }
+                    
+                    gameItems.splice(i, 1);
+                    continue;
+                }
+                
+                if (item.y > gameCanvas.height) {
+                    gameItems.splice(i, 1);
+                }
+            }
+            
+            gameLoopId = requestAnimationFrame(gameLoop);
+        }
+        
+        // --- Online Game: Iframe management ---
+        window.loadOnlineGame = function(gameKey) {
+            const iframe = document.getElementById('onlineGameIframe');
+            const emptyState = document.getElementById('onlineGameEmptyState');
+            if (!iframe || !emptyState) return;
+            
+            emptyState.classList.add('hidden');
+            
+            if (gameKey === '2048') {
+                iframe.src = 'https://gabrielecirulli.github.io/2048/';
+            } else if (gameKey === 'hextris') {
+                iframe.src = 'https://hextris.io/';
+            } else if (gameKey === 'pacman') {
+                iframe.src = 'https://macek.github.io/google_pacman/';
+            }
+            showToast(`กำลังโหลดเกมออนไลน์... 🌐🎮`);
+        };
     </script>
 </body>
 
