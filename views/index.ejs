@@ -2176,17 +2176,6 @@
         let matrixMapping = {}; // key: reqIdx (string), value: array of tcIdx (numbers)
         const MATRIX_HISTORY_KEY = 'cat_matrix_history';
 
-        function getTcData(tc) {
-            if (!tc) return { name: '', expected: '' };
-            if (typeof tc === 'string') {
-                return { name: tc, expected: '' };
-            }
-            return {
-                name: tc.name || '',
-                expected: tc.expected || ''
-            };
-        }
-
         window.addRequirement = function () {
             const input = document.getElementById('reqInput');
             const val = input.value.trim();
@@ -2201,7 +2190,7 @@
             const input = document.getElementById('matrixTcInput');
             const val = input.value.trim();
             if (!val) return;
-            matrixTestCases.push({ name: val, expected: '' });
+            matrixTestCases.push(val);
             input.value = '';
             renderMatrix();
             input.focus();
@@ -2212,29 +2201,20 @@
                 showToast('ไม่พบ Test Case ในหน้าแรกครับเมี้ยว 😿');
                 return;
             }
-            // Map to unique name objects with expected
-            const uniqueTcs = [];
-            const seenNames = new Set();
-            testCases.forEach(tc => {
-                if (tc.name && !seenNames.has(tc.name)) {
-                    seenNames.add(tc.name);
-                    uniqueTcs.push({ name: tc.name, expected: tc.expected || '' });
-                }
-            });
-
+            const tcNames = testCases.map(tc => tc.name).filter((val, idx, self) => val && self.indexOf(val) === idx);
+            if (tcNames.length === 0) {
+                showToast('ไม่พบชื่อ Test Case ที่สมบูรณ์ในหน้าแรก 😿');
+                return;
+            }
             if (matrixTestCases.length > 0 && !confirm('ต้องการดึงกรณีทดสอบมาเขียนทับรายการเดิมทั้งหมดใช่หรือไม่?\n(กดยกเลิกเพื่อเพิ่มต่อท้าย)')) {
                 // Add unique only
-                uniqueTcs.forEach(newTc => {
-                    const exists = matrixTestCases.some(existing => {
-                        const existingData = getTcData(existing);
-                        return existingData.name === newTc.name;
-                    });
-                    if (!exists) {
-                        matrixTestCases.push(newTc);
+                tcNames.forEach(name => {
+                    if (!matrixTestCases.includes(name)) {
+                        matrixTestCases.push(name);
                     }
                 });
             } else {
-                matrixTestCases = uniqueTcs;
+                matrixTestCases = tcNames;
                 matrixMapping = {};
             }
             renderMatrix();
@@ -2267,20 +2247,8 @@
             if (text.trim() === '') {
                 deleteMatrixTestCase(tcIdx);
             } else {
-                if (typeof matrixTestCases[tcIdx] === 'string') {
-                    matrixTestCases[tcIdx] = { name: text.trim(), expected: '' };
-                } else {
-                    matrixTestCases[tcIdx].name = text.trim();
-                }
+                matrixTestCases[tcIdx] = text.trim();
                 updateMatrixStats();
-            }
-        };
-
-        window.updateMatrixTestCaseExpected = function (tcIdx, text) {
-            if (typeof matrixTestCases[tcIdx] === 'string') {
-                matrixTestCases[tcIdx] = { name: matrixTestCases[tcIdx], expected: text.trim() };
-            } else {
-                matrixTestCases[tcIdx].expected = text.trim();
             }
         };
 
@@ -2446,8 +2414,7 @@ ${matrixTestCases.map((tc, i) => `${i + 1}. ${tc}`).join('\n')}`;
                 });
                 
                 matrixTestCases.forEach((tc, tIdx) => {
-                    const tcData = getTcData(tc);
-                    const rowData = { tc: tcData.name, expected: tcData.expected };
+                    const rowData = { tc: tc };
                     matrixRequirements.forEach((req, rIdx) => {
                         const isMapped = matrixMapping[rIdx] && matrixMapping[rIdx].includes(tIdx);
                         rowData[`req_${rIdx}`] = isMapped ? '✔️' : '';
@@ -2457,7 +2424,6 @@ ${matrixTestCases.map((tc, i) => `${i + 1}. ${tc}`).join('\n')}`;
                     row.alignment = { vertical: 'middle' };
                     
                     row.getCell('tc').alignment = { vertical: 'middle', horizontal: 'left', wrapText: true };
-                    row.getCell('expected').alignment = { vertical: 'middle', horizontal: 'left', wrapText: true };
                     
                     matrixRequirements.forEach((req, rIdx) => {
                         const cell = row.getCell(`req_${rIdx}`);
@@ -2474,7 +2440,7 @@ ${matrixTestCases.map((tc, i) => `${i + 1}. ${tc}`).join('\n')}`;
                 });
                 
                 // Add footer row in Excel
-                const footRowData = { tc: 'ความครอบคลุม (เงื่อนไข)', expected: '' };
+                const footRowData = { tc: 'ความครอบคลุม (เงื่อนไข)' };
                 matrixRequirements.forEach((req, rIdx) => {
                     const hasCover = matrixMapping[rIdx] && matrixMapping[rIdx].length > 0;
                     footRowData[`req_${rIdx}`] = hasCover ? 'ครอบคลุม' : 'ไม่ครอบคลุม';
@@ -2487,13 +2453,6 @@ ${matrixTestCases.map((tc, i) => `${i + 1}. ${tc}`).join('\n')}`;
                     type: 'pattern',
                     pattern: 'solid',
                     fgColor: { argb: 'FFFDF2F8' } // rose-50
-                };
-                
-                const expCell = footRow.getCell('expected');
-                expCell.fill = {
-                    type: 'pattern',
-                    pattern: 'solid',
-                    fgColor: { argb: 'FFFDF2F8' }
                 };
                 
                 matrixRequirements.forEach((req, rIdx) => {
@@ -2562,15 +2521,9 @@ ${matrixTestCases.map((tc, i) => `${i + 1}. ${tc}`).join('\n')}`;
             hr.className = 'border-b-2 border-rose-50 bg-rose-50/20';
             
             const thReq = document.createElement('th');
-            thReq.className = 'py-3 px-4 text-rose-500 font-semibold text-sm w-1/4';
+            thReq.className = 'py-3 px-4 text-rose-500 font-semibold text-sm w-1/3';
             thReq.textContent = 'Test Scenario';
             hr.appendChild(thReq);
-            
-            // New Test expect column header
-            const thExp = document.createElement('th');
-            thExp.className = 'py-3 px-4 text-rose-500 font-semibold text-sm w-1/4 border-l border-rose-50/50';
-            thExp.textContent = 'Test expect';
-            hr.appendChild(thExp);
             
             matrixRequirements.forEach((req, idx) => {
                 const th = document.createElement('th');
@@ -2609,28 +2562,17 @@ ${matrixTestCases.map((tc, i) => `${i + 1}. ${tc}`).join('\n')}`;
             header.appendChild(hr);
             
             matrixTestCases.forEach((tc, tIdx) => {
-                const tcData = getTcData(tc);
                 const tr = document.createElement('tr');
                 tr.className = 'border-b border-rose-50 hover:bg-rose-50/30 transition-colors';
                 
                 const tdReq = document.createElement('td');
                 tdReq.className = 'py-3 px-4 font-medium text-gray-700 text-sm';
                 tdReq.contentEditable = true;
-                tdReq.textContent = tcData.name;
+                tdReq.textContent = tc;
                 tdReq.onblur = function() {
                     updateMatrixTestCaseName(tIdx, this.innerText);
                 };
                 tr.appendChild(tdReq);
-
-                // New Test expect column cell
-                const tdExp = document.createElement('td');
-                tdExp.className = 'py-3 px-4 font-medium text-gray-600 text-sm border-l border-rose-50/50';
-                tdExp.contentEditable = true;
-                tdExp.textContent = tcData.expected;
-                tdExp.onblur = function() {
-                    updateMatrixTestCaseExpected(tIdx, this.innerText);
-                };
-                tr.appendChild(tdExp);
                 
                 matrixRequirements.forEach((req, rIdx) => {
                     const td = document.createElement('td');
@@ -2666,11 +2608,6 @@ ${matrixTestCases.map((tc, i) => `${i + 1}. ${tc}`).join('\n')}`;
                 tdLabel.className = 'py-3 px-4 text-rose-500 text-sm';
                 tdLabel.textContent = 'ความครอบคลุม (เงื่อนไข)';
                 trFoot.appendChild(tdLabel);
-                
-                // Add empty cell for the Test expect column in the footer
-                const tdEmpty = document.createElement('td');
-                tdEmpty.className = 'py-3 px-4 border-l border-rose-50/50';
-                trFoot.appendChild(tdEmpty);
                 
                 matrixRequirements.forEach((req, rIdx) => {
                     const td = document.createElement('td');
