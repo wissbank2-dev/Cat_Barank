@@ -840,7 +840,7 @@
         </div>
 
         <!-- Navigation Tabs -->
-        <div class="flex justify-center gap-3 mb-4">
+        <div class="flex justify-center gap-3 mb-4 flex-wrap">
             <button id="tabPage1" onclick="switchPage(1)"
                 class="tab-active px-6 py-3 rounded-full font-bold text-sm transition-all">
                 📝 สร้างกรณีทดสอบ
@@ -848,6 +848,10 @@
             <button id="tabPage2" onclick="switchPage(2)"
                 class="tab-inactive px-6 py-3 rounded-full font-bold text-sm transition-all">
                 🔧 JSON Payload Generator
+            </button>
+            <button id="tabPage3" onclick="switchPage(3)"
+                class="tab-inactive px-6 py-3 rounded-full font-bold text-sm transition-all">
+                📊 Test Coverage Matrix
             </button>
         </div>
         <!-- Members Special Button (Separated) -->
@@ -1040,6 +1044,120 @@
                 </div>
             </div>
         </div>
+
+        <!-- ==================== PAGE 3: Test Coverage Matrix ==================== -->
+        <div id="page3" class="hidden">
+            <!-- Configuration / Input Card -->
+            <div class="cat-card p-8 shadow-2xl relative mb-10">
+                <h2 class="text-xl font-bold text-rose-500 mb-4 flex items-center">
+                    <span class="text-2xl mr-2">📊</span> จัดการ Test Scenario และเงื่อนไข
+                </h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Test Cases Input -->
+                    <div>
+                        <label class="block text-sm font-medium text-rose-600 mb-1">Test Scenario</label>
+                        <div class="flex gap-2 mb-2">
+                            <input type="text" id="matrixTcInput" placeholder="เช่น TC_โอนในประเทศ_Acc1_Bank1" class="flex-1 p-3 bg-rose-50 text-sm">
+                            <button onclick="addMatrixTestCase()" class="btn-primary px-4 py-2 rounded-xl text-sm font-bold shadow">เพิ่ม</button>
+                        </div>
+                        <p class="text-xs text-rose-300">ระบุ Test Scenario เป็นแถว (คุณสามารถพิมพ์เพิ่ม หรือคลิกดึงข้อมูลจาก Test Case หน้าแรกได้)</p>
+                    </div>
+                    <!-- Requirements/Features Input -->
+                    <div>
+                        <label class="block text-sm font-medium text-rose-600 mb-1">เงื่อนไข (Column)</label>
+                        <div class="flex gap-2 mb-2">
+                            <input type="text" id="reqInput" placeholder="เช่น โอนเงินในประเทศ" class="flex-1 p-3 bg-rose-50 text-sm">
+                            <button onclick="addRequirement()" class="btn-primary px-4 py-2 rounded-xl text-sm font-bold shadow">เพิ่ม</button>
+                        </div>
+                        <p class="text-xs text-rose-300">ระบุเงื่อนไขหรือฟังก์ชันที่ต้องการตรวจสอบในคอลัมน์</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Preview Matrix Table Card -->
+            <div class="bg-white rounded-[2rem] p-6 shadow-xl border-2 border-rose-100 mb-8">
+                <div class="flex flex-wrap justify-between items-center gap-3 mb-6">
+                    <h2 class="text-xl font-bold text-rose-500 flex items-center">
+                        <span class="mr-2">📋</span> ตารางความครอบคลุม (Coverage Matrix Preview)
+                    </h2>
+                    <div class="flex flex-wrap gap-2">
+                        <button onclick="pullTestCasesFromPage1()"
+                            class="bg-purple-50 text-purple-500 px-4 py-2 rounded-xl text-sm font-medium hover:bg-purple-100 transition-colors">
+                            📥 ดึงจากหน้าแรก
+                        </button>
+                        <button onclick="requestAIAutoMap()"
+                            class="bg-amber-50 text-amber-500 px-4 py-2 rounded-xl text-sm font-medium hover:bg-amber-100 transition-colors">
+                            🤖 ให้คุมะจับคู่ให้
+                        </button>
+                        <button onclick="copyForGoogleSheets()"
+                            class="bg-blue-50 text-blue-500 px-4 py-2 rounded-xl text-sm font-medium hover:bg-blue-100 transition-colors"
+                            title="คัดลอกเป็นแบบตารางสำหรับวางใน Google Sheets (Ctrl+V) ได้ทันที">
+                            🟢 คัดลอกไป Google Sheets
+                        </button>
+                        <button onclick="exportMatrixExcel()"
+                            class="bg-green-100 text-green-600 px-4 py-2 rounded-xl text-sm font-medium hover:bg-green-200 transition-colors">
+                            📥 ส่งออก Excel
+                        </button>
+                        <button onclick="resetMatrix()"
+                            class="bg-rose-50 text-rose-400 px-4 py-2 rounded-xl text-sm font-medium hover:bg-rose-100 transition-colors">
+                            ล้างทั้งหมด
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Matrix Statistics Summary -->
+                <div class="grid grid-cols-3 gap-4 mb-6 bg-rose-50/30 p-4 rounded-2xl border border-rose-100 text-center">
+                    <div>
+                        <div class="text-xs text-rose-400 font-semibold">เงื่อนไขทั้งหมด</div>
+                        <div id="statTotalReqs" class="text-xl font-bold text-rose-600">0</div>
+                    </div>
+                    <div>
+                        <div class="text-xs text-rose-400 font-semibold">Test Scenario ทั้งหมด</div>
+                        <div id="statTotalTcs" class="text-xl font-bold text-rose-600">0</div>
+                    </div>
+                    <div>
+                        <div class="text-xs text-rose-400 font-semibold">ความครอบคลุม (Coverage)</div>
+                        <div id="statCoveragePct" class="text-xl font-bold text-rose-600">0%</div>
+                    </div>
+                </div>
+
+                <!-- Interactive Matrix Table -->
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse min-w-[600px]">
+                        <thead id="matrixHeader">
+                            <!-- Dynamically generated headers -->
+                        </thead>
+                        <tbody id="matrixBody">
+                            <!-- Dynamically generated rows -->
+                        </tbody>
+                    </table>
+                    <div id="matrixEmptyState" class="text-center py-10 text-rose-200">
+                        <div class="text-5xl mb-2">📊</div>
+                        ยังไม่มี Test Scenario หรือเงื่อนไข เพิ่มข้อมูลด้านบนเพื่อเริ่มจับคู่!
+                    </div>
+                </div>
+            </div>
+
+            <!-- Page 3 History -->
+            <div class="mt-8 bg-white rounded-[2rem] p-6 shadow-xl border-2 border-rose-100">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-bold text-rose-500 flex items-center">
+                        <span class="mr-2">📂</span> ประวัติ Test Coverage Matrix ที่บันทึกไว้
+                    </h2>
+                    <button onclick="saveMatrixHistory()"
+                        class="bg-blue-100 text-blue-600 px-4 py-2 rounded-xl text-sm font-medium hover:bg-blue-200 transition-colors">
+                        💾 บันทึกประวัติ
+                    </button>
+                </div>
+                <div id="matrixHistoryList" class="space-y-2">
+                    <!-- Historical matrices will be rendered here -->
+                </div>
+                <div id="matrixHistoryEmpty" class="text-center py-6 text-rose-200">
+                    <div class="text-3xl mb-1">📊</div>
+                    ยังไม่มีประวัติการบันทึก
+                </div>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -1047,19 +1165,27 @@
         function switchPage(page) {
             const page1 = document.getElementById('page1');
             const page2 = document.getElementById('page2');
+            const page3 = document.getElementById('page3');
             const tab1 = document.getElementById('tabPage1');
             const tab2 = document.getElementById('tabPage2');
+            const tab3 = document.getElementById('tabPage3');
+
+            page1.classList.add('hidden');
+            page2.classList.add('hidden');
+            page3.classList.add('hidden');
+            tab1.className = 'tab-inactive px-6 py-3 rounded-full font-bold text-sm transition-all';
+            tab2.className = 'tab-inactive px-6 py-3 rounded-full font-bold text-sm transition-all';
+            tab3.className = 'tab-inactive px-6 py-3 rounded-full font-bold text-sm transition-all';
 
             if (page === 1) {
                 page1.classList.remove('hidden');
-                page2.classList.add('hidden');
                 tab1.className = 'tab-active px-6 py-3 rounded-full font-bold text-sm transition-all';
-                tab2.className = 'tab-inactive px-6 py-3 rounded-full font-bold text-sm transition-all';
-            } else {
-                page1.classList.add('hidden');
+            } else if (page === 2) {
                 page2.classList.remove('hidden');
                 tab2.className = 'tab-active px-6 py-3 rounded-full font-bold text-sm transition-all';
-                tab1.className = 'tab-inactive px-6 py-3 rounded-full font-bold text-sm transition-all';
+            } else if (page === 3) {
+                page3.classList.remove('hidden');
+                tab3.className = 'tab-active px-6 py-3 rounded-full font-bold text-sm transition-all';
             }
         }
 
@@ -1772,29 +1898,35 @@
                                 }
                                 break;
                             case 'export_excel':
-                                const pageToExport = document.getElementById('page1').classList.contains('hidden') ? 2 : 1;
+                                const pageToExport = document.getElementById('page1').classList.contains('hidden') ? (document.getElementById('page2').classList.contains('hidden') ? 3 : 2) : 1;
                                 if (pageToExport === 1) {
                                     if (testCases.length > 0) document.getElementById('exportBtn').click();
                                     else showToast('ยังไม่มีข้อมูล Test Case ให้ส่งออกครับ 😿', 'error');
-                                } else {
+                                } else if (pageToExport === 2) {
                                     if (generatedPayloads.length > 0) document.getElementById('exportPayloadBtn').click();
                                     else showToast('ยังไม่มีข้อมูล Payload ให้ส่งออกครับ 😿', 'error');
+                                } else {
+                                    exportMatrixExcel();
                                 }
                                 break;
                             case 'save_history':
-                                const activeSavePage = document.getElementById('page1').classList.contains('hidden') ? 2 : 1;
+                                const activeSavePage = document.getElementById('page1').classList.contains('hidden') ? (document.getElementById('page2').classList.contains('hidden') ? 3 : 2) : 1;
                                 if (activeSavePage === 1) {
                                     saveTestCaseHistory();
-                                } else {
+                                } else if (activeSavePage === 2) {
                                     showToast('หน้านี้บันทึกประวัติอัติโนมัติเมื่ออัปโหลดครับเมี้ยว 🐾');
+                                } else {
+                                    saveMatrixHistory();
                                 }
                                 break;
                             case 'clear_all':
-                                const activeClearPage = document.getElementById('page1').classList.contains('hidden') ? 2 : 1;
+                                const activeClearPage = document.getElementById('page1').classList.contains('hidden') ? (document.getElementById('page2').classList.contains('hidden') ? 3 : 2) : 1;
                                 if (activeClearPage === 1) {
                                     testCases = []; renderTable();
-                                } else {
+                                } else if (activeClearPage === 2) {
                                     generatedPayloads = []; renderPayloads();
+                                } else {
+                                    resetMatrix(true);
                                 }
                                 showToast('คุมะล้างข้อมูลให้เกลี้ยงเลยครับ! 🧼');
                                 break;
@@ -1840,7 +1972,7 @@
                                 break;
                             case 'load_history':
                                 if (typeof data.data === 'number') {
-                                    const currentPage = document.getElementById('page1').classList.contains('hidden') ? 2 : 1;
+                                    const currentPage = document.getElementById('page1').classList.contains('hidden') ? (document.getElementById('page2').classList.contains('hidden') ? 3 : 2) : 1;
                                     if (currentPage === 1) {
                                         const history = JSON.parse(localStorage.getItem(TESTCASE_HISTORY_KEY) || '[]');
                                         if (history[data.data]) {
@@ -1848,14 +1980,33 @@
                                             renderTable();
                                             showToast('คุมะดึงประวัติ Test Case มาให้แล้วครับ! 📂');
                                         }
-                                    } else {
+                                    } else if (currentPage === 2) {
                                         const history = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
                                         if (history[data.data]) {
                                             generatedPayloads = [...history[data.data].payloads];
                                             renderPayloads();
                                             showToast('คุมะดึงประวัติ Payload มาให้แล้วครับ! 📂');
                                         }
+                                    } else {
+                                        const history = JSON.parse(localStorage.getItem(MATRIX_HISTORY_KEY) || '[]');
+                                        if (history[data.data]) {
+                                            matrixRequirements = [...history[data.data].requirements];
+                                            matrixTestCases = [...history[data.data].testcases];
+                                            matrixMapping = JSON.parse(JSON.stringify(history[data.data].mapping));
+                                            renderMatrix();
+                                            showToast('คุมะดึงประวัติ Matrix มาให้แล้วครับ! 📂');
+                                        }
                                     }
+                                }
+                                break;
+                            case 'update_matrix':
+                                if (data.data) {
+                                    matrixRequirements = data.data.requirements || [];
+                                    matrixTestCases = data.data.testcases || [];
+                                    matrixMapping = data.data.mapping || {};
+                                    switchPage(3);
+                                    renderMatrix();
+                                    showToast('คุมะสร้าง Test Coverage Matrix ให้แล้วครับ! 📊🐾');
                                 }
                                 break;
                         }
@@ -2018,6 +2169,563 @@
             document.body.appendChild(toast);
             setTimeout(() => toast.remove(), 2500);
         }
+
+        // ==================== PAGE 3: Test Coverage Matrix Logic ====================
+        let matrixRequirements = [];
+        let matrixTestCases = [];
+        let matrixMapping = {}; // key: reqIdx (string), value: array of tcIdx (numbers)
+        const MATRIX_HISTORY_KEY = 'cat_matrix_history';
+
+        window.addRequirement = function () {
+            const input = document.getElementById('reqInput');
+            const val = input.value.trim();
+            if (!val) return;
+            matrixRequirements.push(val);
+            input.value = '';
+            renderMatrix();
+            input.focus();
+        };
+
+        window.addMatrixTestCase = function () {
+            const input = document.getElementById('matrixTcInput');
+            const val = input.value.trim();
+            if (!val) return;
+            matrixTestCases.push(val);
+            input.value = '';
+            renderMatrix();
+            input.focus();
+        };
+
+        window.pullTestCasesFromPage1 = function () {
+            if (testCases.length === 0) {
+                showToast('ไม่พบ Test Case ในหน้าแรกครับเมี้ยว 😿');
+                return;
+            }
+            const tcNames = testCases.map(tc => tc.name).filter((val, idx, self) => val && self.indexOf(val) === idx);
+            if (tcNames.length === 0) {
+                showToast('ไม่พบชื่อ Test Case ที่สมบูรณ์ในหน้าแรก 😿');
+                return;
+            }
+            if (matrixTestCases.length > 0 && !confirm('ต้องการดึงกรณีทดสอบมาเขียนทับรายการเดิมทั้งหมดใช่หรือไม่?\n(กดยกเลิกเพื่อเพิ่มต่อท้าย)')) {
+                // Add unique only
+                tcNames.forEach(name => {
+                    if (!matrixTestCases.includes(name)) {
+                        matrixTestCases.push(name);
+                    }
+                });
+            } else {
+                matrixTestCases = tcNames;
+                matrixMapping = {};
+            }
+            renderMatrix();
+            showToast('ดึงกรณีทดสอบจากหน้าแรกสำเร็จ! 🐾');
+        };
+
+        window.toggleMatrixMapping = function (reqIdx, tcIdx) {
+            if (!matrixMapping[reqIdx]) {
+                matrixMapping[reqIdx] = [];
+            }
+            const idx = matrixMapping[reqIdx].indexOf(tcIdx);
+            if (idx > -1) {
+                matrixMapping[reqIdx].splice(idx, 1);
+            } else {
+                matrixMapping[reqIdx].push(tcIdx);
+            }
+            renderMatrix();
+        };
+
+        window.updateRequirementText = function (reqIdx, text) {
+            if (text.trim() === '') {
+                deleteRequirement(reqIdx);
+            } else {
+                matrixRequirements[reqIdx] = text.trim();
+                updateMatrixStats();
+            }
+        };
+
+        window.updateMatrixTestCaseName = function (tcIdx, text) {
+            if (text.trim() === '') {
+                deleteMatrixTestCase(tcIdx);
+            } else {
+                matrixTestCases[tcIdx] = text.trim();
+                updateMatrixStats();
+            }
+        };
+
+        window.deleteRequirement = function (reqIdx) {
+            matrixRequirements.splice(reqIdx, 1);
+            
+            // Adjust mapping keys
+            const newMapping = {};
+            for (const key in matrixMapping) {
+                const kNum = parseInt(key);
+                if (kNum === reqIdx) continue;
+                if (kNum > reqIdx) {
+                    newMapping[String(kNum - 1)] = matrixMapping[key];
+                } else {
+                    newMapping[key] = matrixMapping[key];
+                }
+            }
+            matrixMapping = newMapping;
+            renderMatrix();
+        };
+
+        window.deleteMatrixTestCase = function (tcIdx) {
+            matrixTestCases.splice(tcIdx, 1);
+            
+            // Adjust mapping values
+            for (const key in matrixMapping) {
+                matrixMapping[key] = matrixMapping[key]
+                    .filter(val => val !== tcIdx)
+                    .map(val => val > tcIdx ? val - 1 : val);
+            }
+            renderMatrix();
+        };
+
+        window.updateMatrixStats = function () {
+            const statTotalReqs = document.getElementById('statTotalReqs');
+            const statTotalTcs = document.getElementById('statTotalTcs');
+            const statCoveragePct = document.getElementById('statCoveragePct');
+            
+            if (!statTotalReqs || !statTotalTcs || !statCoveragePct) return;
+            
+            const totalReqs = matrixRequirements.length;
+            const totalTcs = matrixTestCases.length;
+            
+            statTotalReqs.textContent = totalReqs;
+            statTotalTcs.textContent = totalTcs;
+            
+            if (totalReqs === 0) {
+                statCoveragePct.textContent = '0%';
+                return;
+            }
+            
+            let coveredReqsCount = 0;
+            for (let i = 0; i < totalReqs; i++) {
+                if (matrixMapping[i] && matrixMapping[i].length > 0) {
+                    coveredReqsCount++;
+                }
+            }
+            
+            const pct = Math.round((coveredReqsCount / totalReqs) * 100);
+            statCoveragePct.textContent = `${pct}%`;
+        };
+
+        window.resetMatrix = function (skipConfirm = false) {
+            if (!skipConfirm && !confirm('คุณต้องการล้างข้อมูลความครอบคลุมทั้งหมดใช่หรือไม่?')) return;
+            matrixRequirements = [];
+            matrixTestCases = [];
+            matrixMapping = {};
+            renderMatrix();
+            if (!skipConfirm) showToast('ล้างตารางเมทริกซ์สำเร็จ! 🧼');
+        };
+
+        window.requestAIAutoMap = function () {
+            if (matrixRequirements.length === 0 || matrixTestCases.length === 0) {
+                alert('โปรดเพิ่ม Test Scenario และเงื่อนไขก่อนขอให้คุมะวิเคราะห์จับคู่นะแง้ว!');
+                return;
+            }
+            
+            const messageText = `ช่วยวิเคราะห์เงื่อนไข (เงื่อนไข) และ Test Scenario ต่อไปนี้ แล้วส่ง JSON action "update_matrix" เพื่อจับคู่ความครอบคลุม (Test Coverage Mapping) ให้หน่อยครับเมี้ยว:
+            
+เงื่อนไข (Column):
+${matrixRequirements.map((r, i) => `${i + 1}. ${r}`).join('\n')}
+
+Test Scenario (Row):
+${matrixTestCases.map((tc, i) => `${i + 1}. ${tc}`).join('\n')}`;
+
+            if (!isAIOpen) {
+                toggleAI();
+            }
+            
+            const chatInput = document.getElementById('chat-input');
+            chatInput.value = messageText;
+            sendMessage();
+        };
+
+        window.copyForGoogleSheets = function () {
+            if (matrixTestCases.length === 0) {
+                alert('ยังไม่มีข้อมูล Test Scenario ในการคัดลอกครับ 😿');
+                return;
+            }
+            
+            let tsv = '';
+            
+            // Header Row
+            const headers = ['Test Scenario'];
+            matrixRequirements.forEach(req => {
+                headers.push(req);
+            });
+            tsv += headers.join('\t') + '\n';
+            
+            // Data Rows
+            matrixTestCases.forEach((tc, tIdx) => {
+                const row = [tc];
+                matrixRequirements.forEach((req, rIdx) => {
+                    const isMapped = matrixMapping[rIdx] && matrixMapping[rIdx].includes(tIdx);
+                    row.push(isMapped ? '✔️' : '');
+                });
+                tsv += row.join('\t') + '\n';
+            });
+            
+            // Add coverage footer row
+            const footRow = ['ความครอบคลุม (เงื่อนไข)'];
+            matrixRequirements.forEach((req, rIdx) => {
+                const hasCover = matrixMapping[rIdx] && matrixMapping[rIdx].length > 0;
+                footRow.push(hasCover ? 'ครอบคลุม' : 'ไม่ครอบคลุม');
+            });
+            tsv += footRow.join('\t') + '\n';
+            
+            navigator.clipboard.writeText(tsv).then(() => {
+                showToast('คัดลอกเมทริกซ์ในรูปแบบ Google Sheets สำเร็จ! วาง (Ctrl+V) ได้เลยครับ 🟢🐾');
+            }).catch(err => {
+                console.error('TSV copy failed:', err);
+                alert('ไม่สามารถคัดลอกได้: ' + err.message);
+            });
+        };
+
+        async function exportMatrixExcel() {
+            if (matrixTestCases.length === 0) {
+                alert('ยังไม่มีข้อมูล Test Scenario ในการส่งออกครับ 😿');
+                return;
+            }
+            try {
+                const workbook = new ExcelJS.Workbook();
+                const worksheet = workbook.addWorksheet('Test Coverage Matrix');
+                
+                const cols = [
+                    { header: 'Test Scenario', key: 'tc', width: 35 }
+                ];
+                matrixRequirements.forEach((req, idx) => {
+                    cols.push({ header: req, key: `req_${idx}`, width: 15 });
+                });
+                worksheet.columns = cols;
+                
+                const headerRow = worksheet.getRow(1);
+                headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+                headerRow.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+                
+                headerRow.eachCell((cell) => {
+                    cell.fill = {
+                        type: 'pattern',
+                        pattern: 'solid',
+                        fgColor: { argb: 'FFFDA4AF' }
+                    };
+                });
+                
+                matrixTestCases.forEach((tc, tIdx) => {
+                    const rowData = { tc: tc };
+                    matrixRequirements.forEach((req, rIdx) => {
+                        const isMapped = matrixMapping[rIdx] && matrixMapping[rIdx].includes(tIdx);
+                        rowData[`req_${rIdx}`] = isMapped ? '✔️' : '';
+                    });
+                    
+                    const row = worksheet.addRow(rowData);
+                    row.alignment = { vertical: 'middle' };
+                    
+                    row.getCell('tc').alignment = { vertical: 'middle', horizontal: 'left', wrapText: true };
+                    
+                    matrixRequirements.forEach((req, rIdx) => {
+                        const cell = row.getCell(`req_${rIdx}`);
+                        cell.alignment = { vertical: 'middle', horizontal: 'center' };
+                        if (cell.value === '✔️') {
+                            cell.font = { bold: true, color: { argb: 'FF059669' } };
+                            cell.fill = {
+                                type: 'pattern',
+                                pattern: 'solid',
+                                fgColor: { argb: 'FFD1FAE5' }
+                            };
+                        }
+                    });
+                });
+                
+                // Add footer row in Excel
+                const footRowData = { tc: 'ความครอบคลุม (เงื่อนไข)' };
+                matrixRequirements.forEach((req, rIdx) => {
+                    const hasCover = matrixMapping[rIdx] && matrixMapping[rIdx].length > 0;
+                    footRowData[`req_${rIdx}`] = hasCover ? 'ครอบคลุม' : 'ไม่ครอบคลุม';
+                });
+                const footRow = worksheet.addRow(footRowData);
+                footRow.alignment = { vertical: 'middle' };
+                const tcCell = footRow.getCell('tc');
+                tcCell.font = { bold: true, color: { argb: 'FFBE185D' } }; // rose-700
+                tcCell.fill = {
+                    type: 'pattern',
+                    pattern: 'solid',
+                    fgColor: { argb: 'FFFDF2F8' } // rose-50
+                };
+                
+                matrixRequirements.forEach((req, rIdx) => {
+                    const cell = footRow.getCell(`req_${rIdx}`);
+                    cell.alignment = { vertical: 'middle', horizontal: 'center' };
+                    cell.font = { bold: true };
+                    const hasCover = matrixMapping[rIdx] && matrixMapping[rIdx].length > 0;
+                    if (hasCover) {
+                        cell.font = { bold: true, color: { argb: 'FF059669' } };
+                        cell.fill = {
+                            type: 'pattern',
+                            pattern: 'solid',
+                            fgColor: { argb: 'FFD1FAE5' }
+                        };
+                    } else {
+                        cell.font = { bold: true, color: { argb: 'FFDC2626' } };
+                        cell.fill = {
+                            type: 'pattern',
+                            pattern: 'solid',
+                            fgColor: { argb: 'FFFEE2E2' }
+                        };
+                    }
+                });
+                
+                for (let r = 1; r <= worksheet.rowCount; r++) {
+                    const row = worksheet.getRow(r);
+                    for (let c = 1; c <= cols.length; c++) {
+                        const cell = row.getCell(c);
+                        cell.border = {
+                            top: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+                            left: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+                            bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+                            right: { style: 'thin', color: { argb: 'FFE2E8F0' } }
+                        };
+                    }
+                }
+                
+                const buffer = await workbook.xlsx.writeBuffer();
+                const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+                saveAs(blob, 'Cat_Test_Coverage_Matrix.xlsx');
+                showToast('ส่งออก Excel Test Coverage Matrix สำเร็จ! 📊📥');
+            } catch (error) {
+                console.error('Matrix export failed:', error);
+                alert('เกิดข้อผิดพลาดในการส่งออกไฟล์ Matrix: ' + error.message);
+            }
+        }
+
+        window.renderMatrix = function () {
+            const header = document.getElementById('matrixHeader');
+            const body = document.getElementById('matrixBody');
+            const emptyState = document.getElementById('matrixEmptyState');
+            
+            if (!header || !body || !emptyState) return;
+            
+            header.innerHTML = '';
+            body.innerHTML = '';
+            
+            if (matrixRequirements.length === 0 && matrixTestCases.length === 0) {
+                emptyState.classList.remove('hidden');
+                updateMatrixStats();
+                return;
+            }
+            emptyState.classList.add('hidden');
+            
+            const hr = document.createElement('tr');
+            hr.className = 'border-b-2 border-rose-50 bg-rose-50/20';
+            
+            const thReq = document.createElement('th');
+            thReq.className = 'py-3 px-4 text-rose-500 font-semibold text-sm w-1/3';
+            thReq.textContent = 'Test Scenario';
+            hr.appendChild(thReq);
+            
+            matrixRequirements.forEach((req, idx) => {
+                const th = document.createElement('th');
+                th.className = 'py-3 px-4 text-rose-400 font-semibold text-sm text-center border-l border-rose-50/50 min-w-[120px] relative group';
+                
+                const titleSpan = document.createElement('span');
+                titleSpan.contentEditable = true;
+                titleSpan.className = 'outline-none focus:bg-white focus:border focus:border-rose-300 px-1 rounded block';
+                titleSpan.textContent = req;
+                titleSpan.onblur = function() {
+                    updateRequirementText(idx, this.innerText);
+                };
+                
+                const delBtn = document.createElement('button');
+                delBtn.className = 'absolute -top-1 -right-1 bg-red-100 text-red-500 rounded-full w-4 h-4 text-[9px] font-bold items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity';
+                delBtn.textContent = '✕';
+                delBtn.onclick = function(e) {
+                    e.stopPropagation();
+                    deleteRequirement(idx);
+                };
+                
+                const wrapDiv = document.createElement('div');
+                wrapDiv.className = 'relative inline-block pr-3 w-full';
+                wrapDiv.appendChild(titleSpan);
+                wrapDiv.appendChild(delBtn);
+                
+                th.appendChild(wrapDiv);
+                hr.appendChild(th);
+            });
+            
+            const thAct = document.createElement('th');
+            thAct.className = 'py-3 px-4 text-rose-500 font-semibold text-sm text-center border-l border-rose-50/50 w-16';
+            thAct.textContent = 'จัดการ';
+            hr.appendChild(thAct);
+            
+            header.appendChild(hr);
+            
+            matrixTestCases.forEach((tc, tIdx) => {
+                const tr = document.createElement('tr');
+                tr.className = 'border-b border-rose-50 hover:bg-rose-50/30 transition-colors';
+                
+                const tdReq = document.createElement('td');
+                tdReq.className = 'py-3 px-4 font-medium text-gray-700 text-sm';
+                tdReq.contentEditable = true;
+                tdReq.textContent = tc;
+                tdReq.onblur = function() {
+                    updateMatrixTestCaseName(tIdx, this.innerText);
+                };
+                tr.appendChild(tdReq);
+                
+                matrixRequirements.forEach((req, rIdx) => {
+                    const td = document.createElement('td');
+                    td.className = 'py-3 px-4 text-center border-l border-rose-50/50 cursor-pointer select-none text-xl hover:bg-rose-100/30 transition-colors';
+                    
+                    const isMapped = matrixMapping[rIdx] && matrixMapping[rIdx].includes(tIdx);
+                    if (isMapped) {
+                        td.textContent = '🐾';
+                        td.className += ' text-rose-400 bg-rose-50/20';
+                    }
+                    
+                    td.onclick = function() {
+                        toggleMatrixMapping(rIdx, tIdx);
+                    };
+                    tr.appendChild(td);
+                });
+                
+                const tdAct = document.createElement('td');
+                tdAct.className = 'py-3 px-4 text-center border-l border-rose-50/50';
+                tdAct.innerHTML = `
+                    <button onclick="deleteMatrixTestCase(${tIdx})" class="btn-danger w-6 h-6 rounded-full inline-flex items-center justify-center font-bold text-xs" title="ลบ Test Scenario">✕</button>
+                `;
+                tr.appendChild(tdAct);
+                
+                body.appendChild(tr);
+            });
+            
+            if (matrixTestCases.length > 0 && matrixRequirements.length > 0) {
+                const trFoot = document.createElement('tr');
+                trFoot.className = 'bg-rose-50/10 font-bold border-t-2 border-rose-50';
+                
+                const tdLabel = document.createElement('td');
+                tdLabel.className = 'py-3 px-4 text-rose-500 text-sm';
+                tdLabel.textContent = 'ความครอบคลุม (เงื่อนไข)';
+                trFoot.appendChild(tdLabel);
+                
+                matrixRequirements.forEach((req, rIdx) => {
+                    const td = document.createElement('td');
+                    td.className = 'py-3 px-4 text-center border-l border-rose-50/50 text-xs';
+                    const hasCover = matrixMapping[rIdx] && matrixMapping[rIdx].length > 0;
+                    if (hasCover) {
+                        td.innerHTML = '<span class="text-green-500 bg-green-50 px-2 py-1 rounded-full">ครอบคลุม ✔️</span>';
+                    } else {
+                        td.innerHTML = '<span class="text-rose-400 bg-rose-50 px-2 py-1 rounded-full">ไม่ครอบคลุม ✕</span>';
+                    }
+                    trFoot.appendChild(td);
+                });
+                
+                const tdActEmpty = document.createElement('td');
+                tdActEmpty.className = 'py-3 px-4 border-l border-rose-50/50';
+                trFoot.appendChild(tdActEmpty);
+                
+                body.appendChild(trFoot);
+            }
+            
+            updateMatrixStats();
+        };
+
+        window.saveMatrixHistory = function () {
+            if (matrixRequirements.length === 0 && matrixTestCases.length === 0) {
+                alert('โปรดระบุข้อมูล Matrix ก่อนบันทึกนะแง้ว!');
+                return;
+            }
+            const name = prompt('กรุณาตั้งชื่อชุด Test Coverage Matrix นี้:', matrixRequirements[0] ? `เมทริกซ์สำหรับ ${matrixRequirements[0]}` : 'เมทริกซ์ใหม่');
+            if (name === null) return;
+            
+            const history = JSON.parse(localStorage.getItem(MATRIX_HISTORY_KEY) || '[]');
+            history.unshift({
+                id: Date.now(),
+                name: name || 'ไม่ได้ระบุชื่อ',
+                date: new Date().toLocaleString('th-TH'),
+                requirements: [...matrixRequirements],
+                testcases: [...matrixTestCases],
+                mapping: JSON.parse(JSON.stringify(matrixMapping))
+            });
+            localStorage.setItem(MATRIX_HISTORY_KEY, JSON.stringify(history));
+            renderMatrixHistory();
+            showToast('บันทึกประวัติเมทริกซ์สำเร็จ! 💾');
+        };
+
+        function renderMatrixHistory() {
+            const list = document.getElementById('matrixHistoryList');
+            const empty = document.getElementById('matrixHistoryEmpty');
+            if (!list || !empty) return;
+            const history = JSON.parse(localStorage.getItem(MATRIX_HISTORY_KEY) || '[]');
+            
+            list.innerHTML = '';
+            if (history.length === 0) {
+                empty.classList.remove('hidden');
+                return;
+            }
+            empty.classList.add('hidden');
+            
+            history.forEach((item, idx) => {
+                const el = document.createElement('div');
+                el.className = 'flex items-center justify-between bg-white border-2 border-rose-50 rounded-xl px-4 py-3 hover:border-rose-200 transition-all shadow-sm';
+                el.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <span class="text-xl">📊</span>
+                        <div>
+                            <p class="font-bold text-gray-700 text-sm">${escapeHtml(item.name)}</p>
+                            <p class="text-xs text-gray-400">${item.date} · ${item.requirements.length} เงื่อนไข · ${item.testcases.length} Scenario</p>
+                        </div>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="loadMatrixFromHistory(${idx})" class="bg-rose-50 text-rose-500 px-3 py-1 rounded-lg text-xs font-bold hover:bg-rose-100 transition-colors">
+                            📂 ดึงข้อมูล
+                        </button>
+                        <button onclick="deleteMatrixHistory(${idx})" class="text-gray-300 hover:text-red-400 p-1 transition-colors">
+                            ✕
+                        </button>
+                    </div>
+                `;
+                list.appendChild(el);
+            });
+        }
+
+        window.loadMatrixFromHistory = function (idx) {
+            const history = JSON.parse(localStorage.getItem(MATRIX_HISTORY_KEY) || '[]');
+            if (confirm('ต้องการดึงข้อมูลชุดนี้มาแทนที่ข้อมูลปัจจุบันใช่หรือไม่?')) {
+                matrixRequirements = [...history[idx].requirements];
+                matrixTestCases = [...history[idx].testcases];
+                matrixMapping = JSON.parse(JSON.stringify(history[idx].mapping));
+                renderMatrix();
+                showToast('ดึงข้อมูลเมทริกซ์สำเร็จ! 🐾');
+            }
+        };
+
+        window.deleteMatrixHistory = function (idx) {
+            if (!confirm('ยืนยันระบบลบบันทึกเมทริกซ์ชุดนี้?')) return;
+            const history = JSON.parse(localStorage.getItem(MATRIX_HISTORY_KEY) || '[]');
+            history.splice(idx, 1);
+            localStorage.setItem(MATRIX_HISTORY_KEY, JSON.stringify(history));
+            renderMatrixHistory();
+            showToast('ลบประวัติแล้ว');
+        };
+        
+        setTimeout(() => {
+            const reqInput = document.getElementById('reqInput');
+            const matrixTcInput = document.getElementById('matrixTcInput');
+            if (reqInput) {
+                reqInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') addRequirement();
+                });
+            }
+            if (matrixTcInput) {
+                matrixTcInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') addMatrixTestCase();
+                });
+            }
+            renderMatrixHistory();
+            renderMatrix();
+        }, 500);
     </script>
 
     <!-- KUMA Desktop Pet -->

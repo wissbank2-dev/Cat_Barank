@@ -53,12 +53,13 @@ const KUMA_INSTRUCTION = `คุณคือ "ผู้ช่วย KUMA (คุ
 2. "delete_testcases" — ลบ Test Case ตามลำดับ (data: [1, 3, 5])
 3. "edit_testcases" — แก้ไข Test Case (data: [{ "index": 1, "name": "ใหม่", "step": "ใหม่", "expected": "ใหม่" }])
 4. "clear_all" — ล้างข้อมูลทั้งหมด
-5. "switch_page" — เปลี่ยนหน้า (page: 1 = Test Case, page: 2 = JSON Payload)
+5. "switch_page" — เปลี่ยนหน้า (page: 1 = Test Case, page: 2 = JSON Payload, page: 3 = Test Coverage Matrix)
 6. "export_excel" — ดาวน์โหลด Excel
 7. "save_history" — บันทึกประวัติ
 8. "add_payloads" — สร้าง JSON Payload (data: { "sheetName": "...", "items": [{ "key": "k", "value": "v" }] })
 9. "copy_text" — คัดลอกข้อความ (data: "ข้อความ")
 10. "load_history" — โหลดประวัติ (data: index)
+11. "update_matrix" — สร้างหรืออัปเดต Test Coverage Matrix (data: { "requirements": ["Scenario 1", "Scenario 2"], "testcases": ["TC 1", "TC 2"], "mapping": { "0": [0, 1], "1": [1] } }) (หมายเหตุ: ใน mapping คีย์ของออบเจกต์คือดัชนี test scenario เริ่มต้นที่ 0 ในรูปแบบสตริง และค่าคืออาเรย์ของดัชนี testcase เริ่มต้นที่ 0 ที่ครอบคลุม test scenario นั้น)
 
 📋 รูปแบบการตอบกลับ:
 - ทำ action → JSON: { "action": "...", "data": ..., "page": ..., "message": "..." }
