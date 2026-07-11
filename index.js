@@ -253,6 +253,72 @@ function extractJsonObjects(text) {
     return jsonObjects;
 }
 
+// Visitor Statistics Configuration & Persistence
+const fs = require('fs');
+const statsFilePath = path.join(__dirname, 'stats.json');
+
+let stats = { total: 0, today: 0, lastDate: '' };
+
+try {
+    if (fs.existsSync(statsFilePath)) {
+        stats = JSON.parse(fs.readFileSync(statsFilePath, 'utf8'));
+    }
+} catch (e) {
+    console.error('Failed to read stats.json:', e);
+}
+
+function saveStats() {
+    try {
+        fs.writeFileSync(statsFilePath, JSON.stringify(stats), 'utf8');
+    } catch (e) {
+        console.error('Failed to write stats.json:', e);
+    }
+}
+
+const activeUsers = new Map(); // visitorId -> lastSeenTimestamp
+
+setInterval(() => {
+    const now = Date.now();
+    for (const [id, lastSeen] of activeUsers.entries()) {
+        if (now - lastSeen > 45000) {
+            activeUsers.delete(id);
+        }
+    }
+}, 10000);
+
+app.post('/api/visitor-heartbeat', (req, res) => {
+    const { visitorId, isNewSession } = req.body;
+    if (!visitorId) {
+        return res.status(400).json({ error: 'visitorId is required' });
+    }
+
+    const now = new Date();
+    // Thai Timezone Date calculation
+    const thDateStr = new Date(now.getTime() + (7 * 60 * 60 * 1000)).toISOString().split('T')[0];
+
+    // Reset today's stats if the day changed
+    if (stats.lastDate !== thDateStr) {
+        stats.today = 0;
+        stats.lastDate = thDateStr;
+        saveStats();
+    }
+
+    // Update last seen
+    activeUsers.set(visitorId, Date.now());
+
+    if (isNewSession) {
+        stats.total++;
+        stats.today++;
+        saveStats();
+    }
+
+    res.json({
+        total: stats.total,
+        today: stats.today,
+        active: Math.max(1, activeUsers.size)
+    });
+});
+
 // YouTube No-Key Search Endpoint
 app.get('/api/youtube-search', async (req, res) => {
     const query = req.query.q;
