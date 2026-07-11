@@ -2409,7 +2409,7 @@ ${matrixTestCases.map((tc, i) => `${i + 1}. ${tc}`).join('\n')}`;
             let tsv = '';
             
             // Header Row
-            const headers = ['Test Scenario'];
+            const headers = ['ลำดับ', 'Test Scenario'];
             matrixRequirements.forEach(req => {
                 headers.push(req);
             });
@@ -2417,7 +2417,7 @@ ${matrixTestCases.map((tc, i) => `${i + 1}. ${tc}`).join('\n')}`;
             
             // Data Rows
             matrixTestCases.forEach((tc, tIdx) => {
-                const row = [tc];
+                const row = [tIdx + 1, tc];
                 matrixRequirements.forEach((req, rIdx) => {
                     const isMapped = matrixMapping[rIdx] && matrixMapping[rIdx].includes(tIdx);
                     row.push(isMapped ? '✔️' : '');
@@ -2426,7 +2426,7 @@ ${matrixTestCases.map((tc, i) => `${i + 1}. ${tc}`).join('\n')}`;
             });
             
             // Add coverage footer row
-            const footRow = ['ความครอบคลุม (เงื่อนไข)'];
+            const footRow = ['ความครอบคลุม (เงื่อนไข)', ''];
             matrixRequirements.forEach((req, rIdx) => {
                 const hasCover = matrixMapping[rIdx] && matrixMapping[rIdx].length > 0;
                 footRow.push(hasCover ? 'ครอบคลุม' : 'ไม่ครอบคลุม');
@@ -2451,6 +2451,7 @@ ${matrixTestCases.map((tc, i) => `${i + 1}. ${tc}`).join('\n')}`;
                 const worksheet = workbook.addWorksheet('Test Coverage Matrix');
                 
                 const cols = [
+                    { header: 'ลำดับ', key: 'no', width: 8 },
                     { header: 'Test Scenario', key: 'tc', width: 35 }
                 ];
                 matrixRequirements.forEach((req, idx) => {
@@ -2471,7 +2472,7 @@ ${matrixTestCases.map((tc, i) => `${i + 1}. ${tc}`).join('\n')}`;
                 });
                 
                 matrixTestCases.forEach((tc, tIdx) => {
-                    const rowData = { tc: tc };
+                    const rowData = { no: tIdx + 1, tc: tc };
                     matrixRequirements.forEach((req, rIdx) => {
                         const isMapped = matrixMapping[rIdx] && matrixMapping[rIdx].includes(tIdx);
                         rowData[`req_${rIdx}`] = isMapped ? '✔️' : '';
@@ -2480,6 +2481,7 @@ ${matrixTestCases.map((tc, i) => `${i + 1}. ${tc}`).join('\n')}`;
                     const row = worksheet.addRow(rowData);
                     row.alignment = { vertical: 'middle' };
                     
+                    row.getCell('no').alignment = { vertical: 'middle', horizontal: 'center' };
                     row.getCell('tc').alignment = { vertical: 'middle', horizontal: 'left', wrapText: true };
                     
                     matrixRequirements.forEach((req, rIdx) => {
@@ -2497,19 +2499,26 @@ ${matrixTestCases.map((tc, i) => `${i + 1}. ${tc}`).join('\n')}`;
                 });
                 
                 // Add footer row in Excel
-                const footRowData = { tc: 'ความครอบคลุม (เงื่อนไข)' };
+                const footRowData = { no: 'ความครอบคลุม (เงื่อนไข)', tc: '' };
                 matrixRequirements.forEach((req, rIdx) => {
                     const hasCover = matrixMapping[rIdx] && matrixMapping[rIdx].length > 0;
                     footRowData[`req_${rIdx}`] = hasCover ? 'ครอบคลุม' : 'ไม่ครอบคลุม';
                 });
                 const footRow = worksheet.addRow(footRowData);
                 footRow.alignment = { vertical: 'middle' };
-                const tcCell = footRow.getCell('tc');
+                const tcCell = footRow.getCell('no');
                 tcCell.font = { bold: true, color: { argb: 'FFBE185D' } }; // rose-700
                 tcCell.fill = {
                     type: 'pattern',
                     pattern: 'solid',
                     fgColor: { argb: 'FFFDF2F8' } // rose-50
+                };
+                
+                const tcDescCell = footRow.getCell('tc');
+                tcDescCell.fill = {
+                    type: 'pattern',
+                    pattern: 'solid',
+                    fgColor: { argb: 'FFFDF2F8' }
                 };
                 
                 matrixRequirements.forEach((req, rIdx) => {
@@ -2577,8 +2586,13 @@ ${matrixTestCases.map((tc, i) => `${i + 1}. ${tc}`).join('\n')}`;
             const hr = document.createElement('tr');
             hr.className = 'border-b-2 border-rose-50 bg-rose-50/20';
             
+            const thNo = document.createElement('th');
+            thNo.className = 'py-3 px-4 text-rose-500 font-semibold text-sm w-16 text-center';
+            thNo.textContent = 'ลำดับ';
+            hr.appendChild(thNo);
+
             const thReq = document.createElement('th');
-            thReq.className = 'py-3 px-4 text-rose-500 font-semibold text-sm w-1/3';
+            thReq.className = 'py-3 px-4 text-rose-500 font-semibold text-sm w-1/3 border-l border-rose-50/50';
             thReq.textContent = 'Test Scenario';
             hr.appendChild(thReq);
             
@@ -2622,8 +2636,13 @@ ${matrixTestCases.map((tc, i) => `${i + 1}. ${tc}`).join('\n')}`;
                 const tr = document.createElement('tr');
                 tr.className = 'border-b border-rose-50 hover:bg-rose-50/30 transition-colors';
                 
+                const tdNo = document.createElement('td');
+                tdNo.className = 'py-3 px-4 font-medium text-gray-400 text-sm text-center w-16';
+                tdNo.textContent = tIdx + 1;
+                tr.appendChild(tdNo);
+
                 const tdReq = document.createElement('td');
-                tdReq.className = 'py-3 px-4 font-medium text-gray-700 text-sm';
+                tdReq.className = 'py-3 px-4 font-medium text-gray-700 text-sm border-l border-rose-50/50';
                 tdReq.contentEditable = true;
                 tdReq.textContent = tc;
                 tdReq.onblur = function() {
@@ -2663,6 +2682,7 @@ ${matrixTestCases.map((tc, i) => `${i + 1}. ${tc}`).join('\n')}`;
                 
                 const tdLabel = document.createElement('td');
                 tdLabel.className = 'py-3 px-4 text-rose-500 text-sm';
+                tdLabel.colSpan = 2;
                 tdLabel.textContent = 'ความครอบคลุม (เงื่อนไข)';
                 trFoot.appendChild(tdLabel);
                 
