@@ -276,6 +276,7 @@ function saveStats() {
 }
 
 const activeUsers = new Map(); // visitorId -> lastSeenTimestamp
+const todayVisitors = new Set(); // Keep track of unique visitors counted today (resets on day change/server reboot)
 
 setInterval(() => {
     const now = Date.now();
@@ -287,7 +288,7 @@ setInterval(() => {
 }, 10000);
 
 app.post('/api/visitor-heartbeat', (req, res) => {
-    const { visitorId, isNewSession } = req.body;
+    const { visitorId } = req.body;
     if (!visitorId) {
         return res.status(400).json({ error: 'visitorId is required' });
     }
@@ -300,13 +301,16 @@ app.post('/api/visitor-heartbeat', (req, res) => {
     if (stats.lastDate !== thDateStr) {
         stats.today = 0;
         stats.lastDate = thDateStr;
+        todayVisitors.clear(); // Reset today's tracking set
         saveStats();
     }
 
     // Update last seen
     activeUsers.set(visitorId, Date.now());
 
-    if (isNewSession) {
+    // Deduplicate unique visitors on backend (in case client is already active or reloads)
+    if (!todayVisitors.has(visitorId)) {
+        todayVisitors.add(visitorId);
         stats.total++;
         stats.today++;
         saveStats();
