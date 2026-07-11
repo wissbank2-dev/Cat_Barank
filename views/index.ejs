@@ -949,8 +949,12 @@
 
         <!-- Navigation Tabs -->
         <div class="flex justify-center gap-3 mb-4 flex-wrap">
-            <button id="tabPage1" onclick="switchPage(1)"
+            <button id="tabPageHome" onclick="switchPage('home')"
                 class="tab-active px-6 py-3 rounded-full font-bold text-sm transition-all">
+                🏠 หน้าหลัก
+            </button>
+            <button id="tabPage1" onclick="switchPage(1)"
+                class="tab-inactive px-6 py-3 rounded-full font-bold text-sm transition-all">
                 📝 สร้างกรณีทดสอบ
             </button>
             <button id="tabPage2" onclick="switchPage(2)"
@@ -971,8 +975,40 @@
             </a>
         </div>
 
+        <!-- ==================== PAGE HOME: Home Page with YouTube ==================== -->
+        <div id="pageHome">
+            <div class="cat-card p-8 shadow-2xl relative mb-10 text-center">
+                <h2 class="text-2xl font-bold text-rose-500 mb-2 flex items-center justify-center gap-2">
+                    📺 หน้าหลักน้องคุมะ & YouTube Center
+                </h2>
+                <p class="text-sm text-gray-500 mb-6">
+                    ยินดีต้อนรับเข้าสู่เครื่องมือช่วยเขียนเทสของคุมะครับ! สามารถนั่งฟังเพลง Lofi ทำงานชิลๆ หรือวางลิงก์ YouTube เพื่อเปิดดูวิดีโอที่คุณต้องการได้ที่นี่เลยเมี้ยว~ 🐾
+                </p>
+
+                <!-- Input to load custom YouTube Video -->
+                <div class="max-w-md mx-auto mb-6 flex gap-2">
+                    <input type="text" id="ytUrlInput" placeholder="วางลิงก์ YouTube เช่น https://www.youtube.com/watch?v=..." 
+                        class="flex-1 px-4 py-2 border-2 border-rose-50 rounded-xl text-sm focus:border-rose-300 focus:outline-none transition-all">
+                    <button onclick="loadCustomYoutubeVideo()" 
+                        class="bg-rose-500 text-white px-5 py-2 rounded-xl text-sm font-medium hover:bg-rose-600 transition-colors shadow-md">
+                        เปิดวิดีโอ 📺
+                    </button>
+                </div>
+
+                <!-- YouTube Player Container -->
+                <div class="relative w-full overflow-hidden rounded-2xl border-4 border-rose-100 shadow-lg mx-auto" style="padding-top: 56.25%; max-width: 720px;">
+                    <iframe id="ytPlayer" class="absolute top-0 left-0 w-full h-full"
+                        src="https://www.youtube.com/embed/jfKfPfyJRdk" 
+                        title="YouTube video player" frameborder="0" 
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+                        allowfullscreen>
+                    </iframe>
+                </div>
+            </div>
+        </div>
+
         <!-- ==================== PAGE 1: Test Case Builder ==================== -->
-        <div id="page1">
+        <div id="page1" class="hidden">
             <div class="cat-card p-8 shadow-2xl relative mb-10">
                 <div class="space-y-4">
                     <div>
@@ -1276,21 +1312,29 @@
     <script>
         // ==================== Navigation ====================
         function switchPage(page) {
+            const pageHome = document.getElementById('pageHome');
             const page1 = document.getElementById('page1');
             const page2 = document.getElementById('page2');
             const page3 = document.getElementById('page3');
+            const tabHome = document.getElementById('tabPageHome');
             const tab1 = document.getElementById('tabPage1');
             const tab2 = document.getElementById('tabPage2');
             const tab3 = document.getElementById('tabPage3');
 
+            if (pageHome) pageHome.classList.add('hidden');
             page1.classList.add('hidden');
             page2.classList.add('hidden');
             page3.classList.add('hidden');
+            
+            if (tabHome) tabHome.className = 'tab-inactive px-6 py-3 rounded-full font-bold text-sm transition-all';
             tab1.className = 'tab-inactive px-6 py-3 rounded-full font-bold text-sm transition-all';
             tab2.className = 'tab-inactive px-6 py-3 rounded-full font-bold text-sm transition-all';
             tab3.className = 'tab-inactive px-6 py-3 rounded-full font-bold text-sm transition-all';
 
-            if (page === 1) {
+            if (page === 'home' || page === 0) {
+                if (pageHome) pageHome.classList.remove('hidden');
+                if (tabHome) tabHome.className = 'tab-active px-6 py-3 rounded-full font-bold text-sm transition-all';
+            } else if (page === 1) {
                 page1.classList.remove('hidden');
                 tab1.className = 'tab-active px-6 py-3 rounded-full font-bold text-sm transition-all';
             } else if (page === 2) {
@@ -1301,6 +1345,34 @@
                 tab3.className = 'tab-active px-6 py-3 rounded-full font-bold text-sm transition-all';
             }
         }
+
+        window.loadCustomYoutubeVideo = function() {
+            const input = document.getElementById('ytUrlInput');
+            const player = document.getElementById('ytPlayer');
+            if (!input || !player) return;
+            
+            const url = input.value.trim();
+            if (!url) {
+                alert('โปรดระบุลิงก์ YouTube ก่อนนะแง้ว! 😿');
+                return;
+            }
+            
+            const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+            const match = url.match(regExp);
+            
+            if (match && match[2].length === 11) {
+                const videoId = match[2];
+                player.src = `https://www.youtube.com/embed/${videoId}?autoplay=1`;
+                showToast('โหลดวิดีโอสำเร็จ! ขอให้มีความสุขกับการรับชมครับ 🐱📺');
+            } else {
+                if (url.length === 11) {
+                    player.src = `https://www.youtube.com/embed/${url}?autoplay=1`;
+                    showToast('โหลดวิดีโอสำเร็จ! ขอให้มีความสุขกับการรับชมครับ 🐱📺');
+                } else {
+                    alert('ลิงก์ YouTube ไม่ถูกต้อง กรุณาตรวจสอบอีกครั้งครับเมี้ยว! 😿');
+                }
+            }
+        };
 
         // ==================== PAGE 1: Test Case Builder ====================
         const testCaseNameInput = document.getElementById('testCaseName');
