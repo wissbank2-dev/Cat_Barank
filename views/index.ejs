@@ -921,6 +921,11 @@
                             class="bg-rose-50 text-rose-400 px-4 py-2 rounded-xl text-sm font-medium hover:bg-rose-100 transition-colors">
                             ล้างทั้งหมด
                         </button>
+                        <button id="copySheetsBtn" onclick="copyTestCasesForGoogleSheets()"
+                            class="bg-blue-50 text-blue-500 px-4 py-2 rounded-xl text-sm font-medium hover:bg-blue-100 transition-colors hidden"
+                            title="คัดลอกเป็นแบบตารางสำหรับวางใน Google Sheets (Ctrl+V) ได้ทันที">
+                            🟢 คัดลอกไป Google Sheets
+                        </button>
                         <button id="exportBtn"
                             class="bg-green-100 text-green-600 px-4 py-2 rounded-xl text-sm font-medium hover:bg-green-200 transition-colors hidden">
                             ส่งออก Excel
@@ -1327,6 +1332,46 @@
                 alert('เกิดข้อผิดพลาดในการส่งออกไฟล์: ' + error.message);
             }
         });
+
+        window.copyTestCasesForGoogleSheets = function () {
+            if (testCases.length === 0) {
+                alert('ยังไม่มีข้อมูล Test Case ในการคัดลอกครับ 😿');
+                return;
+            }
+            
+            let tsv = '';
+            
+            // Header Row
+            const headers = ['ลำดับ', 'ชื่อกรณีทดสอบ', 'ขั้นตอนการทดสอบ', 'ผลลัพธ์ที่คาดหวัง'];
+            tsv += headers.join('\t') + '\n';
+            
+            // Data Rows
+            testCases.forEach((tc, idx) => {
+                const escapeTsv = (val) => {
+                    if (!val) return '';
+                    let str = val.toString();
+                    if (str.includes('\n') || str.includes('\t') || str.includes('"')) {
+                        return '"' + str.replace(/"/g, '""') + '"';
+                    }
+                    return str;
+                };
+
+                const row = [
+                    idx + 1,
+                    escapeTsv(tc.name),
+                    escapeTsv(tc.step),
+                    escapeTsv(tc.expected)
+                ];
+                tsv += row.join('\t') + '\n';
+            });
+            
+            navigator.clipboard.writeText(tsv).then(() => {
+                showToast('คัดลอก Test Case ในรูปแบบ Google Sheets สำเร็จ! วาง (Ctrl+V) ได้เลยครับ 🟢🐾');
+            }).catch(err => {
+                console.error('TSV copy failed:', err);
+                alert('ไม่สามารถคัดลอกได้: ' + err.message);
+            });
+        };
 
         // ==================== PAGE 2: JSON Payload Generator ====================
         const uploadZone = document.getElementById('uploadZone');
@@ -2069,12 +2114,15 @@
         // Modify renderTable to add contenteditable
         function renderTable() {
             tableBody.innerHTML = '';
+            const copySheetsBtn = document.getElementById('copySheetsBtn');
             if (testCases.length === 0) {
                 emptyState.classList.remove('hidden');
                 exportBtn.classList.add('hidden');
+                if (copySheetsBtn) copySheetsBtn.classList.add('hidden');
             } else {
                 emptyState.classList.add('hidden');
                 exportBtn.classList.remove('hidden');
+                if (copySheetsBtn) copySheetsBtn.classList.remove('hidden');
                 testCases.forEach((tc, index) => {
                     const row = document.createElement('tr');
                     row.className = 'border-b border-rose-50 hover:bg-rose-50/30 transition-colors';
