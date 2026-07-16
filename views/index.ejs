@@ -672,7 +672,7 @@
         /* Cat House Button */
         #cat-house-btn {
             position: fixed;
-            top: 15px;
+            top: 65px;
             right: 15px;
             z-index: 1000;
             width: 48px;
@@ -965,15 +965,24 @@
                 class="tab-inactive px-6 py-3 rounded-full font-bold text-sm transition-all">
                 📊 Test Coverage Matrix
             </button>
+            
+            <!-- GISX Automate Dropdown Menu -->
+            <div class="relative inline-block text-left group">
+                <button id="tabPageGisxDropdown"
+                    class="tab-inactive px-6 py-3 rounded-full font-bold text-sm transition-all inline-flex items-center gap-1 focus:outline-none">
+                    🤖 GISX Automate <span class="text-xs">▼</span>
+                </button>
+                <div class="absolute right-0 mt-2 w-48 rounded-2xl shadow-xl bg-white z-50 hidden group-hover:block border-2 border-rose-100 overflow-hidden">
+                    <div class="py-1">
+                        <a href="#" onclick="switchPage('gisx_register_case'); return false;"
+                            class="group flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-rose-50 hover:text-rose-500 font-semibold transition-colors">
+                            📝 สร้าง Register Case
+                        </a>
+                    </div>
+                </div>
+            </div>
         </div>
-        <!-- Members Special Button (Separated) -->
-        <div class="flex justify-center mb-8">
-            <a href="/members"
-                class="px-6 py-3 rounded-full font-bold text-sm transition-all border-2 border-amber-300 text-amber-600 hover:bg-amber-50 hover:shadow-lg hover:-translate-y-0.5"
-                style="background: linear-gradient(135deg, #fffbeb, #fef3c7); box-shadow: 0 2px 10px rgba(245,158,11,0.15);">
-                🔐✨ สำหรับเพื่อนสนิทน้องคุมะ
-            </a>
-        </div>
+
 
         <!-- ==================== PAGE HOME: Home Page with YouTube ==================== -->
         <div id="pageHome">
@@ -1399,6 +1408,229 @@
                 </div>
             </div>
         </div>
+
+        <!-- ==================== PAGE GISX: GISX Automate (Register Case) ==================== -->
+        <div id="pageGisx" class="hidden">
+            <!-- Header Card -->
+            <div class="cat-card p-8 shadow-2xl relative mb-8 fade-in text-center md:text-left">
+                <h2 class="text-2xl font-bold text-rose-500 mb-2 flex items-center justify-center md:justify-start gap-2">
+                    <span class="text-3xl">🤖</span> GISX Automate: สร้าง Register Case
+                </h2>
+                <p class="text-sm text-gray-500">
+                    อัปโหลดไฟล์นโยบายประกัน (Excel) เพื่อสร้างเคสในระบบอัตโนมัติ ออกแบบสคริปต์กรอกฟอร์ม และวิเคราะห์ความครบถ้วนของฟิลด์ข้อมูลเมี้ยว 🐾
+                </p>
+            </div>
+
+            <!-- Download Template & Upload Card Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                <!-- Download Template -->
+                <div class="bg-white rounded-[2rem] p-6 shadow-xl border-2 border-rose-100 flex flex-col justify-between">
+                    <div>
+                        <h3 class="text-lg font-bold text-rose-500 mb-2 flex items-center gap-2">
+                            <span>📥</span> 1. ดาวน์โหลดเทมเพลต Excel
+                        </h3>
+                        <p class="text-gray-500 text-sm mb-4 leading-relaxed">
+                            ดาวน์โหลดไฟล์เทมเพลตสำหรับกรอกเคส โดยคอลัมน์ที่ **บังคับกรอก (Required)** จะแสดงเป็น **สีแดง** และคอลัมน์ที่เป็นตัวเลือกรายการมีดรอปดาวน์เลือกใน Excel ให้เหมือนหน้าจอเว็บ GISX จริงครับเมี้ยว!
+                        </p>
+                    </div>
+                    <button onclick="downloadGisxTemplate()"
+                        class="btn-primary w-full py-3 rounded-2xl font-bold shadow-md hover:shadow-lg flex items-center justify-center gap-2">
+                        📥 ดาวน์โหลดเทมเพลต (Excel Template)
+                    </button>
+                </div>
+
+                <!-- Upload File -->
+                <div class="bg-white rounded-[2rem] p-6 shadow-xl border-2 border-rose-100">
+                    <h3 class="text-lg font-bold text-rose-500 mb-2 flex items-center gap-2">
+                        <span>📤</span> 2. อัปโหลดไฟล์ประกันที่กรอกแล้ว
+                    </h3>
+                    <div id="gisxUploadZone" class="upload-zone p-8 text-center cursor-pointer border-2 border-dashed border-rose-200 rounded-2xl hover:bg-rose-50/20 transition-all flex flex-col items-center justify-center min-h-[140px]">
+                        <div class="text-4xl mb-2">📊</div>
+                        <p class="text-rose-500 font-bold text-sm">ลากไฟล์ Excel (.xlsx) มาวางที่นี่</p>
+                        <p class="text-rose-300 text-xs mt-1">หรือคลิกเพื่อค้นหาและเลือกไฟล์</p>
+                        <input type="file" id="gisxFileInput" accept=".xlsx" class="hidden" onchange="handleGisxFileUpload(this)">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Upload File Info (Success notification) -->
+            <div id="gisxFileInfo" class="hidden mb-6 bg-green-50 border border-green-200 rounded-2xl p-4 flex items-center justify-between shadow-sm">
+                <div class="flex items-center gap-2 text-green-700 font-bold text-sm">
+                    <span>🟢</span> ประมวลผลสำเร็จ: <span id="gisxFileName" class="underline">filename.xlsx</span>
+                </div>
+                <button onclick="clearGisxUpload()" class="text-red-400 hover:text-red-600 font-bold text-sm">✕ ลบตาราง</button>
+            </div>
+
+            <!-- Statistics Summary -->
+            <div id="gisxStatsSection" class="hidden grid grid-cols-3 gap-4 mb-6 bg-rose-50/30 p-4 rounded-2xl border border-rose-100 text-center shadow-sm">
+                <div>
+                    <div class="text-xs text-rose-400 font-semibold">จำนวนเคสทั้งหมด</div>
+                    <div id="gisxStatTotal" class="text-xl font-bold text-rose-600">0</div>
+                </div>
+                <div>
+                    <div class="text-xs text-rose-400 font-semibold">เคสข้อมูลครบถ้วน</div>
+                    <div id="gisxStatValid" class="text-xl font-bold text-green-600">0</div>
+                </div>
+                <div>
+                    <div class="text-xs text-rose-400 font-semibold">เคสต้องกรอกเพิ่ม</div>
+                    <div id="gisxStatInvalid" class="text-xl font-bold text-red-500">0</div>
+                </div>
+            </div>
+
+            <!-- Cases Grid Section -->
+            <div id="gisxCasesSection" class="hidden bg-white rounded-[2rem] p-6 shadow-xl border-2 border-rose-100 mb-8">
+                <div class="flex flex-wrap justify-between items-center gap-4 mb-6">
+                    <h3 class="text-lg font-bold text-rose-500 flex items-center gap-2">
+                        <span>📋</span> รายการผู้เอาประกันภัยที่พร้อมสร้าง (Register Cases)
+                    </h3>
+                    <div class="flex flex-wrap gap-2">
+                        <button onclick="copyGisxBatchJson()"
+                            class="bg-blue-50 text-blue-500 px-4 py-2 rounded-xl text-sm font-medium hover:bg-blue-100 transition-colors flex items-center gap-1 shadow-sm">
+                            📋 คัดลอก JSON Payloads
+                        </button>
+                        <button onclick="downloadPlaywrightBatch()"
+                            class="bg-emerald-50 text-emerald-600 px-4 py-2 rounded-xl text-sm font-medium hover:bg-emerald-100 transition-colors flex items-center gap-1 shadow-sm">
+                            🚀 โหลดสคริปต์ Playwright
+                        </button>
+                        <button onclick="downloadRobotBatch()"
+                            class="bg-indigo-50 text-indigo-600 px-4 py-2 rounded-xl text-sm font-medium hover:bg-indigo-100 transition-colors flex items-center gap-1 shadow-sm">
+                            🤖 โหลดสคริปต์ Robot Framework
+                        </button>
+                        <button onclick="clearGisxCases()"
+                            class="bg-rose-50 text-rose-400 px-4 py-2 rounded-xl text-sm font-medium hover:bg-rose-100 transition-colors shadow-sm">
+                            ล้างทั้งหมด
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Cases Interactive Grid -->
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse min-w-[900px]">
+                        <thead>
+                            <tr class="border-b-2 border-rose-50 bg-rose-50/20">
+                                <th class="py-3 px-3 text-rose-500 font-semibold text-xs text-center w-12">ลำดับ</th>
+                                <th class="py-3 px-3 text-rose-500 font-semibold text-xs w-28">เลขใบคำขอ</th>
+                                <th class="py-3 px-3 text-rose-500 font-semibold text-xs w-36">ชื่อ-นามสกุล</th>
+                                <th class="py-3 px-3 text-rose-500 font-semibold text-xs w-28">ช่องทางขาย</th>
+                                <th class="py-3 px-3 text-rose-500 font-semibold text-xs w-32">วันเกิด / เพศ</th>
+                                <th class="py-3 px-3 text-rose-500 font-semibold text-xs w-48">แผนประกัน</th>
+                                <th class="py-3 px-3 text-rose-500 font-semibold text-xs w-24 text-right">เบี้ยประกัน</th>
+                                <th class="py-3 px-3 text-rose-500 font-semibold text-xs text-center w-24">ความสมบูรณ์</th>
+                                <th class="py-3 px-3 text-rose-500 font-semibold text-xs text-center w-24">จัดการ</th>
+                            </tr>
+                        </thead>
+                        <tbody id="gisxCasesBody">
+                            <!-- Dynamically loaded rows -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Edit Case Modal -->
+        <div id="editGisxCaseModal" class="fixed inset-0 bg-black/50 z-[1000] hidden flex items-center justify-center p-4 animate-fade-in">
+            <div class="bg-white rounded-3xl p-6 w-full max-w-2xl max-h-[85vh] overflow-y-auto border-4 border-rose-50 shadow-2xl relative">
+                <button onclick="closeEditGisxModal()" class="absolute top-4 right-4 text-gray-400 hover:text-rose-500 text-xl font-bold">✕</button>
+                <h3 class="text-xl font-bold text-rose-500 mb-4 flex items-center gap-2">
+                    <span>✏️</span> แก้ไขข้อมูลผู้เอาประกันภัย (Register Case)
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                    <div>
+                        <label class="block text-xs font-semibold text-rose-500 mb-1">เลขที่ใบคำขอ (Required)</label>
+                        <input type="text" id="edit_appNo" class="w-full p-2.5 border-2 border-rose-50 rounded-xl focus:outline-none focus:border-rose-300 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-rose-500 mb-1">ช่องทางการขาย (Required)</label>
+                        <select id="edit_salesChannel" class="w-full p-2.5 border-2 border-rose-50 rounded-xl focus:outline-none focus:border-rose-300 text-sm bg-white">
+                            <option value="Agent">Agent</option>
+                            <option value="Bancassurance">Bancassurance</option>
+                            <option value="Telesales">Telesales</option>
+                            <option value="Direct">Direct</option>
+                            <option value="Online">Online</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-rose-500 mb-1">รหัสผู้เสนอขาย (Required)</label>
+                        <input type="text" id="edit_agentCode" class="w-full p-2.5 border-2 border-rose-50 rounded-xl focus:outline-none focus:border-rose-300 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-rose-500 mb-1">คำนำหน้านาม</label>
+                        <select id="edit_title" class="w-full p-2.5 border-2 border-rose-50 rounded-xl focus:outline-none focus:border-rose-300 text-sm bg-white">
+                            <option value="นาย">นาย</option>
+                            <option value="นาง">นาง</option>
+                            <option value="นางสาว">นางสาว</option>
+                            <option value="เด็กชาย">เด็กชาย</option>
+                            <option value="เด็กหญิง">เด็กหญิง</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-rose-500 mb-1">ชื่อผู้เอาประกัน (Required)</label>
+                        <input type="text" id="edit_firstName" class="w-full p-2.5 border-2 border-rose-50 rounded-xl focus:outline-none focus:border-rose-300 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-rose-500 mb-1">นามสกุลผู้เอาประกัน (Required)</label>
+                        <input type="text" id="edit_lastName" class="w-full p-2.5 border-2 border-rose-50 rounded-xl focus:outline-none focus:border-rose-300 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-rose-500 mb-1">เพศ (Required)</label>
+                        <select id="edit_gender" class="w-full p-2.5 border-2 border-rose-50 rounded-xl focus:outline-none focus:border-rose-300 text-sm bg-white">
+                            <option value="ชาย">ชาย</option>
+                            <option value="หญิง">หญิง</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-rose-500 mb-1">วันเกิด YYYY-MM-DD (Required)</label>
+                        <input type="text" id="edit_dob" placeholder="1995-12-31" class="w-full p-2.5 border-2 border-rose-50 rounded-xl focus:outline-none focus:border-rose-300 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-rose-500 mb-1">อาชีพ</label>
+                        <select id="edit_occupation" class="w-full p-2.5 border-2 border-rose-50 rounded-xl focus:outline-none focus:border-rose-300 text-sm bg-white">
+                            <option value="พนักงานบริษัท">พนักงานบริษัท</option>
+                            <option value="เจ้าของธุรกิจ">เจ้าของธุรกิจ</option>
+                            <option value="ข้าราชการ">ข้าราชการ</option>
+                            <option value="แม่บ้าน">แม่บ้าน</option>
+                            <option value="นักเรียน/นักศึกษา">นักเรียน/นักศึกษา</option>
+                            <option value="ค้าขาย">ค้าขาย</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-rose-500 mb-1">แผนประกันภัย (Required)</label>
+                        <select id="edit_plan" class="w-full p-2.5 border-2 border-rose-50 rounded-xl focus:outline-none focus:border-rose-300 text-sm bg-white">
+                            <option value="เมืองไทย แฮปปี้ เซฟเวอร์ 11/1">เมืองไทย แฮปปี้ เซฟเวอร์ 11/1</option>
+                            <option value="เมืองไทย คุ้มครองตลอดชีพ 99/9">เมืองไทย คุ้มครองตลอดชีพ 99/9</option>
+                            <option value="เมืองไทย สมาร์ท ลิงค์ 15/1">เมืองไทย สมาร์ท ลิงค์ 15/1</option>
+                            <option value="เมืองไทย เซฟวิ่ง 10/5">เมืองไทย เซฟวิ่ง 10/5</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-rose-500 mb-1">จำนวนเงินเอาประกันภัย (Required)</label>
+                        <input type="number" id="edit_sumAssured" class="w-full p-2.5 border-2 border-rose-50 rounded-xl focus:outline-none focus:border-rose-300 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-rose-500 mb-1">งวดการชำระเบี้ย (Required)</label>
+                        <select id="edit_mode" class="w-full p-2.5 border-2 border-rose-50 rounded-xl focus:outline-none focus:border-rose-300 text-sm bg-white">
+                            <option value="รายปี">รายปี</option>
+                            <option value="ราย 6 เดือน">ราย 6 เดือน</option>
+                            <option value="ราย 3 เดือน">ราย 3 เดือน</option>
+                            <option value="รายเดือน">รายเดือน</option>
+                            <option value="ชำระครั้งเดียว">ชำระครั้งเดียว</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-rose-500 mb-1">จำนวนเบี้ยประกันภัย (Required)</label>
+                        <input type="number" id="edit_premium" class="w-full p-2.5 border-2 border-rose-50 rounded-xl focus:outline-none focus:border-rose-300 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-rose-500 mb-1">หมายเหตุ (Remark)</label>
+                        <input type="text" id="edit_remark" class="w-full p-2.5 border-2 border-rose-50 rounded-xl focus:outline-none focus:border-rose-300 text-sm">
+                    </div>
+                </div>
+                <div class="flex justify-end gap-2">
+                    <button onclick="closeEditGisxModal()" class="px-4 py-2 border border-gray-200 text-gray-500 text-sm font-semibold rounded-xl hover:bg-gray-50">ยกเลิก</button>
+                    <button onclick="saveEditGisxCase()" class="btn-primary px-6 py-2 rounded-xl text-sm font-bold shadow-md">บันทึกข้อมูล</button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -1408,20 +1640,24 @@
             const page1 = document.getElementById('page1');
             const page2 = document.getElementById('page2');
             const page3 = document.getElementById('page3');
+            const pageGisx = document.getElementById('pageGisx');
             const tabHome = document.getElementById('tabPageHome');
             const tab1 = document.getElementById('tabPage1');
             const tab2 = document.getElementById('tabPage2');
             const tab3 = document.getElementById('tabPage3');
+            const tabGisx = document.getElementById('tabPageGisxDropdown');
 
             if (pageHome) pageHome.classList.add('hidden');
             page1.classList.add('hidden');
             page2.classList.add('hidden');
             page3.classList.add('hidden');
+            if (pageGisx) pageGisx.classList.add('hidden');
             
             if (tabHome) tabHome.className = 'tab-inactive px-6 py-3 rounded-full font-bold text-sm transition-all';
             tab1.className = 'tab-inactive px-6 py-3 rounded-full font-bold text-sm transition-all';
             tab2.className = 'tab-inactive px-6 py-3 rounded-full font-bold text-sm transition-all';
             tab3.className = 'tab-inactive px-6 py-3 rounded-full font-bold text-sm transition-all';
+            if (tabGisx) tabGisx.className = 'tab-inactive px-6 py-3 rounded-full font-bold text-sm transition-all inline-flex items-center gap-1 focus:outline-none';
 
             if (page === 'home' || page === 0) {
                 if (pageHome) pageHome.classList.remove('hidden');
@@ -1435,6 +1671,9 @@
             } else if (page === 3) {
                 page3.classList.remove('hidden');
                 tab3.className = 'tab-active px-6 py-3 rounded-full font-bold text-sm transition-all';
+            } else if (page === 'gisx_register_case' || page === 4) {
+                if (pageGisx) pageGisx.classList.remove('hidden');
+                if (tabGisx) tabGisx.className = 'tab-active px-6 py-3 rounded-full font-bold text-sm transition-all inline-flex items-center gap-1 focus:outline-none';
             }
         }
 
@@ -3130,6 +3369,12 @@ ${matrixTestCases.map((tc, i) => `${i + 1}. ${tc}`).join('\n')}`;
         </div>
     </div>
 
+    <a href="/members" id="cat-friends-btn"
+        class="fixed top-[15px] right-[15px] z-[1000] px-4 py-2 rounded-full font-bold text-xs border-2 border-amber-300 text-amber-600 hover:bg-amber-50 hover:shadow-lg hover:-translate-y-0.5 transition-all flex items-center gap-1 shadow-md bg-white/95 backdrop-blur"
+        title="สำหรับเพื่อนสนิทน้องคุมะ">
+        🔐 สำหรับเพื่อนสนิทน้องคุมะ
+    </a>
+
     <div id="cat-house-btn" onclick="toggleCatHouse()">
         🏠
         <span class="tooltip">เรียกคุมะออกมาเล่น!</span>
@@ -3788,6 +4033,470 @@ ${matrixTestCases.map((tc, i) => `${i + 1}. ${tc}`).join('\n')}`;
             }
             showToast(`กำลังโหลดเกมออนไลน์... 🌐🎮`);
         };
+
+        // ==================== GISX Automate (Register Case) Script ====================
+        let gisxCases = [];
+        let editingGisxIdx = -1;
+
+        // Initialize GISX cases from localStorage
+        try {
+            const cached = localStorage.getItem('cat_gisx_cases');
+            if (cached) {
+                gisxCases = JSON.parse(cached);
+            }
+        } catch (e) {
+            console.error('Failed to load cached GISX cases:', e);
+        }
+
+        window.downloadGisxTemplate = function () {
+            showToast('กำลังดาวน์โหลดเทมเพลต Excel สำหรับ GISX... 📥');
+            window.location.href = '/api/gisx/template';
+        };
+
+        // Setup Drag & Drop for GISX Upload Zone
+        setTimeout(() => {
+            const zone = document.getElementById('gisxUploadZone');
+            if (!zone) return;
+
+            zone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                zone.classList.add('bg-rose-50', 'border-rose-400');
+            });
+
+            zone.addEventListener('dragleave', () => {
+                zone.classList.remove('bg-rose-50', 'border-rose-400');
+            });
+
+            zone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                zone.classList.remove('bg-rose-50', 'border-rose-400');
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    uploadGisxFile(files[0]);
+                }
+            });
+
+            zone.addEventListener('click', () => {
+                document.getElementById('gisxFileInput').click();
+            });
+
+            renderGisxCases();
+        }, 1000);
+
+        window.handleGisxFileUpload = function (input) {
+            if (input.files.length > 0) {
+                uploadGisxFile(input.files[0]);
+                input.value = ''; // Reset file input
+            }
+        };
+
+        function uploadGisxFile(file) {
+            if (!file.name.endsWith('.xlsx')) {
+                alert('โปรดอัปโหลดไฟล์นามสกุล .xlsx เท่านั้นครับเมี้ยว! 😿');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            showToast('กำลังวิเคราะห์และอัปโหลดไฟล์ Excel... 🐾');
+
+            fetch('/api/gisx/upload', {
+                method: 'POST',
+                body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.error) {
+                    alert('เกิดข้อผิดพลาด: ' + data.error);
+                    return;
+                }
+
+                gisxCases = data.cases || [];
+                localStorage.setItem('cat_gisx_cases', JSON.stringify(gisxCases));
+                
+                // Show file info banner
+                const fileInfo = document.getElementById('gisxFileInfo');
+                const fileNameSpan = document.getElementById('gisxFileName');
+                if (fileInfo && fileNameSpan) {
+                    fileNameSpan.textContent = file.name;
+                    fileInfo.classList.remove('hidden');
+                }
+
+                renderGisxCases();
+                showToast('อัปโหลดข้อมูลเสร็จสิ้นและตรวจความครบถ้วนแล้วครับเหมียว! 🎉🐾');
+                triggerAtmosphere();
+            })
+            .catch(err => {
+                console.error(err);
+                alert('ไม่สามารถประมวลผลไฟล์ได้: ' + err.message);
+            });
+        }
+
+        window.clearGisxUpload = function () {
+            document.getElementById('gisxFileInfo').classList.add('hidden');
+            clearGisxCases();
+        };
+
+        window.clearGisxCases = function () {
+            if (gisxCases.length > 0 && !confirm('คุณต้องการล้างข้อมูลเคสทั้งหมดในตารางใช่หรือไม่?')) return;
+            gisxCases = [];
+            localStorage.removeItem('cat_gisx_cases');
+            renderGisxCases();
+            showToast('ล้างตารางเรียบร้อยแล้ว 🧼');
+        };
+
+        window.deleteGisxCase = function (idx) {
+            gisxCases.splice(idx, 1);
+            localStorage.setItem('cat_gisx_cases', JSON.stringify(gisxCases));
+            renderGisxCases();
+            showToast('ลบรายการสำเร็จ! 🐾');
+        };
+
+        window.openEditGisxModal = function (idx) {
+            editingGisxIdx = idx;
+            const item = gisxCases[idx];
+            if (!item) return;
+
+            const fields = ['appNo', 'salesChannel', 'agentCode', 'title', 'firstName', 'lastName', 'gender', 'dob', 'occupation', 'plan', 'sumAssured', 'mode', 'premium', 'remark'];
+            fields.forEach(f => {
+                const el = document.getElementById('edit_' + f);
+                if (el) {
+                    el.value = item[f] !== undefined ? item[f] : '';
+                }
+            });
+
+            document.getElementById('editGisxCaseModal').classList.remove('hidden');
+        };
+
+        window.closeEditGisxModal = function () {
+            document.getElementById('editGisxCaseModal').classList.add('hidden');
+            editingGisxIdx = -1;
+        };
+
+        window.saveEditGisxCase = function () {
+            if (editingGisxIdx === -1) return;
+            const item = gisxCases[editingGisxIdx];
+            if (!item) return;
+
+            const fields = ['appNo', 'salesChannel', 'agentCode', 'title', 'firstName', 'lastName', 'gender', 'dob', 'occupation', 'plan', 'sumAssured', 'mode', 'premium', 'remark'];
+            fields.forEach(f => {
+                const el = document.getElementById('edit_' + f);
+                if (el) {
+                    // Save as number if fields are numeric
+                    if (f === 'sumAssured' || f === 'premium') {
+                        item[f] = el.value ? parseFloat(el.value) : '';
+                    } else {
+                        item[f] = el.value.trim();
+                    }
+                }
+            });
+
+            // Re-validate fields
+            const requiredFields = ['appNo', 'salesChannel', 'agentCode', 'firstName', 'lastName', 'gender', 'dob', 'plan', 'sumAssured', 'mode', 'premium'];
+            const missing = [];
+            requiredFields.forEach(f => {
+                if (item[f] === undefined || item[f] === null || item[f] === '') {
+                    missing.push(f);
+                }
+            });
+
+            item.isValid = missing.length === 0;
+            item.missingFields = missing;
+
+            localStorage.setItem('cat_gisx_cases', JSON.stringify(gisxCases));
+            closeEditGisxModal();
+            renderGisxCases();
+            showToast('บันทึกการแก้ไขเคสสำเร็จ! ✏️😻');
+        };
+
+        window.renderGisxCases = function () {
+            const body = document.getElementById('gisxCasesBody');
+            const statsSec = document.getElementById('gisxStatsSection');
+            const casesSec = document.getElementById('gisxCasesSection');
+            if (!body) return;
+
+            body.innerHTML = '';
+
+            if (gisxCases.length === 0) {
+                statsSec.classList.add('hidden');
+                casesSec.classList.add('hidden');
+                return;
+            }
+
+            statsSec.classList.remove('hidden');
+            casesSec.classList.remove('hidden');
+
+            let validCount = 0;
+            let invalidCount = 0;
+
+            gisxCases.forEach((item, idx) => {
+                if (item.isValid) validCount++;
+                else invalidCount++;
+
+                const tr = document.createElement('tr');
+                tr.className = 'border-b border-rose-50 hover:bg-rose-50/20 transition-colors text-xs text-gray-700';
+
+                // Columns construction
+                const tdNum = document.createElement('td');
+                tdNum.className = 'py-3 px-3 text-center font-bold text-gray-400';
+                tdNum.textContent = idx + 1;
+                tr.appendChild(tdNum);
+
+                const tdAppNo = document.createElement('td');
+                tdAppNo.className = 'py-3 px-3 font-semibold text-rose-500';
+                tdAppNo.textContent = item.appNo || '(ไม่มีข้อมูล)';
+                tr.appendChild(tdAppNo);
+
+                const tdName = document.createElement('td');
+                tdName.className = 'py-3 px-3';
+                tdName.textContent = `${item.title || ''}${item.firstName || ''} ${item.lastName || ''}`.trim() || '(ไม่มีชื่อ)';
+                tr.appendChild(tdName);
+
+                const tdChannel = document.createElement('td');
+                tdChannel.className = 'py-3 px-3';
+                tdChannel.textContent = item.salesChannel || '-';
+                tr.appendChild(tdChannel);
+
+                const tdDob = document.createElement('td');
+                tdDob.className = 'py-3 px-3 text-gray-500';
+                tdDob.textContent = `${item.dob || '-'} (${item.gender || '-'})`;
+                tr.appendChild(tdDob);
+
+                const tdPlan = document.createElement('td');
+                tdPlan.className = 'py-3 px-3 text-gray-600 font-medium truncate max-w-[150px]';
+                tdPlan.title = item.plan || '-';
+                tdPlan.textContent = item.plan || '-';
+                tr.appendChild(tdPlan);
+
+                const tdPremium = document.createElement('td');
+                tdPremium.className = 'py-3 px-3 text-right font-bold text-gray-800';
+                const premiumVal = parseFloat(item.premium);
+                tdPremium.textContent = isNaN(premiumVal) ? '-' : premiumVal.toLocaleString('th-TH', { minimumFractionDigits: 2 });
+                tr.appendChild(tdPremium);
+
+                // Validation Status
+                const tdStatus = document.createElement('td');
+                tdStatus.className = 'py-3 px-3 text-center';
+                if (item.isValid) {
+                    tdStatus.innerHTML = '<span class="inline-flex items-center bg-green-50 text-green-700 px-2 py-1 rounded-full font-bold">ข้อมูลสมบูรณ์ ✔️</span>';
+                } else {
+                    const missingLabel = item.missingFields.join(', ');
+                    tdStatus.innerHTML = `
+                        <span class="inline-flex items-center bg-red-50 text-red-500 px-2 py-1 rounded-full font-bold cursor-help" title="ฟิลด์ที่ขาด: ${missingLabel}">
+                            ข้อมูลไม่ครบ ✕ (ขาด: ${item.missingFields.length})
+                        </span>
+                    `;
+                }
+                tr.appendChild(tdStatus);
+
+                // Actions cell
+                const tdActions = document.createElement('td');
+                tdActions.className = 'py-3 px-3 text-center flex items-center justify-center gap-1.5';
+                tdActions.innerHTML = `
+                    <button onclick="openEditGisxModal(${idx})" class="bg-amber-50 hover:bg-amber-100 text-amber-600 p-1.5 rounded-lg transition-colors font-bold text-[10px]" title="แก้ไขข้อมูล">
+                        ✏️ แก้ไข
+                    </button>
+                    <button onclick="deleteGisxCase(${idx})" class="bg-rose-50 hover:bg-rose-100 text-rose-500 p-1.5 rounded-lg transition-colors font-bold text-[10px]" title="ลบเคส">
+                        🗑️ ลบ
+                    </button>
+                `;
+                tr.appendChild(tdActions);
+
+                body.appendChild(tr);
+            });
+
+            // Update stats indicators
+            document.getElementById('gisxStatTotal').textContent = gisxCases.length;
+            document.getElementById('gisxStatValid').textContent = validCount;
+            document.getElementById('gisxStatInvalid').textContent = invalidCount;
+        };
+
+        window.copyGisxBatchJson = function () {
+            if (gisxCases.length === 0) return;
+            const cleanCases = gisxCases.map(({ isValid, missingFields, rowNum, ...rest }) => rest);
+            const jsonText = JSON.stringify(cleanCases, null, 2);
+
+            navigator.clipboard.writeText(jsonText).then(() => {
+                showToast('คัดลอก JSON Payloads ทั้งหมดของ GISX ลงคลิปบอร์ดแล้วครับ! 🐾📋');
+            }).catch(err => {
+                console.error(err);
+                alert('ไม่สามารถคัดลอกได้: ' + err.message);
+            });
+        };
+
+        window.downloadPlaywrightBatch = function () {
+            if (gisxCases.length === 0) return;
+            
+            const cleanCases = gisxCases.map(({ isValid, missingFields, rowNum, ...rest }) => rest);
+            const script = `/**
+ * Playwright Automation Script for GISX Register Case Entry
+ * Generated by KUMA Test Case Builder 🐾
+ * 
+ * Instructions:
+ * 1. Install Playwright: npm install @playwright/test
+ * 2. Save this file as 'gisx_register.spec.js'
+ * 3. Run: npx playwright test gisx_register.spec.js
+ */
+
+const { test, expect } = require('@playwright/test');
+
+test('Automate GISX Register Case Entry', async ({ page }) => {
+    // Navigate to GISX Register Case URL
+    await page.goto('https://gisx-qa.muangthai.co.th/new-business/register-case');
+    
+    // Login procedure (Uncomment and customize if login page appears)
+    /*
+    await page.fill('input[name="username"]', 'QA_USER');
+    await page.fill('input[name="password"]', 'PASSWORD');
+    await page.click('button[type="submit"]');
+    await page.waitForNavigation();
+    */
+
+    const cases = ${JSON.stringify(cleanCases, null, 4)};
+
+    for (let i = 0; i < cases.length; i++) {
+        const item = cases[i];
+        console.log(\`[KUMA] Registering case \${i + 1}/\${cases.length} - Application No: \${item.appNo}\`);
+
+        // 1. Click "Add New" or "Register Case" button
+        // await page.click('#btn-register-case');
+
+        // 2. Fill Application Number
+        await page.fill('input[name="appNo"]', item.appNo);
+
+        // 3. Select Sales Channel (Dropdown)
+        await page.selectOption('select[name="salesChannel"]', { label: item.salesChannel });
+
+        // 4. Fill Agent Code
+        await page.fill('input[name="agentCode"]', item.agentCode);
+
+        // 5. Select Title (Dropdown - Optional)
+        if (item.title) {
+            await page.selectOption('select[name="title"]', { label: item.title });
+        }
+
+        // 6. Fill First Name & Last Name
+        await page.fill('input[name="firstName"]', item.firstName);
+        await page.fill('input[name="lastName"]', item.lastName);
+
+        // 7. Select Gender (Dropdown)
+        await page.selectOption('select[name="gender"]', { label: item.gender });
+
+        // 8. Fill Date of Birth (YYYY-MM-DD)
+        await page.fill('input[name="dob"]', item.dob);
+
+        // 9. Select Occupation (Dropdown - Optional)
+        if (item.occupation) {
+            await page.selectOption('select[name="occupation"]', { label: item.occupation });
+        }
+
+        // 10. Select Insurance Plan (Dropdown)
+        await page.selectOption('select[name="plan"]', { label: item.plan });
+
+        // 11. Fill Sum Assured
+        await page.fill('input[name="sumAssured"]', String(item.sumAssured));
+
+        // 12. Select Premium Payment Mode (Dropdown)
+        await page.selectOption('select[name="mode"]', { label: item.mode });
+
+        // 13. Fill Premium Amount
+        await page.fill('input[name="premium"]', String(item.premium));
+
+        // 14. Fill Remark (Optional)
+        if (item.remark) {
+            await page.fill('input[name="remark"]', item.remark);
+        }
+
+        // 15. Click "Submit" or "Save" button to create policy
+        // await page.click('button#save-case');
+        // await page.waitForTimeout(2000); // Wait for API response
+        
+        console.log(\`[KUMA] Successfully registered Application No: \${item.appNo}\`);
+    }
+});
+`;
+
+            triggerDownload(script, 'gisx_playwright_test.js', 'text/javascript');
+            showToast('ดาวน์โหลดสคริปต์ Playwright อัตโนมัติเรียบร้อยแล้วครับ 🟢🚀');
+        };
+
+        window.downloadRobotBatch = function () {
+            if (gisxCases.length === 0) return;
+            
+            const cleanCases = gisxCases.map(({ isValid, missingFields, rowNum, ...rest }) => rest);
+            
+            // Build the Robot Framework calling cases
+            let robotSteps = '';
+            cleanCases.forEach(item => {
+                robotSteps += `    Register Single Case    ${item.appNo}    ${item.salesChannel}    ${item.agentCode}    ${item.title || '${EMPTY}'}    ${item.firstName}    ${item.lastName}    ${item.gender}    ${item.dob}    ${item.occupation || '${EMPTY}'}    ${item.plan}    ${item.sumAssured}    ${item.mode}    ${item.premium}    ${item.remark || '${EMPTY}'}\n`;
+            });
+
+            const script = `*** Settings ***
+Documentation     Automated GISX Case Registration Script
+Library           SeleniumLibrary
+
+*** Variables ***
+\${URL}            https://gisx-qa.muangthai.co.th/new-business/register-case
+\${BROWSER}        chrome
+
+*** Test Cases ***
+Register All Policy Cases From Excel
+    [Documentation]    Iterates and enters policy case registrations automatically
+    Open Browser    \${URL}    \${BROWSER}
+    Maximize Browser Window
+    # Run Login Procedure here if required...
+    
+\${robotSteps}
+    [Teardown]    Close Browser
+
+*** Keywords ***
+Register Single Case
+    [Arguments]    \${appNo}    \${salesChannel}    \${agentCode}    \${title}    \${firstName}    \${lastName}    \${gender}    \${dob}    \${occupation}    \${plan}    \${sumAssured}    \${mode}    \${premium}    \${remark}
+    
+    Log To Console    Registering Case: \${appNo} (\${firstName} \${lastName})
+    
+    # Click "Add Case" button
+    # Click Element    xpath=//button[@id='add-new']
+    # Sleep    1s
+
+    # Input Fields selectors (please adjust XPath/CSS to match actual web fields)
+    Input Text      xpath=//input[@name='appNo']            \${appNo}
+    Select From List By Label    xpath=//select[@name='salesChannel']    \${salesChannel}
+    Input Text      xpath=//input[@name='agentCode']         \${agentCode}
+    Run Keyword If    '\${title}' != '\${EMPTY}'    Select From List By Label    xpath=//select[@name='title']    \${title}
+    Input Text      xpath=//input[@name='firstName']         \${firstName}
+    Input Text      xpath=//input[@name='lastName']          \${lastName}
+    Select From List By Label    xpath=//select[@name='gender']          \${gender}
+    Input Text      xpath=//input[@name='dob']               \${dob}
+    Run Keyword If    '\${occupation}' != '\${EMPTY}'    Select From List By Label    xpath=//select[@name='occupation']    \${occupation}
+    Select From List By Label    xpath=//select[@name='plan']            \${plan}
+    Input Text      xpath=//input[@name='sumAssured']        \${sumAssured}
+    Select From List By Label    xpath=//select[@name='mode']            \${mode}
+    Input Text      xpath=//input[@name='premium']           \${premium}
+    Run Keyword If    '\${remark}' != '\${EMPTY}'    Input Text      xpath=//input[@name='remark']           \${remark}
+
+    # Click Save Button
+    # Click Element    xpath=//button[@id='save']
+    # Sleep    2s
+`;
+
+            const fullRobotFile = script.replace('\\${robotSteps}', robotSteps);
+            triggerDownload(fullRobotFile, 'gisx_robot_test.robot', 'text/plain');
+            showToast('ดาวน์โหลดสคริปต์ Robot Framework สำเร็จแล้วครับ 🤖📄');
+        };
+
+        function triggerDownload(content, filename, contentType) {
+            const blob = new Blob([content], { type: contentType + ';charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
     </script>
 </body>
 

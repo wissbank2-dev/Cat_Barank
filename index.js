@@ -519,6 +519,244 @@ app.post('/api/chat', upload.array('files'), async (req, res) => {
     }
 });
 
+// ==================== GISX Automate Endpoints ====================
+
+// 1. Download GISX Register Case Excel Template
+app.get('/api/gisx/template', async (req, res) => {
+    try {
+        const workbook = new ExcelJS.Workbook();
+        const ws = workbook.addWorksheet('Register Case');
+
+        // Fields config
+        const fields = [
+            { header: 'เลขที่ใบคำขอ (Application No.)', key: 'appNo', width: 25, required: true },
+            { header: 'ช่องทางการขาย (Sales Channel)', key: 'salesChannel', width: 22, required: true },
+            { header: 'รหัสผู้เสนอขาย (Agent Code)', key: 'agentCode', width: 20, required: true },
+            { header: 'คำนำหน้านาม (Title)', key: 'title', width: 15, required: false },
+            { header: 'ชื่อผู้เอาประกัน (First Name)', key: 'firstName', width: 25, required: true },
+            { header: 'นามสกุลผู้เอาประกัน (Last Name)', key: 'lastName', width: 25, required: true },
+            { header: 'เพศ (Gender)', key: 'gender', width: 12, required: true },
+            { header: 'วันเกิด (Date of Birth)', key: 'dob', width: 18, required: true },
+            { header: 'อาชีพ (Occupation)', key: 'occupation', width: 20, required: false },
+            { header: 'แผนประกันภัย (Insurance Plan)', key: 'plan', width: 35, required: true },
+            { header: 'จำนวนเงินเอาประกันภัย (Sum Assured)', key: 'sumAssured', width: 25, required: true },
+            { header: 'งวดการชำระเบี้ย (Premium Payment Mode)', key: 'mode', width: 25, required: true },
+            { header: 'จำนวนเบี้ยประกันภัย (Premium Amount)', key: 'premium', width: 20, required: true },
+            { header: 'หมายเหตุ (Remark)', key: 'remark', width: 25, required: false }
+        ];
+
+        ws.columns = fields.map(f => ({ header: f.header, key: f.key, width: f.width }));
+
+        // Style the headers (Red for Required, Light Pink/Rose for Optional)
+        const headerRow = ws.getRow(1);
+        headerRow.height = 30;
+        headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+        headerRow.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+
+        fields.forEach((f, idx) => {
+            const cell = headerRow.getCell(idx + 1);
+            if (f.required) {
+                cell.fill = {
+                    type: 'pattern',
+                    pattern: 'solid',
+                    fgColor: { argb: 'FFEF4444' } // TailWind Red-500
+                };
+            } else {
+                cell.fill = {
+                    type: 'pattern',
+                    pattern: 'solid',
+                    fgColor: { argb: 'FFFDA4AF' } // Light Rose-300
+                };
+            }
+        });
+
+        // Add validations for rows 2 to 100
+        const validations = {
+            salesChannel: {
+                type: 'list',
+                allowBlank: true,
+                formulae: ['"Agent,Bancassurance,Telesales,Direct,Online"']
+            },
+            title: {
+                type: 'list',
+                allowBlank: true,
+                formulae: ['"นาย,นาง,นางสาว,เด็กชาย,เด็กหญิง"']
+            },
+            gender: {
+                type: 'list',
+                allowBlank: true,
+                formulae: ['"ชาย,หญิง"']
+            },
+            occupation: {
+                type: 'list',
+                allowBlank: true,
+                formulae: ['"พนักงานบริษัท,เจ้าของธุรกิจ,ข้าราชการ,แม่บ้าน,นักเรียน/นักศึกษา,ค้าขาย"']
+            },
+            plan: {
+                type: 'list',
+                allowBlank: true,
+                formulae: ['"เมืองไทย แฮปปี้ เซฟเวอร์ 11/1,เมืองไทย คุ้มครองตลอดชีพ 99/9,เมืองไทย สมาร์ท ลิงค์ 15/1,เมืองไทย เซฟวิ่ง 10/5"']
+            },
+            mode: {
+                type: 'list',
+                allowBlank: true,
+                formulae: ['"รายปี,ราย 6 เดือน,ราย 3 เดือน,รายเดือน,ชำระครั้งเดียว"']
+            }
+        };
+
+        for (let r = 2; r <= 100; r++) {
+            fields.forEach((f, colIdx) => {
+                const cell = ws.getCell(r, colIdx + 1);
+                if (validations[f.key]) {
+                    cell.dataValidation = validations[f.key];
+                }
+                
+                // Format text format for DOB and text cells, and numeric styling
+                if (f.key === 'sumAssured' || f.key === 'premium') {
+                    cell.numFmt = '#,##0.00';
+                }
+            });
+        }
+
+        // Add a demo/example row
+        ws.addRow({
+            appNo: 'APP9909988',
+            salesChannel: 'Agent',
+            agentCode: 'AG010992',
+            title: 'นาย',
+            firstName: 'สมชาย',
+            lastName: 'ใจดีสู้เสือ',
+            gender: 'ชาย',
+            dob: '1992-08-25',
+            occupation: 'พนักงานบริษัท',
+            plan: 'เมืองไทย คุ้มครองตลอดชีพ 99/9',
+            sumAssured: 1000000,
+            mode: 'รายปี',
+            premium: 25000,
+            remark: 'เคสทดสอบระบบ GISX'
+        });
+
+        // Set response headers and transmit the template file
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', 'attachment; filename=GISX_Register_Case_Template.xlsx');
+        await workbook.xlsx.write(res);
+        res.end();
+    } catch (error) {
+        console.error('GISX Template generation failed:', error);
+        res.status(500).json({ error: 'Failed to generate GISX Excel template' });
+    }
+});
+
+// 2. Upload and Parse GISX Excel file
+app.post('/api/gisx/upload', upload.single('file'), async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ error: 'ไม่พบไฟล์อัปโหลด' });
+        }
+
+        const workbook = new ExcelJS.Workbook();
+        await workbook.xlsx.load(req.file.buffer);
+
+        const ws = workbook.worksheets[0];
+        if (!ws) {
+            return res.status(400).json({ error: 'ไม่พบตารางงานในไฟล์ Excel' });
+        }
+
+        const cases = [];
+        const requiredFields = ['appNo', 'salesChannel', 'agentCode', 'firstName', 'lastName', 'gender', 'dob', 'plan', 'sumAssured', 'mode', 'premium'];
+
+        // Map column indices dynamically based on headers in row 1
+        const headerRow = ws.getRow(1);
+        const colMap = {};
+        
+        const fieldMapping = {
+            'เลขที่ใบคำขอ (Application No.)': 'appNo',
+            'ช่องทางการขาย (Sales Channel)': 'salesChannel',
+            'รหัสผู้เสนอขาย (Agent Code)': 'agentCode',
+            'คำนำหน้านาม (Title)': 'title',
+            'ชื่อผู้เอาประกัน (First Name)': 'firstName',
+            'นามสกุลผู้เอาประกัน (Last Name)': 'lastName',
+            'เพศ (Gender)': 'gender',
+            'วันเกิด (Date of Birth)': 'dob',
+            'อาชีพ (Occupation)': 'occupation',
+            'แผนประกันภัย (Insurance Plan)': 'plan',
+            'จำนวนเงินเอาประกันภัย (Sum Assured)': 'sumAssured',
+            'งวดการชำระเบี้ย (Premium Payment Mode)': 'mode',
+            'จำนวนเบี้ยประกันภัย (Premium Amount)': 'premium',
+            'หมายเหตุ (Remark)': 'remark'
+        };
+
+        headerRow.eachCell((cell, colNumber) => {
+            const text = cell.text ? cell.text.trim() : '';
+            if (fieldMapping[text]) {
+                colMap[fieldMapping[text]] = colNumber;
+            }
+        });
+
+        // Fallback to absolute index positioning if header row mapping failed or headers didn't match exactly
+        const keysList = ['appNo', 'salesChannel', 'agentCode', 'title', 'firstName', 'lastName', 'gender', 'dob', 'occupation', 'plan', 'sumAssured', 'mode', 'premium', 'remark'];
+        keysList.forEach((key, index) => {
+            if (!colMap[key]) {
+                colMap[key] = index + 1;
+            }
+        });
+
+        // Parse data rows starting from row 2
+        ws.eachRow((row, rowNumber) => {
+            if (rowNumber === 1) return; // Skip headers
+
+            const rowData = {};
+            keysList.forEach(key => {
+                const colIdx = colMap[key];
+                const cell = row.getCell(colIdx);
+                let val = cell.value;
+                
+                // Handle complex ExcelJS cell structures (like formulas or rich text)
+                if (val && typeof val === 'object') {
+                    if (val.result !== undefined) val = val.result;
+                    else if (val.richText) val = val.richText.map(t => t.text).join('');
+                    else if (val.text) val = val.text;
+                }
+                
+                // Trim string values
+                if (typeof val === 'string') {
+                    val = val.trim();
+                }
+                
+                // Ensure date formatting is clean
+                if (key === 'dob' && val instanceof Date) {
+                    val = val.toISOString().split('T')[0];
+                }
+
+                rowData[key] = val !== null && val !== undefined ? val : '';
+            });
+
+            // Skip empty rows (where all essential fields are blank)
+            const isRowEmpty = Object.values(rowData).every(v => v === '');
+            if (isRowEmpty) return;
+
+            // Validate fields
+            const missing = [];
+            requiredFields.forEach(f => {
+                if (rowData[f] === undefined || rowData[f] === null || rowData[f] === '') {
+                    missing.push(f);
+                }
+            });
+
+            rowData.isValid = missing.length === 0;
+            rowData.missingFields = missing;
+            rowData.rowNum = rowNumber;
+
+            cases.push(rowData);
+        });
+
+        res.json({ cases });
+    } catch (error) {
+        console.error('GISX File Upload Parse Error:', error);
+        res.status(500).json({ error: 'ไม่สามารถประมวลผลไฟล์ Excel ได้: ' + error.message });
+    }
+});
+
 // Start the server
 app.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);
