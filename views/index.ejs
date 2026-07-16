@@ -1511,12 +1511,15 @@
                         <thead>
                             <tr class="border-b-2 border-rose-50 bg-rose-50/20">
                                 <th class="py-3 px-3 text-rose-500 font-semibold text-xs text-center w-12">ลำดับ</th>
-                                <th class="py-3 px-3 text-rose-500 font-semibold text-xs w-28">เลขใบคำขอ</th>
-                                <th class="py-3 px-3 text-rose-500 font-semibold text-xs w-36">ชื่อ-นามสกุล</th>
-                                <th class="py-3 px-3 text-rose-500 font-semibold text-xs w-28">ช่องทางขาย</th>
-                                <th class="py-3 px-3 text-rose-500 font-semibold text-xs w-32">วันเกิด / เพศ</th>
-                                <th class="py-3 px-3 text-rose-500 font-semibold text-xs w-48">แผนประกัน</th>
-                                <th class="py-3 px-3 text-rose-500 font-semibold text-xs w-24 text-right">เบี้ยประกัน</th>
+                                <th class="py-3 px-3 text-rose-500 font-semibold text-xs w-28">Quotation No.</th>
+                                <th class="py-3 px-3 text-rose-500 font-semibold text-xs w-24">Title</th>
+                                <th class="py-3 px-3 text-rose-500 font-semibold text-xs w-48">Name (TH / EN)</th>
+                                <th class="py-3 px-3 text-rose-500 font-semibold text-xs w-28">Line of Business</th>
+                                <th class="py-3 px-3 text-rose-500 font-semibold text-xs w-28">Risk / Occupation</th>
+                                <th class="py-3 px-3 text-rose-500 font-semibold text-xs w-36">Effective Date & Time</th>
+                                <th class="py-3 px-3 text-rose-500 font-semibold text-xs w-36">End Date & Time</th>
+                                <th class="py-3 px-3 text-rose-500 font-semibold text-xs w-20 text-center">Language</th>
+                                <th class="py-3 px-3 text-rose-500 font-semibold text-xs w-20 text-center">Copy</th>
                                 <th class="py-3 px-3 text-rose-500 font-semibold text-xs text-center w-24">ความสมบูรณ์</th>
                                 <th class="py-3 px-3 text-rose-500 font-semibold text-xs text-center w-24">จัดการ</th>
                             </tr>
@@ -1538,93 +1541,81 @@
                 </h3>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                     <div>
-                        <label class="block text-xs font-semibold text-rose-500 mb-1">เลขที่ใบคำขอ (Required)</label>
-                        <input type="text" id="edit_appNo" class="w-full p-2.5 border-2 border-rose-50 rounded-xl focus:outline-none focus:border-rose-300 text-sm">
+                        <label class="block text-xs font-semibold text-rose-500 mb-1">Quotation No. (Required)</label>
+                        <input type="text" id="edit_quotationNo" class="w-full p-2.5 border-2 border-rose-50 rounded-xl focus:outline-none focus:border-rose-300 text-sm">
                     </div>
                     <div>
-                        <label class="block text-xs font-semibold text-rose-500 mb-1">ช่องทางการขาย (Required)</label>
-                        <select id="edit_salesChannel" class="w-full p-2.5 border-2 border-rose-50 rounded-xl focus:outline-none focus:border-rose-300 text-sm bg-white">
-                            <option value="Agent">Agent</option>
-                            <option value="Bancassurance">Bancassurance</option>
-                            <option value="Telesales">Telesales</option>
-                            <option value="Direct">Direct</option>
-                            <option value="Online">Online</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-rose-500 mb-1">รหัสผู้เสนอขาย (Required)</label>
-                        <input type="text" id="edit_agentCode" class="w-full p-2.5 border-2 border-rose-50 rounded-xl focus:outline-none focus:border-rose-300 text-sm">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-rose-500 mb-1">คำนำหน้านาม</label>
+                        <label class="block text-xs font-semibold text-rose-500 mb-1">Policy Holder Title (Required)</label>
                         <select id="edit_title" class="w-full p-2.5 border-2 border-rose-50 rounded-xl focus:outline-none focus:border-rose-300 text-sm bg-white">
                             <option value="นาย">นาย</option>
                             <option value="นาง">นาง</option>
                             <option value="นางสาว">นางสาว</option>
                             <option value="เด็กชาย">เด็กชาย</option>
                             <option value="เด็กหญิง">เด็กหญิง</option>
+                            <option value="บจก.">บจก.</option>
+                            <option value="บมจ.">บมจ.</option>
                         </select>
                     </div>
                     <div>
-                        <label class="block text-xs font-semibold text-rose-500 mb-1">ชื่อผู้เอาประกัน (Required)</label>
-                        <input type="text" id="edit_firstName" class="w-full p-2.5 border-2 border-rose-50 rounded-xl focus:outline-none focus:border-rose-300 text-sm">
+                        <label class="block text-xs font-semibold text-rose-500 mb-1">Policy Holder Name (Thai) (Required)</label>
+                        <input type="text" id="edit_nameTh" class="w-full p-2.5 border-2 border-rose-50 rounded-xl focus:outline-none focus:border-rose-300 text-sm">
                     </div>
                     <div>
-                        <label class="block text-xs font-semibold text-rose-500 mb-1">นามสกุลผู้เอาประกัน (Required)</label>
-                        <input type="text" id="edit_lastName" class="w-full p-2.5 border-2 border-rose-50 rounded-xl focus:outline-none focus:border-rose-300 text-sm">
+                        <label class="block text-xs font-semibold text-rose-500 mb-1">Policy Holder Name (English) (Required)</label>
+                        <input type="text" id="edit_nameEn" class="w-full p-2.5 border-2 border-rose-50 rounded-xl focus:outline-none focus:border-rose-300 text-sm">
                     </div>
                     <div>
-                        <label class="block text-xs font-semibold text-rose-500 mb-1">เพศ (Required)</label>
-                        <select id="edit_gender" class="w-full p-2.5 border-2 border-rose-50 rounded-xl focus:outline-none focus:border-rose-300 text-sm bg-white">
-                            <option value="ชาย">ชาย</option>
-                            <option value="หญิง">หญิง</option>
+                        <label class="block text-xs font-semibold text-rose-500 mb-1">Line of Business (Required)</label>
+                        <select id="edit_lineOfBusiness" class="w-full p-2.5 border-2 border-rose-50 rounded-xl focus:outline-none focus:border-rose-300 text-sm bg-white">
+                            <option value="Ordinary">Ordinary</option>
+                            <option value="Group">Group</option>
+                            <option value="Credit Life">Credit Life</option>
+                            <option value="Accident">Accident</option>
                         </select>
                     </div>
                     <div>
-                        <label class="block text-xs font-semibold text-rose-500 mb-1">วันเกิด YYYY-MM-DD (Required)</label>
-                        <input type="text" id="edit_dob" placeholder="1995-12-31" class="w-full p-2.5 border-2 border-rose-50 rounded-xl focus:outline-none focus:border-rose-300 text-sm">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-rose-500 mb-1">อาชีพ</label>
-                        <select id="edit_occupation" class="w-full p-2.5 border-2 border-rose-50 rounded-xl focus:outline-none focus:border-rose-300 text-sm bg-white">
-                            <option value="พนักงานบริษัท">พนักงานบริษัท</option>
-                            <option value="เจ้าของธุรกิจ">เจ้าของธุรกิจ</option>
-                            <option value="ข้าราชการ">ข้าราชการ</option>
-                            <option value="แม่บ้าน">แม่บ้าน</option>
-                            <option value="นักเรียน/นักศึกษา">นักเรียน/นักศึกษา</option>
-                            <option value="ค้าขาย">ค้าขาย</option>
+                        <label class="block text-xs font-semibold text-rose-500 mb-1">Risk Level (Required)</label>
+                        <select id="edit_riskLevel" class="w-full p-2.5 border-2 border-rose-50 rounded-xl focus:outline-none focus:border-rose-300 text-sm bg-white">
+                            <option value="Low">Low</option>
+                            <option value="Medium">Medium</option>
+                            <option value="High">High</option>
                         </select>
                     </div>
                     <div>
-                        <label class="block text-xs font-semibold text-rose-500 mb-1">แผนประกันภัย (Required)</label>
-                        <select id="edit_plan" class="w-full p-2.5 border-2 border-rose-50 rounded-xl focus:outline-none focus:border-rose-300 text-sm bg-white">
-                            <option value="เมืองไทย แฮปปี้ เซฟเวอร์ 11/1">เมืองไทย แฮปปี้ เซฟเวอร์ 11/1</option>
-                            <option value="เมืองไทย คุ้มครองตลอดชีพ 99/9">เมืองไทย คุ้มครองตลอดชีพ 99/9</option>
-                            <option value="เมืองไทย สมาร์ท ลิงค์ 15/1">เมืองไทย สมาร์ท ลิงค์ 15/1</option>
-                            <option value="เมืองไทย เซฟวิ่ง 10/5">เมืองไทย เซฟวิ่ง 10/5</option>
+                        <label class="block text-xs font-semibold text-rose-500 mb-1">Occupational Classification (Priority) (Required)</label>
+                        <select id="edit_occupationClass" class="w-full p-2.5 border-2 border-rose-50 rounded-xl focus:outline-none focus:border-rose-300 text-sm bg-white">
+                            <option value="Class 1">Class 1</option>
+                            <option value="Class 2">Class 2</option>
+                            <option value="Class 3">Class 3</option>
+                            <option value="Class 4">Class 4</option>
                         </select>
                     </div>
                     <div>
-                        <label class="block text-xs font-semibold text-rose-500 mb-1">จำนวนเงินเอาประกันภัย (Required)</label>
-                        <input type="number" id="edit_sumAssured" class="w-full p-2.5 border-2 border-rose-50 rounded-xl focus:outline-none focus:border-rose-300 text-sm">
+                        <label class="block text-xs font-semibold text-rose-500 mb-1">Policy Effective Date DD/MM/YYYY (Required)</label>
+                        <input type="text" id="edit_effDate" placeholder="DD/MM/YYYY" class="w-full p-2.5 border-2 border-rose-50 rounded-xl focus:outline-none focus:border-rose-300 text-sm">
                     </div>
                     <div>
-                        <label class="block text-xs font-semibold text-rose-500 mb-1">งวดการชำระเบี้ย (Required)</label>
-                        <select id="edit_mode" class="w-full p-2.5 border-2 border-rose-50 rounded-xl focus:outline-none focus:border-rose-300 text-sm bg-white">
-                            <option value="รายปี">รายปี</option>
-                            <option value="ราย 6 เดือน">ราย 6 เดือน</option>
-                            <option value="ราย 3 เดือน">ราย 3 เดือน</option>
-                            <option value="รายเดือน">รายเดือน</option>
-                            <option value="ชำระครั้งเดียว">ชำระครั้งเดียว</option>
+                        <label class="block text-xs font-semibold text-rose-500 mb-1">Policy Effective Time HH:MM:SS (Required)</label>
+                        <input type="text" id="edit_effTime" placeholder="00:00:00" class="w-full p-2.5 border-2 border-rose-50 rounded-xl focus:outline-none focus:border-rose-300 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-rose-500 mb-1">Policy End Date DD/MM/YYYY (Required)</label>
+                        <input type="text" id="edit_endDate" placeholder="DD/MM/YYYY" class="w-full p-2.5 border-2 border-rose-50 rounded-xl focus:outline-none focus:border-rose-300 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-rose-500 mb-1">Policy End Time HH:MM:SS (Required)</label>
+                        <input type="text" id="edit_endTime" placeholder="23:59:59" class="w-full p-2.5 border-2 border-rose-50 rounded-xl focus:outline-none focus:border-rose-300 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-rose-500 mb-1">Policy Language (Required)</label>
+                        <select id="edit_language" class="w-full p-2.5 border-2 border-rose-50 rounded-xl focus:outline-none focus:border-rose-300 text-sm bg-white">
+                            <option value="Thai">Thai</option>
+                            <option value="English">English</option>
                         </select>
                     </div>
                     <div>
-                        <label class="block text-xs font-semibold text-rose-500 mb-1">จำนวนเบี้ยประกันภัย (Required)</label>
-                        <input type="number" id="edit_premium" class="w-full p-2.5 border-2 border-rose-50 rounded-xl focus:outline-none focus:border-rose-300 text-sm">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-rose-500 mb-1">หมายเหตุ (Remark)</label>
-                        <input type="text" id="edit_remark" class="w-full p-2.5 border-2 border-rose-50 rounded-xl focus:outline-none focus:border-rose-300 text-sm">
+                        <label class="block text-xs font-semibold text-rose-500 mb-1">Copy of Policy (Required)</label>
+                        <input type="number" id="edit_copyCount" class="w-full p-2.5 border-2 border-rose-50 rounded-xl focus:outline-none focus:border-rose-300 text-sm">
                     </div>
                 </div>
                 <div class="flex justify-end gap-2">
@@ -3787,6 +3778,186 @@ ${matrixTestCases.map((tc, i) => `${i + 1}. ${tc}`).join('\n')}`;
             ]
         };
         
+        window.editGisxCase = function (idx) {
+            editingGisxIdx = idx;
+            const item = gisxCases[idx];
+            if (!item) return;
+
+            const fields = ['quotationNo', 'title', 'nameTh', 'nameEn', 'lineOfBusiness', 'riskLevel', 'occupationClass', 'effDate', 'effTime', 'endDate', 'endTime', 'language', 'copyCount'];
+            fields.forEach(f => {
+                const el = document.getElementById('edit_' + f);
+                if (el) {
+                    el.value = item[f] !== undefined ? item[f] : '';
+                }
+            });
+
+            document.getElementById('editGisxCaseModal').classList.remove('hidden');
+        };
+
+        window.closeEditGisxModal = function () {
+            document.getElementById('editGisxCaseModal').classList.add('hidden');
+            editingGisxIdx = -1;
+        };
+
+        window.saveEditGisxCase = function () {
+            if (editingGisxIdx === -1) return;
+            const item = gisxCases[editingGisxIdx];
+            if (!item) return;
+
+            const fields = ['quotationNo', 'title', 'nameTh', 'nameEn', 'lineOfBusiness', 'riskLevel', 'occupationClass', 'effDate', 'effTime', 'endDate', 'endTime', 'language', 'copyCount'];
+            fields.forEach(f => {
+                const el = document.getElementById('edit_' + f);
+                if (el) {
+                    if (f === 'copyCount') {
+                        item[f] = el.value ? parseInt(el.value, 10) : '';
+                    } else {
+                        item[f] = el.value.trim();
+                    }
+                }
+            });
+
+            // Re-validate fields (all required)
+            const requiredFields = ['quotationNo', 'title', 'nameTh', 'nameEn', 'lineOfBusiness', 'riskLevel', 'occupationClass', 'effDate', 'effTime', 'endDate', 'endTime', 'language', 'copyCount'];
+            const missing = [];
+            requiredFields.forEach(f => {
+                if (item[f] === undefined || item[f] === null || item[f] === '') {
+                    missing.push(f);
+                }
+            });
+
+            item.isValid = missing.length === 0;
+            item.missingFields = missing;
+
+            localStorage.setItem('cat_gisx_cases', JSON.stringify(gisxCases));
+            closeEditGisxModal();
+            renderGisxCases();
+            showToast('บันทึกการแก้ไขเคสสำเร็จ! ✏️😻');
+        };
+
+        window.renderGisxCases = function () {
+            const body = document.getElementById('gisxCasesBody');
+            const statsSec = document.getElementById('gisxStatsSection');
+            const casesSec = document.getElementById('gisxCasesSection');
+            if (!body) return;
+
+            body.innerHTML = '';
+
+            if (gisxCases.length === 0) {
+                statsSec.classList.add('hidden');
+                casesSec.classList.add('hidden');
+                return;
+            }
+
+            statsSec.classList.remove('hidden');
+            casesSec.classList.remove('hidden');
+
+            let validCount = 0;
+            let invalidCount = 0;
+
+            gisxCases.forEach((item, idx) => {
+                if (item.isValid) validCount++;
+                else invalidCount++;
+
+                const tr = document.createElement('tr');
+                tr.className = 'border-b border-rose-50 hover:bg-rose-50/20 transition-colors text-xs text-gray-700';
+
+                // Columns construction
+                const tdNum = document.createElement('td');
+                tdNum.className = 'py-3 px-3 text-center font-bold text-gray-400';
+                tdNum.textContent = idx + 1;
+                tr.appendChild(tdNum);
+
+                // Quotation No.
+                const tdQuotation = document.createElement('td');
+                tdQuotation.className = 'py-3 px-3 font-semibold text-rose-500';
+                tdQuotation.textContent = item.quotationNo || '(ไม่มีข้อมูล)';
+                tr.appendChild(tdQuotation);
+
+                // Title
+                const tdTitle = document.createElement('td');
+                tdTitle.className = 'py-3 px-3 text-gray-500';
+                tdTitle.textContent = item.title || '-';
+                tr.appendChild(tdTitle);
+
+                // Name (TH / EN)
+                const tdName = document.createElement('td');
+                tdName.className = 'py-3 px-3';
+                tdName.innerHTML = `<div class="font-semibold">${item.nameTh || '-'}</div><div class="text-[10px] text-gray-400">${item.nameEn || '-'}</div>`;
+                tr.appendChild(tdName);
+
+                // Line of Business
+                const tdLine = document.createElement('td');
+                tdLine.className = 'py-3 px-3';
+                tdLine.textContent = item.lineOfBusiness || '-';
+                tr.appendChild(tdLine);
+
+                // Risk / Occupation
+                const tdRiskOcc = document.createElement('td');
+                tdRiskOcc.className = 'py-3 px-3 text-gray-500';
+                tdRiskOcc.innerHTML = `<div>${item.riskLevel || '-'}</div><div class="text-[10px] text-gray-400">${item.occupationClass || '-'}</div>`;
+                tr.appendChild(tdRiskOcc);
+
+                // Effective Date & Time
+                const tdEff = document.createElement('td');
+                tdEff.className = 'py-3 px-3';
+                tdEff.innerHTML = `<div>${item.effDate || '-'}</div><div class="text-[10px] text-gray-400">${item.effTime || '-'}</div>`;
+                tr.appendChild(tdEff);
+
+                // End Date & Time
+                const tdEnd = document.createElement('td');
+                tdEnd.className = 'py-3 px-3';
+                tdEnd.innerHTML = `<div>${item.endDate || '-'}</div><div class="text-[10px] text-gray-400">${item.endTime || '-'}</div>`;
+                tr.appendChild(tdEnd);
+
+                // Language
+                const tdLang = document.createElement('td');
+                tdLang.className = 'py-3 px-3 text-center';
+                tdLang.textContent = item.language || '-';
+                tr.appendChild(tdLang);
+
+                // Copy
+                const tdCopy = document.createElement('td');
+                tdCopy.className = 'py-3 px-3 text-center font-bold text-gray-800';
+                tdCopy.textContent = item.copyCount || '0';
+                tr.appendChild(tdCopy);
+
+                // Validation Status
+                const tdStatus = document.createElement('td');
+                tdStatus.className = 'py-3 px-3 text-center';
+                if (item.isValid) {
+                    tdStatus.innerHTML = '<span class="inline-flex items-center bg-green-50 text-green-700 px-2 py-1 rounded-full font-bold">ข้อมูลสมบูรณ์ ✔️</span>';
+                } else {
+                    const missingLabel = item.missingFields.join(', ');
+                    tdStatus.innerHTML = `
+                        <span class="inline-flex items-center bg-red-50 text-red-500 px-2 py-1 rounded-full font-bold cursor-help" title="ฟิลด์ที่ขาด: ${missingLabel}">
+                            ข้อมูลไม่ครบ ✕ (ขาด: ${item.missingFields.length})
+                        </span>
+                    `;
+                }
+                tr.appendChild(tdStatus);
+
+                // Actions cell
+                const tdActions = document.createElement('td');
+                tdActions.className = 'py-3 px-3 text-center flex items-center justify-center gap-1.5';
+                tdActions.innerHTML = `
+                    <button onclick="editGisxCase(${idx})" class="bg-amber-50 hover:bg-amber-100 text-amber-600 p-1.5 rounded-lg transition-colors font-bold text-[10px]" title="แก้ไขข้อมูล">
+                        ✏️ แก้ไข
+                    </button>
+                    <button onclick="deleteGisxCase(${idx})" class="bg-rose-50 hover:bg-rose-100 text-rose-500 p-1.5 rounded-lg transition-colors font-bold text-[10px]" title="ลบเคส">
+                        🗑️ ลบ
+                    </button>
+                `;
+                tr.appendChild(tdActions);
+
+                body.appendChild(tr);
+            });
+
+            // Update stats indicators
+            document.getElementById('gisxStatTotal').textContent = gisxCases.length;
+            document.getElementById('gisxStatValid').textContent = validCount;
+            document.getElementById('gisxStatInvalid').textContent = invalidCount;
+        };
+        
         window.getFortune = function() {
             const cat = document.getElementById('fortuneCategory').value;
             const display = document.getElementById('fortuneResult');
@@ -4344,8 +4515,8 @@ ${matrixTestCases.map((tc, i) => `${i + 1}. ${tc}`).join('\n')}`;
 const { test, expect } = require('@playwright/test');
 
 test('Automate GISX Register Case Entry', async ({ page }) => {
-    // Navigate to GISX Register Case URL
-    await page.goto('https://gisx-qa.muangthai.co.th/new-business/register-case');
+    // Navigate to GISX Register Case Creation page
+    await page.goto('https://gisx-qa.muangthai.co.th/new-business/register-case/create');
     
     // Login procedure (Uncomment and customize if login page appears)
     /*
@@ -4359,62 +4530,48 @@ test('Automate GISX Register Case Entry', async ({ page }) => {
 
     for (let i = 0; i < cases.length; i++) {
         const item = cases[i];
-        console.log(\`[KUMA] Registering case \${i + 1}/\${cases.length} - Application No: \${item.appNo}\`);
+        console.log(\`[KUMA] Registering case \${i + 1}/\${cases.length} - Quotation No: \${item.quotationNo}\`);
 
-        // 1. Click "Add New" or "Register Case" button
-        // await page.click('#btn-register-case');
+        // Fill Quotation No.
+        await page.fill('input[name="quotationNo"]', item.quotationNo);
 
-        // 2. Fill Application Number
-        await page.fill('input[name="appNo"]', item.appNo);
+        // Select Policy Holder Title (Dropdown)
+        await page.selectOption('select[name="title"]', { label: item.title });
 
-        // 3. Select Sales Channel (Dropdown)
-        await page.selectOption('select[name="salesChannel"]', { label: item.salesChannel });
+        // Fill Policy Holder Name (Thai)
+        await page.fill('input[name="nameTh"]', item.nameTh);
 
-        // 4. Fill Agent Code
-        await page.fill('input[name="agentCode"]', item.agentCode);
+        // Fill Policy Holder Name (English)
+        await page.fill('input[name="nameEn"]', item.nameEn);
 
-        // 5. Select Title (Dropdown - Optional)
-        if (item.title) {
-            await page.selectOption('select[name="title"]', { label: item.title });
-        }
+        // Select Line of Business (Dropdown)
+        await page.selectOption('select[name="lineOfBusiness"]', { label: item.lineOfBusiness });
 
-        // 6. Fill First Name & Last Name
-        await page.fill('input[name="firstName"]', item.firstName);
-        await page.fill('input[name="lastName"]', item.lastName);
+        // Select Risk Level (Dropdown)
+        await page.selectOption('select[name="riskLevel"]', { label: item.riskLevel });
 
-        // 7. Select Gender (Dropdown)
-        await page.selectOption('select[name="gender"]', { label: item.gender });
+        // Select Occupational Classification (Priority) (Dropdown)
+        await page.selectOption('select[name="occupationClass"]', { label: item.occupationClass });
 
-        // 8. Fill Date of Birth (YYYY-MM-DD)
-        await page.fill('input[name="dob"]', item.dob);
+        // Fill Policy Effective Date & Time
+        await page.fill('input[name="effDate"]', item.effDate);
+        await page.fill('input[name="effTime"]', item.effTime);
 
-        // 9. Select Occupation (Dropdown - Optional)
-        if (item.occupation) {
-            await page.selectOption('select[name="occupation"]', { label: item.occupation });
-        }
+        // Fill Policy End Date & Time
+        await page.fill('input[name="endDate"]', item.endDate);
+        await page.fill('input[name="endTime"]', item.endTime);
 
-        // 10. Select Insurance Plan (Dropdown)
-        await page.selectOption('select[name="plan"]', { label: item.plan });
+        // Select Policy Language (Dropdown)
+        await page.selectOption('select[name="language"]', { label: item.language });
 
-        // 11. Fill Sum Assured
-        await page.fill('input[name="sumAssured"]', String(item.sumAssured));
+        // Fill Copy of Policy
+        await page.fill('input[name="copyCount"]', String(item.copyCount));
 
-        // 12. Select Premium Payment Mode (Dropdown)
-        await page.selectOption('select[name="mode"]', { label: item.mode });
-
-        // 13. Fill Premium Amount
-        await page.fill('input[name="premium"]', String(item.premium));
-
-        // 14. Fill Remark (Optional)
-        if (item.remark) {
-            await page.fill('input[name="remark"]', item.remark);
-        }
-
-        // 15. Click "Submit" or "Save" button to create policy
-        // await page.click('button#save-case');
+        // Click "Save Draft" or "Next" button
+        // await page.click('button:has-text("Save Draft")');
         // await page.waitForTimeout(2000); // Wait for API response
         
-        console.log(\`[KUMA] Successfully registered Application No: \${item.appNo}\`);
+        console.log(\`[KUMA] Successfully registered Quotation No: \${item.quotationNo}\`);
     }
 });
 `;
@@ -4431,7 +4588,7 @@ test('Automate GISX Register Case Entry', async ({ page }) => {
             // Build the Robot Framework calling cases
             let robotSteps = '';
             cleanCases.forEach(item => {
-                robotSteps += `    Register Single Case    ${item.appNo}    ${item.salesChannel}    ${item.agentCode}    ${item.title || '${EMPTY}'}    ${item.firstName}    ${item.lastName}    ${item.gender}    ${item.dob}    ${item.occupation || '${EMPTY}'}    ${item.plan}    ${item.sumAssured}    ${item.mode}    ${item.premium}    ${item.remark || '${EMPTY}'}\n`;
+                robotSteps += `    Register Single Case    ${item.quotationNo}    ${item.title}    ${item.nameTh}    ${item.nameEn}    ${item.lineOfBusiness}    ${item.riskLevel}    ${item.occupationClass}    ${item.effDate}    ${item.effTime}    ${item.endDate}    ${item.endTime}    ${item.language}    ${item.copyCount}\n`;
             });
 
             const script = `*** Settings ***
@@ -4439,7 +4596,7 @@ Documentation     Automated GISX Case Registration Script
 Library           SeleniumLibrary
 
 *** Variables ***
-\${URL}            https://gisx-qa.muangthai.co.th/new-business/register-case
+\${URL}            https://gisx-qa.muangthai.co.th/new-business/register-case/create
 \${BROWSER}        chrome
 
 *** Test Cases ***
@@ -4454,32 +4611,27 @@ Register All Policy Cases From Excel
 
 *** Keywords ***
 Register Single Case
-    [Arguments]    \${appNo}    \${salesChannel}    \${agentCode}    \${title}    \${firstName}    \${lastName}    \${gender}    \${dob}    \${occupation}    \${plan}    \${sumAssured}    \${mode}    \${premium}    \${remark}
+    [Arguments]    \${quotationNo}    \${title}    \${nameTh}    \${nameEn}    \${lineOfBusiness}    \${riskLevel}    \${occupationClass}    \${effDate}    \${effTime}    \${endDate}    \${endTime}    \${language}    \${copyCount}
     
-    Log To Console    Registering Case: \${appNo} (\${firstName} \${lastName})
+    Log To Console    Registering Case: \${quotationNo} (\${nameTh})
     
-    # Click "Add Case" button
-    # Click Element    xpath=//button[@id='add-new']
-    # Sleep    1s
-
     # Input Fields selectors (please adjust XPath/CSS to match actual web fields)
-    Input Text      xpath=//input[@name='appNo']            \${appNo}
-    Select From List By Label    xpath=//select[@name='salesChannel']    \${salesChannel}
-    Input Text      xpath=//input[@name='agentCode']         \${agentCode}
-    Run Keyword If    '\${title}' != '\${EMPTY}'    Select From List By Label    xpath=//select[@name='title']    \${title}
-    Input Text      xpath=//input[@name='firstName']         \${firstName}
-    Input Text      xpath=//input[@name='lastName']          \${lastName}
-    Select From List By Label    xpath=//select[@name='gender']          \${gender}
-    Input Text      xpath=//input[@name='dob']               \${dob}
-    Run Keyword If    '\${occupation}' != '\${EMPTY}'    Select From List By Label    xpath=//select[@name='occupation']    \${occupation}
-    Select From List By Label    xpath=//select[@name='plan']            \${plan}
-    Input Text      xpath=//input[@name='sumAssured']        \${sumAssured}
-    Select From List By Label    xpath=//select[@name='mode']            \${mode}
-    Input Text      xpath=//input[@name='premium']           \${premium}
-    Run Keyword If    '\${remark}' != '\${EMPTY}'    Input Text      xpath=//input[@name='remark']           \${remark}
+    Input Text      xpath=//input[@name='quotationNo']       \${quotationNo}
+    Select From List By Label    xpath=//select[@name='title']    \${title}
+    Input Text      xpath=//input[@name='nameTh']            \${nameTh}
+    Input Text      xpath=//input[@name='nameEn']            \${nameEn}
+    Select From List By Label    xpath=//select[@name='lineOfBusiness']    \${lineOfBusiness}
+    Select From List By Label    xpath=//select[@name='riskLevel']         \${riskLevel}
+    Select From List By Label    xpath=//select[@name='occupationClass']   \${occupationClass}
+    Input Text      xpath=//input[@name='effDate']           \${effDate}
+    Input Text      xpath=//input[@name='effTime']           \${effTime}
+    Input Text      xpath=//input[@name='endDate']           \${endDate}
+    Input Text      xpath=//input[@name='endTime']           \${endTime}
+    Select From List By Label    xpath=//select[@name='language']          \${language}
+    Input Text      xpath=//input[@name='copyCount']         \${copyCount}
 
-    # Click Save Button
-    # Click Element    xpath=//button[@id='save']
+    # Click Save Draft Button
+    # Click Element    xpath=//button[contains(text(), 'Save Draft')]
     # Sleep    2s
 `;
 

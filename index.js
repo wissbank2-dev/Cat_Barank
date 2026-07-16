@@ -527,27 +527,26 @@ app.get('/api/gisx/template', async (req, res) => {
         const workbook = new ExcelJS.Workbook();
         const ws = workbook.addWorksheet('Register Case');
 
-        // Fields config
+        // Fields config (all required per screenshot)
         const fields = [
-            { header: 'เลขที่ใบคำขอ (Application No.)', key: 'appNo', width: 25, required: true },
-            { header: 'ช่องทางการขาย (Sales Channel)', key: 'salesChannel', width: 22, required: true },
-            { header: 'รหัสผู้เสนอขาย (Agent Code)', key: 'agentCode', width: 20, required: true },
-            { header: 'คำนำหน้านาม (Title)', key: 'title', width: 15, required: false },
-            { header: 'ชื่อผู้เอาประกัน (First Name)', key: 'firstName', width: 25, required: true },
-            { header: 'นามสกุลผู้เอาประกัน (Last Name)', key: 'lastName', width: 25, required: true },
-            { header: 'เพศ (Gender)', key: 'gender', width: 12, required: true },
-            { header: 'วันเกิด (Date of Birth)', key: 'dob', width: 18, required: true },
-            { header: 'อาชีพ (Occupation)', key: 'occupation', width: 20, required: false },
-            { header: 'แผนประกันภัย (Insurance Plan)', key: 'plan', width: 35, required: true },
-            { header: 'จำนวนเงินเอาประกันภัย (Sum Assured)', key: 'sumAssured', width: 25, required: true },
-            { header: 'งวดการชำระเบี้ย (Premium Payment Mode)', key: 'mode', width: 25, required: true },
-            { header: 'จำนวนเบี้ยประกันภัย (Premium Amount)', key: 'premium', width: 20, required: true },
-            { header: 'หมายเหตุ (Remark)', key: 'remark', width: 25, required: false }
+            { header: 'Quotation No. *', key: 'quotationNo', width: 25, required: true },
+            { header: 'Policy Holder Title *', key: 'title', width: 25, required: true },
+            { header: 'Policy Holder Name (Thai) *', key: 'nameTh', width: 35, required: true },
+            { header: 'Policy Holder Name (English) *', key: 'nameEn', width: 35, required: true },
+            { header: 'Line of Business *', key: 'lineOfBusiness', width: 22, required: true },
+            { header: 'Risk Level *', key: 'riskLevel', width: 18, required: true },
+            { header: 'Occupational Classification (Priority) *', key: 'occupationClass', width: 40, required: true },
+            { header: 'Policy Effective Date *', key: 'effDate', width: 25, required: true },
+            { header: 'Policy Effective Time *', key: 'effTime', width: 25, required: true },
+            { header: 'Policy End Date *', key: 'endDate', width: 25, required: true },
+            { header: 'Policy End Time *', key: 'endTime', width: 25, required: true },
+            { header: 'Policy Language *', key: 'language', width: 22, required: true },
+            { header: 'Copy of Policy *', key: 'copyCount', width: 20, required: true }
         ];
 
         ws.columns = fields.map(f => ({ header: f.header, key: f.key, width: f.width }));
 
-        // Style the headers (Red for Required, Light Pink/Rose for Optional)
+        // Style the headers (All solid Red because they are required)
         const headerRow = ws.getRow(1);
         headerRow.height = 30;
         headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' } };
@@ -555,52 +554,39 @@ app.get('/api/gisx/template', async (req, res) => {
 
         fields.forEach((f, idx) => {
             const cell = headerRow.getCell(idx + 1);
-            if (f.required) {
-                cell.fill = {
-                    type: 'pattern',
-                    pattern: 'solid',
-                    fgColor: { argb: 'FFEF4444' } // TailWind Red-500
-                };
-            } else {
-                cell.fill = {
-                    type: 'pattern',
-                    pattern: 'solid',
-                    fgColor: { argb: 'FFFDA4AF' } // Light Rose-300
-                };
-            }
+            cell.fill = {
+                type: 'pattern',
+                pattern: 'solid',
+                fgColor: { argb: 'FFEF4444' } // Red
+            };
         });
 
         // Add validations for rows 2 to 100
         const validations = {
-            salesChannel: {
-                type: 'list',
-                allowBlank: true,
-                formulae: ['"Agent,Bancassurance,Telesales,Direct,Online"']
-            },
             title: {
                 type: 'list',
                 allowBlank: true,
-                formulae: ['"นาย,นาง,นางสาว,เด็กชาย,เด็กหญิง"']
+                formulae: ['"นาย,นาง,นางสาว,เด็กชาย,เด็กหญิง,บจก.,บมจ."']
             },
-            gender: {
+            lineOfBusiness: {
                 type: 'list',
                 allowBlank: true,
-                formulae: ['"ชาย,หญิง"']
+                formulae: ['"Ordinary,Group,Credit Life,Accident"']
             },
-            occupation: {
+            riskLevel: {
                 type: 'list',
                 allowBlank: true,
-                formulae: ['"พนักงานบริษัท,เจ้าของธุรกิจ,ข้าราชการ,แม่บ้าน,นักเรียน/นักศึกษา,ค้าขาย"']
+                formulae: ['"Low,Medium,High"']
             },
-            plan: {
+            occupationClass: {
                 type: 'list',
                 allowBlank: true,
-                formulae: ['"เมืองไทย แฮปปี้ เซฟเวอร์ 11/1,เมืองไทย คุ้มครองตลอดชีพ 99/9,เมืองไทย สมาร์ท ลิงค์ 15/1,เมืองไทย เซฟวิ่ง 10/5"']
+                formulae: ['"Class 1,Class 2,Class 3,Class 4"']
             },
-            mode: {
+            language: {
                 type: 'list',
                 allowBlank: true,
-                formulae: ['"รายปี,ราย 6 เดือน,ราย 3 เดือน,รายเดือน,ชำระครั้งเดียว"']
+                formulae: ['"Thai,English"']
             }
         };
 
@@ -611,9 +597,9 @@ app.get('/api/gisx/template', async (req, res) => {
                     cell.dataValidation = validations[f.key];
                 }
                 
-                // Format text format for DOB and text cells, and numeric styling
-                if (f.key === 'sumAssured' || f.key === 'premium') {
-                    cell.numFmt = '#,##0.00';
+                // Format numeric styling
+                if (f.key === 'copyCount') {
+                    cell.numFmt = '0';
                 }
             });
         }
@@ -621,20 +607,19 @@ app.get('/api/gisx/template', async (req, res) => {
         // Add a demo/example row on row 2 (first row under headers)
         const demoRow = ws.getRow(2);
         demoRow.values = {
-            appNo: 'APP9909988',
-            salesChannel: 'Agent',
-            agentCode: 'AG010992',
+            quotationNo: 'QT20260716001',
             title: 'นาย',
-            firstName: 'สมชาย',
-            lastName: 'ใจดีสู้เสือ',
-            gender: 'ชาย',
-            dob: '1992-08-25',
-            occupation: 'พนักงานบริษัท',
-            plan: 'เมืองไทย คุ้มครองตลอดชีพ 99/9',
-            sumAssured: 1000000,
-            mode: 'รายปี',
-            premium: 25000,
-            remark: 'เคสทดสอบระบบ GISX'
+            nameTh: 'สมชาย มั่งคั่ง',
+            nameEn: 'Somchai Mangkang',
+            lineOfBusiness: 'Ordinary',
+            riskLevel: 'Low',
+            occupationClass: 'Class 1',
+            effDate: '16/07/2026',
+            effTime: '00:00:00',
+            endDate: '15/07/2027',
+            endTime: '23:59:59',
+            language: 'Thai',
+            copyCount: 1
         };
 
         // Set response headers and transmit the template file
@@ -664,27 +649,26 @@ app.post('/api/gisx/upload', upload.single('file'), async (req, res) => {
         }
 
         const cases = [];
-        const requiredFields = ['appNo', 'salesChannel', 'agentCode', 'firstName', 'lastName', 'gender', 'dob', 'plan', 'sumAssured', 'mode', 'premium'];
+        const requiredFields = ['quotationNo', 'title', 'nameTh', 'nameEn', 'lineOfBusiness', 'riskLevel', 'occupationClass', 'effDate', 'effTime', 'endDate', 'endTime', 'language', 'copyCount'];
 
         // Map column indices dynamically based on headers in row 1
         const headerRow = ws.getRow(1);
         const colMap = {};
         
         const fieldMapping = {
-            'เลขที่ใบคำขอ (Application No.)': 'appNo',
-            'ช่องทางการขาย (Sales Channel)': 'salesChannel',
-            'รหัสผู้เสนอขาย (Agent Code)': 'agentCode',
-            'คำนำหน้านาม (Title)': 'title',
-            'ชื่อผู้เอาประกัน (First Name)': 'firstName',
-            'นามสกุลผู้เอาประกัน (Last Name)': 'lastName',
-            'เพศ (Gender)': 'gender',
-            'วันเกิด (Date of Birth)': 'dob',
-            'อาชีพ (Occupation)': 'occupation',
-            'แผนประกันภัย (Insurance Plan)': 'plan',
-            'จำนวนเงินเอาประกันภัย (Sum Assured)': 'sumAssured',
-            'งวดการชำระเบี้ย (Premium Payment Mode)': 'mode',
-            'จำนวนเบี้ยประกันภัย (Premium Amount)': 'premium',
-            'หมายเหตุ (Remark)': 'remark'
+            'Quotation No. *': 'quotationNo',
+            'Policy Holder Title *': 'title',
+            'Policy Holder Name (Thai) *': 'nameTh',
+            'Policy Holder Name (English) *': 'nameEn',
+            'Line of Business *': 'lineOfBusiness',
+            'Risk Level *': 'riskLevel',
+            'Occupational Classification (Priority) *': 'occupationClass',
+            'Policy Effective Date *': 'effDate',
+            'Policy Effective Time *': 'effTime',
+            'Policy End Date *': 'endDate',
+            'Policy End Time *': 'endTime',
+            'Policy Language *': 'language',
+            'Copy of Policy *': 'copyCount'
         };
 
         headerRow.eachCell((cell, colNumber) => {
@@ -694,8 +678,8 @@ app.post('/api/gisx/upload', upload.single('file'), async (req, res) => {
             }
         });
 
-        // Fallback to absolute index positioning if header row mapping failed or headers didn't match exactly
-        const keysList = ['appNo', 'salesChannel', 'agentCode', 'title', 'firstName', 'lastName', 'gender', 'dob', 'occupation', 'plan', 'sumAssured', 'mode', 'premium', 'remark'];
+        // Fallback to absolute index positioning
+        const keysList = ['quotationNo', 'title', 'nameTh', 'nameEn', 'lineOfBusiness', 'riskLevel', 'occupationClass', 'effDate', 'effTime', 'endDate', 'endTime', 'language', 'copyCount'];
         keysList.forEach((key, index) => {
             if (!colMap[key]) {
                 colMap[key] = index + 1;
@@ -712,7 +696,7 @@ app.post('/api/gisx/upload', upload.single('file'), async (req, res) => {
                 const cell = row.getCell(colIdx);
                 let val = cell.value;
                 
-                // Handle complex ExcelJS cell structures (like formulas or rich text)
+                // Handle complex ExcelJS cell structures
                 if (val && typeof val === 'object') {
                     if (val.result !== undefined) val = val.result;
                     else if (val.richText) val = val.richText.map(t => t.text).join('');
@@ -724,15 +708,19 @@ app.post('/api/gisx/upload', upload.single('file'), async (req, res) => {
                     val = val.trim();
                 }
                 
-                // Ensure date formatting is clean
-                if (key === 'dob' && val instanceof Date) {
-                    val = val.toISOString().split('T')[0];
+                // Ensure date formatting is clean (DD/MM/YYYY)
+                if ((key === 'effDate' || key === 'endDate') && val instanceof Date) {
+                    const d = val;
+                    const dd = String(d.getDate()).padStart(2, '0');
+                    const mm = String(d.getMonth() + 1).padStart(2, '0');
+                    const yyyy = d.getFullYear();
+                    val = `${dd}/${mm}/${yyyy}`;
                 }
 
                 rowData[key] = val !== null && val !== undefined ? val : '';
             });
 
-            // Skip empty rows (where all essential fields are blank)
+            // Skip empty rows
             const isRowEmpty = Object.values(rowData).every(v => v === '');
             if (isRowEmpty) return;
 
