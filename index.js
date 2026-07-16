@@ -618,8 +618,9 @@ app.get('/api/gisx/template', async (req, res) => {
             });
         }
 
-        // Add a demo/example row
-        ws.addRow({
+        // Add a demo/example row on row 2 (first row under headers)
+        const demoRow = ws.getRow(2);
+        demoRow.values = {
             appNo: 'APP9909988',
             salesChannel: 'Agent',
             agentCode: 'AG010992',
@@ -634,7 +635,7 @@ app.get('/api/gisx/template', async (req, res) => {
             mode: 'รายปี',
             premium: 25000,
             remark: 'เคสทดสอบระบบ GISX'
-        });
+        };
 
         // Set response headers and transmit the template file
         res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
