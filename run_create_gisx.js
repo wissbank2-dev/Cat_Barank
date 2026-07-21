@@ -154,16 +154,16 @@ const results = [];
                 console.log(`[KUMA DUMP] Dropdown "${dataQaName}" options evaluation failed:`, e.message);
             }
 
-            const overlay = page.locator('[data-qa="dropdown_overlay"]');
+            const activeOverlay = page.locator('[data-qa="dropdown_overlay"]').last();
             
             // Check for Apply button presence in DOM (multi-select)
-            const hasApplyBtn = (await overlay
+            const hasApplyBtn = (await activeOverlay
                 .locator('[data-qa="btn_dropdown_confirm"], button:has-text("Apply"), button:has-text("ตกลง"), button:has-text("นำไปใช้"), button:has-text("OK")')
                 .count().catch(() => 0)) > 0;
 
             if (valueText) {
                 if (valueText === 'Select All,เลือกทั้งหมด') {
-                    const items = page.locator('[data-qa="dropdown_overlay"] [data-qa^="dropdown_item"], [data-qa="dropdown_overlay"] [id^="dropdown-overlay-item-"]');
+                    const items = activeOverlay.locator('[data-qa^="dropdown_item"], [id^="dropdown-overlay-item-"]');
                     const count = await items.count().catch(() => 0);
                     console.log(`[KUMA AUTO] Selecting all ${count} items one by one in "${dataQaName}"...`);
                     for (let i = 0; i < count; i++) {
@@ -171,7 +171,7 @@ const results = [];
                         await page.waitForTimeout(200);
                     }
                     if (hasApplyBtn) {
-                        const applyBtn = overlay.locator('[data-qa="btn_dropdown_confirm"], button:has-text("Apply"), button:has-text("ตกลง"), button:has-text("นำไปใช้"), button:has-text("OK")').first();
+                        const applyBtn = activeOverlay.locator('[data-qa="btn_dropdown_confirm"], button:has-text("Apply"), button:has-text("ตกลง"), button:has-text("นำไปใช้"), button:has-text("OK")').first();
                         if (await applyBtn.isVisible().catch(() => false)) {
                             await applyBtn.click({ force: true });
                             await page.waitForTimeout(600);
@@ -209,15 +209,15 @@ const results = [];
                         if (matched) {
                             let item;
                             if (matched.type === 'data-qa') {
-                                item = page.locator(`[data-qa="dropdown_overlay"] [data-qa="${matched.value}"]`).first();
+                                item = activeOverlay.locator(`[data-qa="${matched.value}"]`).first();
                             } else {
-                                item = page.locator(`[data-qa="dropdown_overlay"] #${matched.value}`).first();
+                                item = activeOverlay.locator(`#${matched.value}`).first();
                             }
                             await item.click({ force: true });
                             await page.waitForTimeout(300);
                         }
                     }
-                    const applyBtn = overlay.locator('[data-qa="btn_dropdown_confirm"], button:has-text("Apply"), button:has-text("ตกลง"), button:has-text("นำไปใช้"), button:has-text("OK")').first();
+                    const applyBtn = activeOverlay.locator('[data-qa="btn_dropdown_confirm"], button:has-text("Apply"), button:has-text("ตกลง"), button:has-text("นำไปใช้"), button:has-text("OK")').first();
                     if (await applyBtn.isVisible().catch(() => false)) {
                         await applyBtn.click({ force: true });
                         await page.waitForTimeout(600);
@@ -252,27 +252,34 @@ const results = [];
                     if (matched) {
                         let option;
                         if (matched.type === 'data-qa') {
-                            option = page.locator(`[data-qa="dropdown_overlay"] [data-qa="${matched.value}"]`).first();
+                            option = activeOverlay.locator(`[data-qa="${matched.value}"]`).first();
                         } else {
-                            option = page.locator(`[data-qa="dropdown_overlay"] #${matched.value}`).first();
+                            option = activeOverlay.locator(`#${matched.value}`).first();
                         }
                         await option.click({ force: true });
                         await page.waitForTimeout(600);
                     } else {
-                        console.log(`[KUMA AUTO]   ⚠️  Option "${valueText}" not found in "${dataQaName}"`);
-                        await page.keyboard.press('Escape').catch(() => {});
+                        // Fallback: select first option in list
+                        const firstOpt = activeOverlay.locator('[data-qa^="dropdown_item"], [id^="dropdown-overlay-item-"]').first();
+                        if (await firstOpt.isVisible().catch(() => false)) {
+                            await firstOpt.click({ force: true });
+                            await page.waitForTimeout(600);
+                        } else {
+                            console.log(`[KUMA AUTO]   ⚠️  Option "${valueText}" not found in "${dataQaName}"`);
+                            await page.keyboard.press('Escape').catch(() => {});
+                        }
                     }
                 }
             } else {
                 // Pick first option
-                const firstItem = page.locator('[data-qa="dropdown_overlay"] [data-qa^="dropdown_item"], [data-qa="dropdown_overlay"] [id^="dropdown-overlay-item-"]').first();
+                const firstItem = activeOverlay.locator('[data-qa^="dropdown_item"], [id^="dropdown-overlay-item-"]').first();
                 await firstItem.waitFor({ state: 'visible', timeout: 4000 }).catch(() => {});
                 if (await firstItem.isVisible().catch(() => false)) {
                     await firstItem.click({ force: true });
                     await page.waitForTimeout(600);
                 }
                 if (hasApplyBtn) {
-                    const applyBtn = overlay.locator('[data-qa="btn_dropdown_confirm"], button:has-text("Apply"), button:has-text("ตกลง"), button:has-text("นำไปใช้"), button:has-text("OK")').first();
+                    const applyBtn = activeOverlay.locator('[data-qa="btn_dropdown_confirm"], button:has-text("Apply"), button:has-text("ตกลง"), button:has-text("นำไปใช้"), button:has-text("OK")').first();
                     if (await applyBtn.isVisible().catch(() => false)) {
                         await applyBtn.click({ force: true });
                         await page.waitForTimeout(600);
