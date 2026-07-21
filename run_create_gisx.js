@@ -837,7 +837,7 @@ const results = [];
                 // Fill Claim Payment fields
                 console.log('[KUMA AUTO] Filling Claim Payment fields...');
                 // 1. Plan Type
-                await fillDropdown('field_type_dropdown_name_claim_payment_object.claim_payment.0.plan_type', 'Select All,เลือกทั้งหมด');
+                await fillDropdown('field_type_dropdown_name_claim_payment_object.claim_payment.0.plan_type', '1 :, 2 :, 3 :, 4 :, 5 :, 6 :');
                 await page.waitForTimeout(300);
 
                 // 2. Payment Type (Select first option)
