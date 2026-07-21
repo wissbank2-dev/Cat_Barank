@@ -106,7 +106,7 @@ const results = [];
                     if (valClean === 'low') valueText = 'ความเสี่ยงต่ำ';
                     else if (valClean === 'medium') valueText = 'ความเสี่ยงปานกลาง';
                     else if (valClean === 'high') valueText = 'ความเสี่ยงสูง';
-                } else if (dataQaName.includes('occup_classified')) {
+                } else if (dataQaName.includes('occup_classified') || dataQaName.includes('occupational_classification')) {
                     if (valClean.includes('1') || valClean.includes('ชั้น 1')) valueText = 'ประเภทอาชีพ ชั้น 1';
                     else if (valClean.includes('2') || valClean.includes('ชั้น 2')) valueText = 'ประเภทอาชีพ ชั้น 2';
                     else if (valClean.includes('3') || valClean.includes('ชั้น 3')) valueText = 'ประเภทอาชีพ ชั้น 3';
@@ -115,6 +115,9 @@ const results = [];
                     if (valClean === 'บริษัท' || valClean.includes('บริษัท') || valClean.includes('บจก') || valClean.includes('บมจ')) {
                         valueText = 'บริษัท,บจก.,บมจ.';
                     }
+                }
+                if (valClean === 'select all' || valClean.includes('select all') || valClean === 'เลือกทั้งหมด' || valClean.includes('เลือกทั้งหมด')) {
+                    valueText = 'Select All,เลือกทั้งหมด';
                 }
             }
 
@@ -138,6 +141,19 @@ const results = [];
                 .waitFor({ state: 'visible', timeout: 5000 })
                 .catch(() => {});
 
+            // Dump dropdown options to console!
+            try {
+                const optionsText = await page.evaluate(() => {
+                    const overlays = Array.from(document.querySelectorAll('[data-qa="dropdown_overlay"]'));
+                    const activeOverlay = overlays.find(el => el.getBoundingClientRect().height > 0) || overlays[overlays.length - 1] || document;
+                    const items = Array.from(activeOverlay.querySelectorAll('[data-qa^="dropdown_item"], [id^="dropdown-overlay-item-"]'));
+                    return items.map(el => el.textContent.trim());
+                });
+                console.log(`[KUMA DUMP] Dropdown "${dataQaName}" options:`, JSON.stringify(optionsText));
+            } catch (e) {
+                console.log(`[KUMA DUMP] Dropdown "${dataQaName}" options evaluation failed:`, e.message);
+            }
+
             const overlay = page.locator('[data-qa="dropdown_overlay"]');
             
             // Check for Apply button presence in DOM (multi-select)
@@ -146,12 +162,32 @@ const results = [];
                 .count().catch(() => 0)) > 0;
 
             if (valueText) {
+                if (valueText === 'Select All,เลือกทั้งหมด') {
+                    const items = page.locator('[data-qa="dropdown_overlay"] [data-qa^="dropdown_item"], [data-qa="dropdown_overlay"] [id^="dropdown-overlay-item-"]');
+                    const count = await items.count().catch(() => 0);
+                    console.log(`[KUMA AUTO] Selecting all ${count} items one by one in "${dataQaName}"...`);
+                    for (let i = 0; i < count; i++) {
+                        await items.nth(i).click({ force: true });
+                        await page.waitForTimeout(200);
+                    }
+                    if (hasApplyBtn) {
+                        const applyBtn = overlay.locator('[data-qa="btn_dropdown_confirm"], button:has-text("Apply"), button:has-text("ตกลง"), button:has-text("นำไปใช้"), button:has-text("OK")').first();
+                        if (await applyBtn.isVisible().catch(() => false)) {
+                            await applyBtn.click({ force: true });
+                            await page.waitForTimeout(600);
+                        }
+                    }
+                    return;
+                }
+
                 const alternatives = valueText.split(',').map(v => v.trim());
 
                 if (hasApplyBtn) {
                     for (const alt of alternatives) {
                         const matched = await page.evaluate(({ value }) => {
-                            const items = Array.from(document.querySelectorAll('[data-qa="dropdown_overlay"] [data-qa^="dropdown_item"], [data-qa="dropdown_overlay"] [id^="dropdown-overlay-item-"]'));
+                            const overlays = Array.from(document.querySelectorAll('[data-qa="dropdown_overlay"]'));
+                            const activeOverlay = overlays.find(el => el.getBoundingClientRect().height > 0) || overlays[overlays.length - 1] || document;
+                            const items = Array.from(activeOverlay.querySelectorAll('[data-qa^="dropdown_item"], [id^="dropdown-overlay-item-"]'));
                             let match = items.find(el => el.textContent.trim().toLowerCase() === value.toLowerCase());
                             if (!match) {
                                 match = items.find(el => el.textContent.trim().toLowerCase().includes(value.toLowerCase()));
@@ -190,7 +226,9 @@ const results = [];
                     let matched = null;
                     for (const alt of alternatives) {
                         matched = await page.evaluate(({ value }) => {
-                            const items = Array.from(document.querySelectorAll('[data-qa="dropdown_overlay"] [data-qa^="dropdown_item"], [data-qa="dropdown_overlay"] [id^="dropdown-overlay-item-"]'));
+                            const overlays = Array.from(document.querySelectorAll('[data-qa="dropdown_overlay"]'));
+                            const activeOverlay = overlays.find(el => el.getBoundingClientRect().height > 0) || overlays[overlays.length - 1] || document;
+                            const items = Array.from(activeOverlay.querySelectorAll('[data-qa^="dropdown_item"], [id^="dropdown-overlay-item-"]'));
                             let match = items.find(el => el.textContent.trim().toLowerCase() === value.toLowerCase());
                             if (!match) {
                                 match = items.find(el => el.textContent.trim().toLowerCase().includes(value.toLowerCase()));
@@ -423,8 +461,20 @@ const results = [];
             await fillDropdown('field_type_dropdown_name_detail_policy.policy_holder_address.sub_district', item.subDistrict);
             await page.waitForTimeout(1500);
 
-            // 17. Zip Code
-            await fillText('input[name="detail_policy.policy_holder_address.zip_code"]', item.zipCode || '10310');
+            // 17. Zip Code (check if it has value first, do not modify if it does)
+            try {
+                const zipCodeInput = page.locator('input[name="detail_policy.policy_holder_address.zip_code"]').first();
+                await zipCodeInput.waitFor({ state: 'visible', timeout: 5000 });
+                const currentZip = await zipCodeInput.inputValue().catch(() => '');
+                if (!currentZip) {
+                    await zipCodeInput.fill(item.zipCode || '10310');
+                } else {
+                    console.log(`[KUMA AUTO] Zip Code already has value: "${currentZip}", skipping fill.`);
+                }
+            } catch (e) {
+                console.log('[KUMA AUTO]   ⚠️  Zip Code input error:', e.message);
+                await fillText('input[name="detail_policy.policy_holder_address.zip_code"]', item.zipCode || '10310').catch(() => {});
+            }
 
             // 18-19. Contact
             await fillText('input[name="detail_policy.contact.name"]', item.contactName || item.nameTh || '');
@@ -512,29 +562,41 @@ const results = [];
 
             // Click "+ Add Commission Rate" and fill commission fields
             try {
-                const planCount = parseInt(item.planNumber || 1);
-                console.log(`[KUMA AUTO] Need to add commission rates for ${planCount} plans...`);
-
                 const addCommBtn = page.locator('button:has-text("Add Commission Rate"), button:has-text("Commission Rate"), button:has-text("คอมมิชชั่น")').first();
+                const hasCustomComm = item.commPlanType1 || item.commRate1 || item.addCommRate1;
                 
-                for (let i = 0; i < planCount; i++) {
+                if (hasCustomComm) {
+                    const planCount = parseInt(item.planNumber || 1);
+                    console.log(`[KUMA AUTO] Need to add custom commission rates for ${planCount} plans...`);
+                    for (let i = 0; i < planCount; i++) {
+                        if (await addCommBtn.isVisible().catch(() => false)) {
+                            console.log(`[KUMA AUTO] Clicking + Add Commission Rate button (Index ${i})...`);
+                            await addCommBtn.click({ force: true });
+                            await page.waitForTimeout(1000);
+                            
+                            const planTypeDdl = `field_type_dropdown_name_agent_broker.commission_rate.${i}.plan_type`;
+                            const userPlanType = item[`commPlanType${i+1}`];
+                            await fillDropdown(planTypeDdl, userPlanType || null, 0);
+
+                            const commRateVal = item[`commRate${i+1}`] !== undefined && item[`commRate${i+1}`] !== '' ? item[`commRate${i+1}`] : '10';
+                            await fillText(`input[name="agent_broker.commission_rate.${i}.commission_rate"]`, String(commRateVal));
+
+                            const addCommVal = item[`addCommRate${i+1}`] !== undefined && item[`addCommRate${i+1}`] !== '' ? item[`addCommRate${i+1}`] : '0';
+                            await fillText(`input[name="agent_broker.commission_rate.${i}.additional_commission"]`, String(addCommVal));
+                        }
+                    }
+                } else {
+                    // Default behavior: Click once, select "Select All" and fill "10" for commission rate
                     if (await addCommBtn.isVisible().catch(() => false)) {
-                        console.log(`[KUMA AUTO] Clicking + Add Commission Rate button (Index ${i})...`);
+                        console.log('[KUMA AUTO] Clicking + Add Commission Rate button (Default Select All)...');
                         await addCommBtn.click({ force: true });
                         await page.waitForTimeout(1000);
                         
-                        // Fill Plan Type for this row
-                        const planTypeDdl = `field_type_dropdown_name_agent_broker.commission_rate.${i}.plan_type`;
-                        const userPlanType = item[`commPlanType${i+1}`];
-                        await fillDropdown(planTypeDdl, userPlanType || null, 0);
+                        const planTypeDdl = `field_type_dropdown_name_agent_broker.commission_rate.0.plan_type`;
+                        await fillDropdown(planTypeDdl, 'Select All,เลือกทั้งหมด', 0);
 
-                        // Fill Commission Rate
-                        const commRateVal = item[`commRate${i+1}`] !== undefined && item[`commRate${i+1}`] !== '' ? item[`commRate${i+1}`] : '10';
-                        await fillText(`input[name="agent_broker.commission_rate.${i}.commission_rate"]`, String(commRateVal));
-
-                        // Fill Additional Commission
-                        const addCommVal = item[`addCommRate${i+1}`] !== undefined && item[`addCommRate${i+1}`] !== '' ? item[`addCommRate${i+1}`] : '0';
-                        await fillText(`input[name="agent_broker.commission_rate.${i}.additional_commission"]`, String(addCommVal));
+                        await fillText('input[name="agent_broker.commission_rate.0.commission_rate"]', '10');
+                        await fillText('input[name="agent_broker.commission_rate.0.additional_commission"]', '0');
                     }
                 }
                 await takeScreenshot(`${caseLabel}_04_agent_broker_commission_filled`);
@@ -610,9 +672,15 @@ const results = [];
                 await takeScreenshot(`${caseLabel}_07_step2_create_account`);
 
                 // FILL ACCOUNT DETAIL MODAL
-                const modal = page.locator('div.fixed, div.absolute, [role="dialog"]')
-                    .filter({ hasText: 'Account Information' })
-                    .first();
+                let modal = page.locator('[role="dialog"], div.fixed, div.absolute').filter({ hasText: 'Account Detail' }).last();
+                if (!(await modal.isVisible().catch(() => false))) {
+                    console.log('[KUMA AUTO] Preferred modal locator not visible, trying fallback...');
+                    modal = page.locator('[role="dialog"], div.fixed, div.absolute').first();
+                    if (!(await modal.isVisible().catch(() => false))) {
+                        console.log('[KUMA AUTO] Fallback modal locator not visible, using page-wide locators.');
+                        modal = page;
+                    }
+                }
 
                 // Dump all inputs inside modal to console so we can see them in logs
                 try {
@@ -633,92 +701,69 @@ const results = [];
                     console.log('[KUMA DUMP] Modal evaluation failed:', e.message);
                 }
                 
-                await modal.locator('input[placeholder*="Account Name" i]').nth(0).fill(item.accNameTh || item.nameTh || '');
-                await page.waitForTimeout(300);
-                await modal.locator('input[placeholder*="Account Name" i]').nth(1).fill(item.accNameEn || item.nameEn || '');
-                await page.waitForTimeout(300);
-                await modal.locator('input[placeholder*="Tax" i]').first().fill(item.accTaxId || '1101800262649');
+                // Fill Account Name (Thai)
+                await page.locator('input[name="account_detail.account_information.account_name.th_TH"]').first().fill(item.accNameTh || item.nameTh || '');
                 await page.waitForTimeout(300);
 
+                // Fill Account Name (English)
+                await page.locator('input[name="account_detail.account_information.account_name.en_US"]').first().fill(item.accNameEn || item.nameEn || '');
+                await page.waitForTimeout(300);
+
+                // Fill Tax ID
+                await page.locator('input[name="account_detail.account_information.tax_id"]').first().fill(item.accTaxId || '1101800262649');
+                await page.waitForTimeout(300);
+
+                // Head count
                 const hcType = String(item.accHeadCountType || 'Non Head Count').toLowerCase();
                 if (hcType.includes('non')) {
-                    await modal.locator('label:has-text("Non Head Count"), input[id$="-NON_HEAD_COUNT"], input[id$="-NON_HEAD"]').first().click({ force: true });
+                    await page.locator('input[value="NON_HEAD_COUNT"]').first().click({ force: true });
                 } else {
-                    await modal.locator('label:has-text("Head Count"), input[id$="-HEAD_COUNT"], input[id$="-HEAD"]').first().click({ force: true });
+                    await page.locator('input[value="HEAD_COUNT"]').first().click({ force: true });
                 }
                 await page.waitForTimeout(300);
 
                 if (item.accHeadCountDesc) {
-                    await modal.locator('input[placeholder*="Count Description" i]').first().fill(item.accHeadCountDesc);
+                    await page.locator('input[name="account_detail.account_information.head_count_desc"]').first().fill(item.accHeadCountDesc);
                     await page.waitForTimeout(300);
                 }
 
-                // Modal dropdowns
-                async function fillModalDropdown(trigger, valueText) {
-                    try {
-                        if (valueText) {
-                            const valClean = valueText.trim().toLowerCase();
-                            if (valClean === 'บริษัท' || valClean.includes('บริษัท') || valClean.includes('บจก') || valClean.includes('บมจ')) {
-                                valueText = 'บริษัท,บจก.,บมจ.';
-                            }
-                        }
+                // Account Address (ตาม Policy Holder)
+                await page.locator('input[value="POLICY_HOLDER"]').first().click({ force: true });
+                await page.waitForTimeout(300);
 
-                        await page.keyboard.press('Escape').catch(() => {});
-                        await page.waitForTimeout(200);
-                        await trigger.scrollIntoViewIfNeeded().catch(() => {});
-                        await trigger.click().catch(() => trigger.click({ force: true }));
-                        await page.waitForTimeout(1000);
+                // ผู้รับ Invoice & Receipt (A : Account)
+                await page.locator('input[value="A"]').first().click({ force: true });
+                await page.waitForTimeout(300);
 
-                        const overlay = page.locator('[data-qa="dropdown_overlay"]').first();
-                        await overlay.waitFor({ state: 'visible', timeout: 4000 }).catch(() => {});
-                        await overlay.locator('[data-qa^="dropdown_item"], [id^="dropdown-overlay-item-"]').first()
-                            .waitFor({ state: 'visible', timeout: 3000 }).catch(() => {});
+                // ชุดเอกสาร Invoice & Receipt (INCLUDE : รวมชุด)
+                await page.locator('input[value="INCLUDE"]').first().click({ force: true });
+                await page.waitForTimeout(500);
 
-                        if (valueText) {
-                            const alternatives = valueText.split(',').map(v => v.trim());
-                            let matched = null;
-                            for (const alt of alternatives) {
-                                matched = await page.evaluate(({ value }) => {
-                                    const items = Array.from(document.querySelectorAll('[data-qa="dropdown_overlay"] [data-qa^="dropdown_item"], [data-qa="dropdown_overlay"] [id^="dropdown-overlay-item-"]'));
-                                    let match = items.find(el => el.textContent.trim().toLowerCase() === value.toLowerCase());
-                                    if (!match) match = items.find(el => el.textContent.trim().toLowerCase().includes(value.toLowerCase()));
-                                    if (!match && value.length === 1) match = items.find(el => el.textContent.trim().toUpperCase().startsWith(value.toUpperCase()));
-                                    return match ? { type: match.getAttribute('data-qa') ? 'data-qa' : 'id', value: match.getAttribute('data-qa') || match.getAttribute('id') } : null;
-                                }, { value: alt });
-                                if (matched) break;
-                            }
+                // Dropdowns
+                // 1. Account Title
+                await fillDropdown('field_type_dropdown_name_account_detail.account_information.account_title', item.accTitle || 'บริษัท');
+                await page.waitForTimeout(300);
 
-                            if (matched) {
-                                const option = matched.type === 'data-qa' ? page.locator(`[data-qa="dropdown_overlay"] [data-qa="${matched.value}"]`) : page.locator(`[data-qa="dropdown_overlay"] #${matched.value}`);
-                                await option.first().click().catch(() => option.first().click({ force: true }));
-                            } else {
-                                await page.locator('[data-qa="dropdown_overlay"] [data-qa^="dropdown_item"], [data-qa="dropdown_overlay"] [id^="dropdown-overlay-item-"]').first().click({ force: true });
-                            }
-                        } else {
-                            await page.locator('[data-qa="dropdown_overlay"] [data-qa^="dropdown_item"], [data-qa="dropdown_overlay"] [id^="dropdown-overlay-item-"]').first().click({ force: true });
-                        }
-                        await page.waitForTimeout(500);
-                    } catch (e) {
-                        await page.keyboard.press('Escape').catch(() => {});
-                    }
-                }
-
-                const toggles = modal.locator('[data-qa="btn_dropdown_toggle_ddl"]');
+                // 2. Account Type
                 const titleVal = item.accTitle || item.title || 'นาย';
-                let defaultAccType = '4 : บุคคลธรรมดาทั่วไป';
-                const titleValClean = titleVal.trim().toLowerCase();
-                if (titleValClean === 'บริษัท' || titleValClean.includes('บริษัท') || titleValClean.includes('บจก') || titleValClean.includes('บมจ')) {
-                    defaultAccType = '1 : นิติบุคคล';
-                }
+                let defaultAccType = 'Compulsory (Base Account)';
+                await fillDropdown('field_type_dropdown_name_account_detail.account_information.account_type', item.accType || defaultAccType);
+                await page.waitForTimeout(300);
 
-                await fillModalDropdown(toggles.nth(0), titleVal);
-                await fillModalDropdown(toggles.nth(1), item.accType || defaultAccType);
-                await fillModalDropdown(toggles.nth(2), item.accLineOfBusiness || item.lineOfBusiness || 'Ordinary');
-                await fillModalDropdown(toggles.nth(3), item.accRiskLevel || item.riskLevel || 'Low');
-                await fillModalDropdown(toggles.nth(4), item.accOccupationClass || item.occupationClass || 'Class 1');
+                // 3. Line of Business
+                await fillDropdown('field_type_dropdown_name_account_detail.account_information.line_of_business', item.accLineOfBusiness || item.lineOfBusiness || 'Ordinary');
+                await page.waitForTimeout(300);
+
+                // 4. Risk Level
+                await fillDropdown('field_type_dropdown_name_account_detail.account_information.risk_level', item.accRiskLevel || item.riskLevel || 'Low');
+                await page.waitForTimeout(300);
+
+                // 5. Occupational Classification
+                await fillDropdown('field_type_dropdown_name_account_detail.account_information.occupational_classification', item.accOccupationClass || item.occupationClass || 'Class 1');
+                await page.waitForTimeout(1000);
 
                 // Submit modal
-                const modalSubmitBtn = modal.locator('button:has-text("Submit"), button:has-text("ตกลง"), button:has-text("บันทึก")').first();
+                const modalSubmitBtn = page.locator('#account-detail-modal-content_Account\\ Detail button:has-text("Submit"), button:has-text("Submit"), button:has-text("ตกลง"), button:has-text("บันทึก")').first();
                 await modalSubmitBtn.click().catch(() => modalSubmitBtn.click({ force: true }));
                 await page.waitForTimeout(4000);
                 await takeScreenshot(`${caseLabel}_07_step2_account_saved`);

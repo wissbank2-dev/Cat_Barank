@@ -775,7 +775,7 @@ app.get('/api/gisx/template', async (req, res) => {
             accNameTh: 'สมชาย มั่งคั่งคุมะ',
             accNameEn: 'Somchai Mangkang',
             accTaxId: '1101800262649',
-            accType: '4 : บุคคลธรรมดาทั่วไป',
+            accType: 'Compulsory (Base Account)',
             accHeadCountType: 'Non Head Count',
             accHeadCountDesc: '',
             accLineOfBusiness: 'Ordinary',
