@@ -750,26 +750,85 @@ const results = [];
                 await fillDropdown('field_type_dropdown_name_account_detail.account_information.account_type', item.accType || defaultAccType);
                 await page.waitForTimeout(300);
 
-                // 3. Line of Business
-                await fillDropdown('field_type_dropdown_name_account_detail.account_information.line_of_business', item.accLineOfBusiness || item.lineOfBusiness || 'Ordinary');
-                await page.waitForTimeout(300);
+                // 3. Line of Business (only if custom value specified)
+                if (item.accLineOfBusiness && item.accLineOfBusiness !== 'Ordinary' && item.accLineOfBusiness !== 'O') {
+                    await fillDropdown('field_type_dropdown_name_account_detail.account_information.line_of_business', item.accLineOfBusiness);
+                    await page.waitForTimeout(300);
+                }
 
-                // 4. Risk Level
-                await fillDropdown('field_type_dropdown_name_account_detail.account_information.risk_level', item.accRiskLevel || item.riskLevel || 'Low');
-                await page.waitForTimeout(300);
+                // 4. Risk Level (only if custom value specified)
+                if (item.accRiskLevel && item.accRiskLevel !== 'Low') {
+                    await fillDropdown('field_type_dropdown_name_account_detail.account_information.risk_level', item.accRiskLevel);
+                    await page.waitForTimeout(300);
+                }
 
-                // 5. Occupational Classification
-                await fillDropdown('field_type_dropdown_name_account_detail.account_information.occupational_classification', item.accOccupationClass || item.occupationClass || 'Class 1');
-                await page.waitForTimeout(1000);
+                // 5. Occupational Classification (only if custom value specified)
+                if (item.accOccupationClass && item.accOccupationClass !== 'Class 1') {
+                    await fillDropdown('field_type_dropdown_name_account_detail.account_information.occupational_classification', item.accOccupationClass);
+                    await page.waitForTimeout(1000);
+                }
+
+                // Fill Claim Payment Tab
+                console.log('[KUMA AUTO] Filling Claim Payment tab in modal...');
+                const claimTab = page.locator('[role="dialog"] div:has-text("Claim Payment"), #account-detail-modal-content_Account\\ Detail div:has-text("Claim Payment")').last();
+                if (await claimTab.isVisible().catch(() => false)) {
+                    await claimTab.click({ force: true });
+                    await page.waitForTimeout(1000);
+
+                    // Locate visible dropdown toggles in modal
+                    const claimToggles = page.locator('[role="dialog"] [data-qa="btn_dropdown_toggle_ddl"]:visible');
+                    const toggleCount = await claimToggles.count().catch(() => 0);
+                    console.log(`[KUMA AUTO] Found ${toggleCount} dropdown toggles in Claim Payment tab.`);
+
+                    if (toggleCount >= 3) {
+                        // 1. Plan Type (Select all)
+                        console.log('[KUMA AUTO]   → Selecting all in Claim Payment Plan Type...');
+                        await claimToggles.nth(0).click({ force: true });
+                        await page.waitForTimeout(1000);
+
+                        const activeOverlay = page.locator('[data-qa="dropdown_overlay"]').last();
+                        const selectAllItem = activeOverlay.locator('label:has-text("Select all"), span:has-text("Select all"), :has-text("Select all")').last();
+                        await selectAllItem.click({ force: true }).catch(() => {});
+                        await page.waitForTimeout(300);
+
+                        const applyBtn = activeOverlay.locator('button:has-text("Apply"), button:has-text("ตกลง")').first();
+                        await applyBtn.click({ force: true }).catch(() => {});
+                        await page.waitForTimeout(500);
+
+                        // 2. Payment Type (Select first option)
+                        console.log('[KUMA AUTO]   → Selecting first option in Claim Payment Payment Type...');
+                        await claimToggles.nth(1).click({ force: true });
+                        await page.waitForTimeout(1000);
+                        const firstOpt1 = page.locator('[data-qa="dropdown_overlay"]').last().locator('[data-qa^="dropdown_item"], [id^="dropdown-overlay-item-"]').first();
+                        await firstOpt1.click({ force: true }).catch(() => {});
+                        await page.waitForTimeout(500);
+
+                        // 3. Paid To (Select first option)
+                        console.log('[KUMA AUTO]   → Selecting first option in Claim Payment Paid To...');
+                        await claimToggles.nth(2).click({ force: true });
+                        await page.waitForTimeout(1000);
+                        const firstOpt2 = page.locator('[data-qa="dropdown_overlay"]').last().locator('[data-qa^="dropdown_item"], [id^="dropdown-overlay-item-"]').first();
+                        await firstOpt2.click({ force: true }).catch(() => {});
+                        await page.waitForTimeout(500);
+                    }
+                }
 
                 // Submit modal
                 const modalSubmitBtn = page.locator('#account-detail-modal-content_Account\\ Detail button:has-text("Submit"), button:has-text("Submit"), button:has-text("ตกลง"), button:has-text("บันทึก")').first();
                 await modalSubmitBtn.click().catch(() => modalSubmitBtn.click({ force: true }));
                 await page.waitForTimeout(4000);
+
+                // Verify modal is closed
+                if (await page.locator('#account-detail-modal-content_Account\\ Detail').isVisible().catch(() => false)) {
+                    const errors = await page.locator('#account-detail-modal-content_Account\\ Detail #helper-text').allTextContents().catch(() => []);
+                    throw new Error(`Modal submission failed. Validation errors: ${errors.join(', ')}`);
+                }
+
                 await takeScreenshot(`${caseLabel}_07_step2_account_saved`);
 
             } catch (e) {
                 console.log('[KUMA AUTO]   ⚠️  Create Account error:', e.message);
+                throw e; // rethrow to abort remaining steps on failure!
             }
 
             // ====================================================
