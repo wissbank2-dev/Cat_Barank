@@ -132,12 +132,12 @@ const results = [];
             await page.waitForTimeout(800);
 
             // Wait for dropdown overlay to render
-            await page.locator('[data-qa="dropdown_overlay"]').first()
-                .waitFor({ state: 'visible', timeout: 5000 })
-                .catch(() => {});
+            // Wait for the newly opened dropdown overlay to become visible in DOM
+            const activeOverlay = page.locator('[data-qa="dropdown_overlay"]').last();
+            await activeOverlay.waitFor({ state: 'visible', timeout: 5000 }).catch(() => {});
 
-            // Wait for at least one dropdown item to render and become visible
-            await page.locator('[data-qa="dropdown_overlay"] [data-qa^="dropdown_item"], [data-qa="dropdown_overlay"] [id^="dropdown-overlay-item-"]').first()
+            // Wait for at least one dropdown item inside this active overlay to render and become visible
+            await activeOverlay.locator('[data-qa^="dropdown_item"], [id^="dropdown-overlay-item-"]').first()
                 .waitFor({ state: 'visible', timeout: 5000 })
                 .catch(() => {});
 
@@ -153,8 +153,6 @@ const results = [];
             } catch (e) {
                 console.log(`[KUMA DUMP] Dropdown "${dataQaName}" options evaluation failed:`, e.message);
             }
-
-            const activeOverlay = page.locator('[data-qa="dropdown_overlay"]').last();
             
             // Check for Apply button presence in DOM (multi-select)
             const hasApplyBtn = (await activeOverlay
