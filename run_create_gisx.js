@@ -1,0 +1,743 @@
+/**
+ * GISX Register Case Automation Script (Batch Mode)
+ * 🐾 Powered by KUMA Test Case Builder
+ *
+ * Usage:
+ *   node run_create_gisx.js --input cases.json [--headless]
+ *
+ * Input file: JSON array of case objects (exported from KUMA Web)
+ */
+
+const { chromium } = require('playwright');
+const path = require('path');
+const fs = require('fs');
+
+// ---- Parse CLI args ----
+const args = process.argv.slice(2);
+const inputFlag = args.indexOf('--input');
+const inputFile = inputFlag !== -1 ? args[inputFlag + 1] : null;
+const headless = args.includes('--headless');
+
+// Screenshot output dir (can be overridden by --screenshotDir)
+const sdFlag = args.indexOf('--screenshotDir');
+const screenshotDir = sdFlag !== -1
+    ? args[sdFlag + 1]
+    : path.join(__dirname, 'gisx_screenshots_' + Date.now());
+
+// Credentials (can be overridden by env)
+const GISX_USERNAME = process.env.GISX_USERNAME || 'mtl807032';
+const GISX_PASSWORD = process.env.GISX_PASSWORD || 'Love35795wissbank@2';
+const GISX_BASE_URL = process.env.GISX_BASE_URL || 'https://gisx-qa.muangthai.co.th';
+
+// ---- Load cases ----
+let cases = [];
+if (inputFile && fs.existsSync(inputFile)) {
+    try {
+        cases = JSON.parse(fs.readFileSync(inputFile, 'utf8'));
+        console.log(`[KUMA AUTO] Loaded ${cases.length} case(s) from: ${inputFile}`);
+    } catch (e) {
+        console.error('[KUMA AUTO] Failed to parse input JSON:', e.message);
+        process.exit(1);
+    }
+} else {
+    // Fallback demo case
+    console.log('[KUMA AUTO] No --input file provided. Running with demo case...');
+    cases = [{
+        quotationNo: 'QT20260721-DEMO',
+        title: 'นาย',
+        nameTh: 'สมชาย มั่งคั่งคุมะ',
+        nameEn: 'Somchai MangkangKuma',
+        lineOfBusiness: 'Ordinary',
+        riskLevel: 'Low',
+        occupationClass: 'Class 1',
+        effDate: '01/01/2026',
+        effTime: '00:00:00',
+        endDate: '31/12/2026',
+        endTime: '23:59:59',
+        language: 'Thai',
+        copyCount: 1
+    }];
+}
+
+// ---- Create screenshot dir ----
+if (!fs.existsSync(screenshotDir)) {
+    fs.mkdirSync(screenshotDir, { recursive: true });
+}
+console.log(`[KUMA AUTO] Screenshots will be saved to: ${screenshotDir}`);
+
+// ---- Results tracking ----
+const results = [];
+
+(async () => {
+    console.log('[KUMA AUTO] Launching browser...');
+    const browser = await chromium.launch({
+        headless: headless,
+        args: ['--start-maximized']
+    });
+
+    const context = await browser.newContext({ viewport: null });
+    const page = await context.newPage();
+
+    // ---------- Helpers ----------
+
+    async function takeScreenshot(label) {
+        try {
+            const filename = `${label}_${Date.now()}.png`;
+            const filepath = path.join(screenshotDir, filename);
+            await page.screenshot({ path: filepath, fullPage: false });
+            console.log(`[KUMA AUTO] 📸 Screenshot: ${filename}`);
+        } catch (e) {
+            console.log(`[KUMA AUTO] ⚠️  Screenshot failed: ${e.message}`);
+        }
+    }
+
+    async function fillDropdown(dataQaName, valueText = null) {
+        try {
+            // Apply QA environment mappings
+            if (valueText) {
+                const valClean = valueText.trim().toLowerCase();
+                if (dataQaName.includes('line_of_business')) {
+                    if (valClean.startsWith('o')) valueText = 'O'; // e.g. Ordinary -> O
+                    else if (valClean.startsWith('g')) valueText = 'G'; // e.g. Group -> G
+                    else if (valClean.startsWith('c')) valueText = 'P'; // e.g. Credit Life -> P (since codes start with P)
+                    else if (valClean.startsWith('a')) valueText = 'F'; // e.g. Accident -> F (since codes start with F)
+                } else if (dataQaName.includes('risk_level')) {
+                    if (valClean === 'low') valueText = 'ความเสี่ยงต่ำ';
+                    else if (valClean === 'medium') valueText = 'ความเสี่ยงปานกลาง';
+                    else if (valClean === 'high') valueText = 'ความเสี่ยงสูง';
+                                } else if (dataQaName.includes('occup_classified')) {
+                    if (valClean.includes('1') || valClean.includes('ชั้น 1')) valueText = 'ประเภทอาชีพ ชั้น 1';
+                    else if (valClean.includes('2') || valClean.includes('ชั้น 2')) valueText = 'ประเภทอาชีพ ชั้น 2';
+                    else if (valClean.includes('3') || valClean.includes('ชั้น 3')) valueText = 'ประเภทอาชีพ ชั้น 3';
+                    else if (valClean.includes('4') || valClean.includes('ชั้น 4')) valueText = 'ประเภทอาชีพ ชั้น 4';
+                } else if (dataQaName.includes('title')) {
+                    if (valClean === 'บริษัท' || valClean.includes('บริษัท') || valClean.includes('บจก') || valClean.includes('บมจ')) {
+                        valueText = 'บริษัท,บจก.,บมจ.';
+                    }
+                }
+            }
+
+            console.log(`[KUMA AUTO]   → Dropdown "${dataQaName}" = "${valueText ?? '(first option)'}"`);
+            await page.keyboard.press('Escape').catch(() => {});
+            await page.waitForTimeout(300);
+
+            const selector = `div[data-qa="${dataQaName}"] [data-qa="btn_dropdown_toggle_ddl"]`;
+            const trigger = page.locator(selector).first();
+            await trigger.scrollIntoViewIfNeeded().catch(() => {});
+            await trigger.click({ force: true });
+            await page.waitForTimeout(800);
+
+            // Wait for dropdown overlay to render
+            await page.locator('[data-qa="dropdown_overlay"]').first()
+                .waitFor({ state: 'visible', timeout: 5000 })
+                .catch(() => {});
+
+            // Wait for at least one dropdown item to render and become visible
+            await page.locator('[data-qa="dropdown_overlay"] [data-qa^="dropdown_item"], [data-qa="dropdown_overlay"] [id^="dropdown-overlay-item-"]').first()
+                .waitFor({ state: 'visible', timeout: 5000 })
+                .catch(() => {});
+
+            const overlay = page.locator('[data-qa="dropdown_overlay"]');
+            
+            // Check for Apply button presence in DOM (multi-select)
+            const hasApplyBtn = (await overlay
+                .locator('[data-qa="btn_dropdown_confirm"], button:has-text("Apply"), button:has-text("ตกลง"), button:has-text("นำไปใช้"), button:has-text("OK")')
+                .count().catch(() => 0)) > 0;
+
+            if (valueText) {
+                const alternatives = valueText.split(',').map(v => v.trim());
+
+                if (hasApplyBtn) {
+                    for (const alt of alternatives) {
+                        const matched = await page.evaluate(({ value }) => {
+                            const items = Array.from(document.querySelectorAll('[data-qa="dropdown_overlay"] [data-qa^="dropdown_item"], [data-qa="dropdown_overlay"] [id^="dropdown-overlay-item-"]'));
+                            let match = items.find(el => el.textContent.trim().toLowerCase() === value.toLowerCase());
+                            if (!match) {
+                                match = items.find(el => el.textContent.trim().toLowerCase().includes(value.toLowerCase()));
+                            }
+                            if (!match && value.length === 1) {
+                                match = items.find(el => el.textContent.trim().toUpperCase().startsWith(value.toUpperCase()));
+                            }
+                            if (match) {
+                                if (match.getAttribute('data-qa')) {
+                                    return { type: 'data-qa', value: match.getAttribute('data-qa') };
+                                }
+                                if (match.getAttribute('id')) {
+                                    return { type: 'id', value: match.getAttribute('id') };
+                                }
+                            }
+                            return null;
+                        }, { value: alt });
+
+                        if (matched) {
+                            let item;
+                            if (matched.type === 'data-qa') {
+                                item = page.locator(`[data-qa="dropdown_overlay"] [data-qa="${matched.value}"]`).first();
+                            } else {
+                                item = page.locator(`[data-qa="dropdown_overlay"] #${matched.value}`).first();
+                            }
+                            await item.click({ force: true });
+                            await page.waitForTimeout(300);
+                        }
+                    }
+                    const applyBtn = overlay.locator('[data-qa="btn_dropdown_confirm"], button:has-text("Apply"), button:has-text("ตกลง"), button:has-text("นำไปใช้"), button:has-text("OK")').first();
+                    if (await applyBtn.isVisible().catch(() => false)) {
+                        await applyBtn.click({ force: true });
+                        await page.waitForTimeout(600);
+                    }
+                } else {
+                    let matched = null;
+                    for (const alt of alternatives) {
+                        matched = await page.evaluate(({ value }) => {
+                            const items = Array.from(document.querySelectorAll('[data-qa="dropdown_overlay"] [data-qa^="dropdown_item"], [data-qa="dropdown_overlay"] [id^="dropdown-overlay-item-"]'));
+                            let match = items.find(el => el.textContent.trim().toLowerCase() === value.toLowerCase());
+                            if (!match) {
+                                match = items.find(el => el.textContent.trim().toLowerCase().includes(value.toLowerCase()));
+                            }
+                            if (!match && value.length === 1) {
+                                match = items.find(el => el.textContent.trim().toUpperCase().startsWith(value.toUpperCase()));
+                            }
+                            if (match) {
+                                if (match.getAttribute('data-qa')) {
+                                    return { type: 'data-qa', value: match.getAttribute('data-qa') };
+                                }
+                                if (match.getAttribute('id')) {
+                                    return { type: 'id', value: match.getAttribute('id') };
+                                }
+                            }
+                            return null;
+                        }, { value: alt });
+                        if (matched) break;
+                    }
+
+                    if (matched) {
+                        let option;
+                        if (matched.type === 'data-qa') {
+                            option = page.locator(`[data-qa="dropdown_overlay"] [data-qa="${matched.value}"]`).first();
+                        } else {
+                            option = page.locator(`[data-qa="dropdown_overlay"] #${matched.value}`).first();
+                        }
+                        await option.click({ force: true });
+                        await page.waitForTimeout(600);
+                    } else {
+                        console.log(`[KUMA AUTO]   ⚠️  Option "${valueText}" not found in "${dataQaName}"`);
+                        await page.keyboard.press('Escape').catch(() => {});
+                    }
+                }
+            } else {
+                // Pick first option
+                const firstItem = page.locator('[data-qa="dropdown_overlay"] [data-qa^="dropdown_item"], [data-qa="dropdown_overlay"] [id^="dropdown-overlay-item-"]').first();
+                await firstItem.waitFor({ state: 'visible', timeout: 4000 }).catch(() => {});
+                if (await firstItem.isVisible().catch(() => false)) {
+                    await firstItem.click({ force: true });
+                    await page.waitForTimeout(600);
+                }
+                if (hasApplyBtn) {
+                    const applyBtn = overlay.locator('[data-qa="btn_dropdown_confirm"], button:has-text("Apply"), button:has-text("ตกลง"), button:has-text("นำไปใช้"), button:has-text("OK")').first();
+                    if (await applyBtn.isVisible().catch(() => false)) {
+                        await applyBtn.click({ force: true });
+                        await page.waitForTimeout(600);
+                    }
+                }
+            }
+        } catch (err) {
+            console.log(`[KUMA AUTO]   ⚠️  Dropdown "${dataQaName}" error: ${err.message}`);
+            await page.keyboard.press('Escape').catch(() => {});
+        }
+    }
+
+    async function fillText(selector, value) {
+        if (!value && value !== 0) return;
+        try {
+            const el = page.locator(selector).first();
+            await el.scrollIntoViewIfNeeded().catch(() => {});
+            await el.fill(String(value));
+            await page.waitForTimeout(300);
+        } catch (err) {
+            console.log(`[KUMA AUTO]   ⚠️  fillText "${selector}" error: ${err.message}`);
+        }
+    }
+
+    async function clickEl(selector) {
+        try {
+            const el = page.locator(selector).first();
+            await el.scrollIntoViewIfNeeded().catch(() => {});
+            await el.click({ force: true });
+            await page.waitForTimeout(400);
+        } catch (err) {
+            console.log(`[KUMA AUTO]   ⚠️  click "${selector}" error: ${err.message}`);
+        }
+    }
+
+    // ---------- Login once ----------
+    console.log(`[KUMA AUTO] Navigating to ${GISX_BASE_URL}/new-business/register-case ...`);
+    await page.goto(`${GISX_BASE_URL}/new-business/register-case`);
+
+    try {
+        console.log('[KUMA AUTO] Checking for login form...');
+        // Wait up to 30 seconds for either the login form (username input) or the dashboard (e.g. Create button or logout)
+        await Promise.race([
+            page.waitForSelector('input[type="text"], input[name="username"]', { timeout: 30000 }),
+            page.waitForSelector('button:has-text("Create"), button:has-text("สร้าง"), a:has-text("Create")', { timeout: 30000 })
+        ]);
+
+        if (await page.locator('input[type="text"], input[name="username"]').first().isVisible()) {
+            console.log('[KUMA AUTO] Login page detected. Logging in...');
+            await page.locator('input[type="text"], input[name="username"]').first().fill(GISX_USERNAME);
+            await page.locator('input[type="password"]').first().fill(GISX_PASSWORD);
+
+            const submitBtn = page.locator('input[type="submit"], #kc-login, button[type="submit"], button:has-text("Login")').first();
+            await submitBtn.click();
+            console.log('[KUMA AUTO] Clicked login. Waiting for navigation...');
+            await page.waitForNavigation({ timeout: 30000 }).catch(() => {});
+        } else {
+            console.log('[KUMA AUTO] Already logged in (found dashboard controls).');
+        }
+    } catch (e) {
+        console.log('[KUMA AUTO] Login check or step error:', e.message);
+    }
+
+    await page.waitForTimeout(4000);
+    console.log(`[KUMA AUTO] Current URL after login: ${page.url()}`);
+    await takeScreenshot('00_after_login');
+
+    // ---------- Process each case ----------
+    for (let caseIdx = 0; caseIdx < cases.length; caseIdx++) {
+        const item = cases[caseIdx];
+        const caseLabel = `case${String(caseIdx + 1).padStart(3, '0')}_${(item.quotationNo || 'unknown').replace(/[^a-z0-9]/gi, '_')}`;
+
+        console.log(`\n[KUMA AUTO] ========================================`);
+        console.log(`[KUMA AUTO] 🚀 Processing Case ${caseIdx + 1}/${cases.length}`);
+        console.log(`[KUMA AUTO]    Quotation No : ${item.quotationNo}`);
+        console.log(`[KUMA AUTO]    Name (TH)    : ${item.nameTh}`);
+        console.log(`[KUMA AUTO]    Line of Biz  : ${item.lineOfBusiness}`);
+        console.log(`[KUMA AUTO] ========================================`);
+
+        let caseStatus = 'success';
+        let caseError = null;
+
+        try {
+            // Navigate to Create Case page
+            console.log('[KUMA AUTO] Navigating to Register Case create page...');
+            await page.goto(`${GISX_BASE_URL}/new-business/register-case/create`).catch(async () => {
+                // fallback: click Create button
+                const btn = page.locator('button:has-text("Create"), button:has-text("สร้าง"), a:has-text("Create")').first();
+                if (await btn.isVisible().catch(() => false)) {
+                    await btn.click({ force: true });
+                }
+            });
+
+            await page.waitForTimeout(6000);
+            const currentUrl = page.url();
+            console.log(`[KUMA AUTO] Create page URL: ${currentUrl}`);
+            await takeScreenshot(`${caseLabel}_01_create_page`);
+
+            if (!currentUrl.includes('/new-business/register-case/create')) {
+                throw new Error(`ไม่สามารถเปิดหน้าสร้างข้อมูลเคสได้ (URL ปัจจุบัน: ${currentUrl})`);
+            }
+
+            // ====================================================
+            // STEP 1 — Policy Detail Tab
+            // ====================================================
+            console.log('[KUMA AUTO] --- SUB-TAB: Policy Detail ---');
+            await clickEl('a:has-text("Policy Detail"), button:has-text("Policy Detail")');
+            await page.waitForTimeout(1000);
+
+            // 1. Quotation No.
+            await fillText(
+                'input[placeholder*="Quotation" i], input[placeholder*="ใบเสนอราคา" i]',
+                item.quotationNo
+            );
+
+            // 2. Policy Holder Title
+            await fillDropdown(
+                'field_type_dropdown_name_detail_policy.policy_info.policy_holder_title',
+                item.title
+            );
+
+            // 3. Policy Holder Name (Thai)
+            await fillText(
+                'input[placeholder*="Holder Name" i], input[placeholder*="ชื่อผู้เอาประกัน" i]',
+                item.nameTh
+            );
+
+            // 4. Policy Holder Name (English) — second input with same placeholder
+            try {
+                const nameEnInput = page.locator(
+                    'input[placeholder*="Holder Name" i], input[placeholder*="ชื่อผู้เอาประกัน" i]'
+                ).nth(1);
+                await nameEnInput.fill(item.nameEn || '');
+            } catch (e) {}
+
+            // 5. Line of Business
+            await fillDropdown(
+                'field_type_dropdown_name_detail_policy.policy_info.line_of_business',
+                item.lineOfBusiness
+            );
+
+            // 6. Risk Level
+            await fillDropdown(
+                'field_type_dropdown_name_detail_policy.policy_info.risk_level',
+                item.riskLevel
+            );
+
+            // 7. Occupational Classification
+            await fillDropdown(
+                'field_type_dropdown_name_detail_policy.policy_info.occup_classified',
+                item.occupationClass
+            );
+
+            // 8-9. Effective Date / End Date
+            try {
+                const dateInputs = page.locator('input[placeholder*="DD/MM/YYYY" i]');
+                await dateInputs.nth(0).fill(item.effDate || '');
+                await page.waitForTimeout(400);
+                await dateInputs.nth(1).fill(item.endDate || '');
+                await page.keyboard.press('Escape').catch(() => {});
+                await page.waitForTimeout(500);
+            } catch (e) {}
+
+            // 10. Policy Language (checkbox/radio)
+            if (item.language === 'Thai' || item.language === 'TH') {
+                await clickEl('label:has-text("Thai"), label:has-text("ภาษาไทย"), input[value="Thai"], input[value="TH"]');
+            } else {
+                await clickEl('label:has-text("English"), input[value="English"], input[value="EN"]');
+            }
+
+            // 11. Copy of Policy
+            await fillText('input[placeholder*="Copy" i], input[type="number"]', String(item.copyCount || 1));
+
+            // 12. Address lines
+            await fillText('input[name="detail_policy.policy_holder_address.address_1"]', item.address1 || '123/45 Kuma Tower');
+            if (item.address2) {
+                await fillText('input[name="detail_policy.policy_holder_address.address_2"]', item.address2);
+            }
+
+            // 13-16. Country > Province > District > Sub District
+            await fillDropdown('field_type_dropdown_name_detail_policy.policy_holder_address.country', item.country);
+            await fillDropdown('field_type_dropdown_name_detail_policy.policy_holder_address.province', item.province);
+            await page.waitForTimeout(2000);
+            await fillDropdown('field_type_dropdown_name_detail_policy.policy_holder_address.district', item.district);
+            await page.waitForTimeout(2000);
+            await fillDropdown('field_type_dropdown_name_detail_policy.policy_holder_address.sub_district', item.subDistrict);
+            await page.waitForTimeout(1500);
+
+            // 17. Zip Code
+            await fillText('input[name="detail_policy.policy_holder_address.zip_code"]', item.zipCode || '10310');
+
+            // 18-19. Contact
+            await fillText('input[name="detail_policy.contact.name"]', item.contactName || item.nameTh || '');
+            await fillText('input[name="detail_policy.contact.position"]', item.contactPosition || 'ผู้จัดการ');
+            if (item.contactMobile) {
+                await fillText('input[name="detail_policy.contact.mobile"]', item.contactMobile);
+            }
+            if (item.contactPhone) {
+                await fillText('input[name="detail_policy.contact.phone"]', item.contactPhone);
+            }
+            if (item.contactEmail) {
+                await fillText('input[name="detail_policy.contact.email"]', item.contactEmail);
+            }
+
+            await takeScreenshot(`${caseLabel}_02_policy_detail`);
+
+            // ====================================================
+            // STEP 1 — Coverage Tab
+            // ====================================================
+            console.log('[KUMA AUTO] --- SUB-TAB: Coverage ---');
+            await clickEl('a:has-text("Coverage"), button:has-text("Coverage")');
+            await page.waitForTimeout(1000);
+
+            await fillDropdown('field_type_dropdown_name_coverage.coverage_info.product_type', item.productType || '01');
+            await page.waitForTimeout(2000);
+            await fillDropdown('field_type_dropdown_name_coverage.coverage_info.sub_product_type', item.subProduct);
+
+            await fillText('div[data-qa="field_type_inputSelection_name_coverage.coverage_info.age_average"] input', item.ageAverage || '40');
+            await fillDropdown('field_type_inputSelection_name_coverage.coverage_info.age_average');
+
+            await fillText('div[data-qa="field_type_inputSelection_name_coverage.coverage_info.min_age"] input', item.minAge || '2');
+            await fillDropdown('field_type_inputSelection_name_coverage.coverage_info.min_age');
+
+            await fillText('div[data-qa="field_type_inputSelection_name_coverage.coverage_info.max_age"] input', item.maxAge || '80');
+            await fillDropdown('field_type_inputSelection_name_coverage.coverage_info.max_age');
+
+            try {
+                await page.locator('input[name="coverage.coverage_table.plan_number"]').first().fill(String(item.planNumber || '1'));
+            } catch (e) {
+                await fillText('input[placeholder*="จำนวนแผน" i], input[placeholder*="plan" i]', String(item.planNumber || '1'));
+            }
+
+            try {
+                const enterBtn = page.locator('div[data-qa="field_type_inputBtn_name_coverage.coverage_table.plan_number"] button').first();
+                await enterBtn.click().catch(() => enterBtn.click({ force: true }));
+                await page.waitForTimeout(2000);
+            } catch (e) {}
+
+            await fillDropdown('field_type_dropdown_name_coverage.coverage_table.plan_type', item.planType || '1 :, 2 :, 3 :, 4 :, 5 :, 6 :');
+            await fillDropdown('field_type_dropdown_name_coverage.coverage_table.mode_of_payment', item.modeOfPayment || 'Monthly, รายเดือน');
+
+            await clickEl('input[id$="-WAIVED"]');
+
+            await takeScreenshot(`${caseLabel}_03_coverage`);
+
+            // ====================================================
+            // STEP 1 — Agent/Broker Tab
+            // ====================================================
+            console.log('[KUMA AUTO] --- SUB-TAB: Agent/Broker ---');
+            await clickEl('a:has-text("Agent/Broker"), button:has-text("Agent/Broker")');
+            await page.waitForTimeout(1000);
+
+            await fillDropdown(
+                'field_type_dropdown_name_agent_broker.agent_broker_info.channel',
+                item.channel || 'Agent (บุคคลธรรมดา)'
+            );
+
+            try {
+                const agentCodeInput = page.locator('input[name="agent_broker.agent_broker_info.agent_broker_code"]').first();
+                await agentCodeInput.waitFor({ state: 'visible', timeout: 5000 });
+                await agentCodeInput.fill(item.agentBrokerCode || '144660');
+                await page.keyboard.press('Tab');
+                await page.waitForTimeout(5000); // Wait for API call
+            } catch (e) {
+                console.log('[KUMA AUTO]   ⚠️  Agent Code input not found');
+            }
+
+            await fillDropdown('field_type_dropdown_name_agent_broker.mtl_sales_info.sales_team', item.salesTeam);
+            await fillDropdown('field_type_dropdown_name_agent_broker.mtl_sales_info.sales_name', item.salesName);
+
+            await takeScreenshot(`${caseLabel}_04_agent_broker`);
+
+            // ====================================================
+            // STEP 1 — Experience Refund Tab
+            // ====================================================
+            console.log('[KUMA AUTO] --- SUB-TAB: Experience Refund ---');
+            await clickEl('a:has-text("Experience Refund"), button:has-text("Experience Refund")');
+            await page.waitForTimeout(800);
+            
+            const isER = String(item.erType || '').toUpperCase() === 'ER';
+            if (isER) {
+                await clickEl('input[id$="-ER"]');
+                await page.waitForTimeout(500);
+                if (item.lossRatio) {
+                    await fillText('input[name="reinsurance_detail.experience_refund.loss_ratio"]', item.lossRatio);
+                }
+                if (item.refundRate) {
+                    await fillText('input[name="reinsurance_detail.experience_refund.refund_rate"]', item.refundRate);
+                }
+            } else {
+                await clickEl('input[id$="-NON_ER"]');
+            }
+
+            await takeScreenshot(`${caseLabel}_05_step1_complete`);
+
+            // ====================================================
+            // STEP 1 → Click NEXT
+            // ====================================================
+            console.log('[KUMA AUTO] Clicking Next (Step 1 → Step 2)...');
+            const nextBtn = page.locator('button:has-text("Next"), button:has-text("ถัดไป")').last();
+            await nextBtn.scrollIntoViewIfNeeded().catch(() => {});
+            await nextBtn.click({ force: true });
+            await page.waitForTimeout(8000);
+            await takeScreenshot(`${caseLabel}_06_step2_account`);
+
+            // ====================================================
+            // STEP 2 — Account Detail
+            // ====================================================
+            console.log('[KUMA AUTO] --- STEP 2: Account Detail ---');
+
+            try {
+                const accountSummaryTab = page.locator(
+                    'a:has-text("Account Summary"), button:has-text("Account Summary")'
+                ).first();
+                await accountSummaryTab.scrollIntoViewIfNeeded().catch(() => {});
+                await accountSummaryTab.click({ force: true });
+                await page.waitForTimeout(2000);
+            } catch (e) {}
+
+            // Scroll down to find + Create Account button
+            await page.evaluate(() => {
+                const el = document.querySelector('main, .content, [class*="content"], [class*="main-content"]') || document.documentElement;
+                el.scrollTop = el.scrollHeight;
+                window.scrollTo(0, document.body.scrollHeight);
+            });
+            await page.waitForTimeout(1000);
+
+            try {
+                await page.evaluate(() => {
+                    const btn = Array.from(document.querySelectorAll('button')).find(
+                        b => b.textContent.includes('+ Create Account') || b.textContent.includes('Create Account')
+                    );
+                    if (btn) { btn.scrollIntoView({ behavior: 'smooth', block: 'center' }); btn.click(); }
+                });
+                await page.waitForTimeout(4000);
+                await takeScreenshot(`${caseLabel}_07_step2_create_account`);
+
+                // FILL ACCOUNT DETAIL MODAL
+                const modal = page.locator('[role="dialog"], div.fixed, div.absolute, [class*="modal" i]')
+                    .filter({ hasText: 'Account Detail' })
+                    .filter({ has: page.locator('input') })
+                    .first();
+                
+                await modal.locator('input[placeholder*="Account Name" i]').nth(0).fill(item.accNameTh || item.nameTh || '');
+                await page.waitForTimeout(300);
+                await modal.locator('input[placeholder*="Account Name" i]').nth(1).fill(item.accNameEn || item.nameEn || '');
+                await page.waitForTimeout(300);
+                await modal.locator('input[placeholder*="Tax" i]').first().fill(item.accTaxId || '1101800262649');
+                await page.waitForTimeout(300);
+
+                const hcType = String(item.accHeadCountType || 'Non Head Count').toLowerCase();
+                if (hcType.includes('non')) {
+                    await modal.locator('label:has-text("Non Head Count"), input[id$="-NON_HEAD_COUNT"], input[id$="-NON_HEAD"]').first().click({ force: true });
+                } else {
+                    await modal.locator('label:has-text("Head Count"), input[id$="-HEAD_COUNT"], input[id$="-HEAD"]').first().click({ force: true });
+                }
+                await page.waitForTimeout(300);
+
+                if (item.accHeadCountDesc) {
+                    await modal.locator('input[placeholder*="Count Description" i]').first().fill(item.accHeadCountDesc);
+                    await page.waitForTimeout(300);
+                }
+
+                // Modal dropdowns
+                async function fillModalDropdown(trigger, valueText) {
+                    try {
+                        if (valueText) {
+                            const valClean = valueText.trim().toLowerCase();
+                            if (valClean === 'บริษัท' || valClean.includes('บริษัท') || valClean.includes('บจก') || valClean.includes('บมจ')) {
+                                valueText = 'บริษัท,บจก.,บมจ.';
+                            }
+                        }
+
+                        await page.keyboard.press('Escape').catch(() => {});
+                        await page.waitForTimeout(200);
+                        await trigger.scrollIntoViewIfNeeded().catch(() => {});
+                        await trigger.click().catch(() => trigger.click({ force: true }));
+                        await page.waitForTimeout(1000);
+
+                        const overlay = page.locator('[data-qa="dropdown_overlay"]').first();
+                        await overlay.waitFor({ state: 'visible', timeout: 4000 }).catch(() => {});
+                        await overlay.locator('[data-qa^="dropdown_item"], [id^="dropdown-overlay-item-"]').first()
+                            .waitFor({ state: 'visible', timeout: 3000 }).catch(() => {});
+
+                        if (valueText) {
+                            const alternatives = valueText.split(',').map(v => v.trim());
+                            let matched = null;
+                            for (const alt of alternatives) {
+                                matched = await page.evaluate(({ value }) => {
+                                    const items = Array.from(document.querySelectorAll('[data-qa="dropdown_overlay"] [data-qa^="dropdown_item"], [data-qa="dropdown_overlay"] [id^="dropdown-overlay-item-"]'));
+                                    let match = items.find(el => el.textContent.trim().toLowerCase() === value.toLowerCase());
+                                    if (!match) match = items.find(el => el.textContent.trim().toLowerCase().includes(value.toLowerCase()));
+                                    if (!match && value.length === 1) match = items.find(el => el.textContent.trim().toUpperCase().startsWith(value.toUpperCase()));
+                                    return match ? { type: match.getAttribute('data-qa') ? 'data-qa' : 'id', value: match.getAttribute('data-qa') || match.getAttribute('id') } : null;
+                                }, { value: alt });
+                                if (matched) break;
+                            }
+
+                            if (matched) {
+                                const option = matched.type === 'data-qa' ? page.locator(`[data-qa="dropdown_overlay"] [data-qa="${matched.value}"]`) : page.locator(`[data-qa="dropdown_overlay"] #${matched.value}`);
+                                await option.first().click().catch(() => option.first().click({ force: true }));
+                            } else {
+                                await page.locator('[data-qa="dropdown_overlay"] [data-qa^="dropdown_item"], [data-qa="dropdown_overlay"] [id^="dropdown-overlay-item-"]').first().click({ force: true });
+                            }
+                        } else {
+                            await page.locator('[data-qa="dropdown_overlay"] [data-qa^="dropdown_item"], [data-qa="dropdown_overlay"] [id^="dropdown-overlay-item-"]').first().click({ force: true });
+                        }
+                        await page.waitForTimeout(500);
+                    } catch (e) {
+                        await page.keyboard.press('Escape').catch(() => {});
+                    }
+                }
+
+                const toggles = modal.locator('[data-qa="btn_dropdown_toggle_ddl"]');
+                const titleVal = item.accTitle || item.title || 'นาย';
+                let defaultAccType = '4 : บุคคลธรรมดาทั่วไป';
+                const titleValClean = titleVal.trim().toLowerCase();
+                if (titleValClean === 'บริษัท' || titleValClean.includes('บริษัท') || titleValClean.includes('บจก') || titleValClean.includes('บมจ')) {
+                    defaultAccType = '1 : นิติบุคคล';
+                }
+
+                await fillModalDropdown(toggles.nth(0), titleVal);
+                await fillModalDropdown(toggles.nth(1), item.accType || defaultAccType);
+                await fillModalDropdown(toggles.nth(2), item.accLineOfBusiness || item.lineOfBusiness || 'Ordinary');
+                await fillModalDropdown(toggles.nth(3), item.accRiskLevel || item.riskLevel || 'Low');
+                await fillModalDropdown(toggles.nth(4), item.accOccupationClass || item.occupationClass || 'Class 1');
+
+                // Submit modal
+                const modalSubmitBtn = modal.locator('button:has-text("Submit"), button:has-text("ตกลง"), button:has-text("บันทึก")').first();
+                await modalSubmitBtn.click().catch(() => modalSubmitBtn.click({ force: true }));
+                await page.waitForTimeout(4000);
+                await takeScreenshot(`${caseLabel}_07_step2_account_saved`);
+
+            } catch (e) {
+                console.log('[KUMA AUTO]   ⚠️  Create Account error:', e.message);
+            }
+
+            // ====================================================
+            // STEP 3 — Document Upload (click NEXT to proceed)
+            // ====================================================
+            console.log('[KUMA AUTO] --- STEP 3: Upload Document → Click Next ---');
+            const nextBtn3 = page.locator('button:has-text("Next"), button:has-text("ถัดไป")').last();
+            await nextBtn3.scrollIntoViewIfNeeded().catch(() => {});
+            await nextBtn3.click({ force: true });
+            await page.waitForTimeout(6000);
+            await takeScreenshot(`${caseLabel}_08_step4_summary`);
+
+            // ====================================================
+            // STEP 4 — Case Summary → Submit
+            // ====================================================
+            console.log('[KUMA AUTO] --- STEP 4: Case Summary → Submit ---');
+            const submitBtn = page.locator(
+                'button:has-text("Submit"), button:has-text("Confirm"), button:has-text("บันทึก"), button:has-text("ตกลง"), button:has-text("สร้าง")'
+            ).first();
+
+            if (await submitBtn.isVisible().catch(() => false)) {
+                console.log('[KUMA AUTO] Clicking final Submit/Confirm button...');
+                await submitBtn.click({ force: true });
+                await page.waitForTimeout(8000);
+                await takeScreenshot(`${caseLabel}_09_DONE`);
+                console.log(`[KUMA AUTO] ✅ Case ${caseIdx + 1} submitted successfully!`);
+            } else {
+                console.log('[KUMA AUTO]   ℹ️  Submit button not visible — may require manual review.');
+                await takeScreenshot(`${caseLabel}_09_submit_not_found`);
+            }
+
+        } catch (err) {
+            caseStatus = 'error';
+            caseError = err.message;
+            console.error(`[KUMA AUTO] ❌ Case ${caseIdx + 1} FAILED: ${err.message}`);
+            await takeScreenshot(`${caseLabel}_ERROR`);
+        }
+
+        results.push({
+            caseIndex: caseIdx + 1,
+            quotationNo: item.quotationNo,
+            nameTh: item.nameTh,
+            status: caseStatus,
+            error: caseError
+        });
+
+        // Brief pause between cases
+        if (caseIdx < cases.length - 1) {
+            console.log('[KUMA AUTO] Waiting 3s before next case...');
+            await page.waitForTimeout(3000);
+        }
+    }
+
+    // ---- Print Summary ----
+    console.log('\n[KUMA AUTO] ============ BATCH SUMMARY ============');
+    results.forEach(r => {
+        const icon = r.status === 'success' ? '✅' : '❌';
+        console.log(`${icon}  Case ${r.caseIndex}: ${r.quotationNo} | ${r.nameTh} → ${r.status}${r.error ? ' — ' + r.error : ''}`);
+    });
+    console.log(`[KUMA AUTO] Total: ${results.length} | Success: ${results.filter(r => r.status === 'success').length} | Failed: ${results.filter(r => r.status !== 'success').length}`);
+    console.log(`[KUMA AUTO] Screenshots saved to: ${screenshotDir}`);
+
+    // Save results JSON
+    const resultsFile = path.join(screenshotDir, 'batch_results.json');
+    fs.writeFileSync(resultsFile, JSON.stringify(results, null, 2), 'utf8');
+    console.log(`[KUMA AUTO] Results JSON saved: ${resultsFile}`);
+
+    console.log('\n[KUMA AUTO] Browser will remain open for 30 seconds for review...');
+    await page.waitForTimeout(30000);
+    await browser.close();
+    console.log('[KUMA AUTO] Done. Browser closed.');
+})();
