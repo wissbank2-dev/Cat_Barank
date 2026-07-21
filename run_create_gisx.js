@@ -770,14 +770,16 @@ const results = [];
 
                 // Fill Claim Payment Tab
                 console.log('[KUMA AUTO] Switching to Claim Payment tab in modal...');
-                let claimTab = page.locator('[role="dialog"] :text("Claim Payment"), #account-detail-modal-content_Account\\ Detail :text("Claim Payment")').first();
+                let claimTab = page.locator('[role="dialog"] :text-is("Claim Payment")').first();
                 if (!(await claimTab.isVisible().catch(() => false))) {
-                    claimTab = page.locator('[role="dialog"] *:has-text("Claim Payment")').first();
+                    console.log('[KUMA AUTO] Preferred claimTab locator not visible, trying fallback...');
+                    claimTab = page.locator('[role="dialog"] p, [role="dialog"] span, [role="dialog"] button, [role="dialog"] [role="tab"]')
+                        .filter({ hasText: /^Claim Payment$/ })
+                        .first();
                 }
-                
                 await claimTab.scrollIntoViewIfNeeded().catch(() => {});
                 await claimTab.click({ force: true });
-                await page.waitForTimeout(1000);
+                await page.waitForTimeout(1500);
 
                 // Fill Claim Payment fields
                 console.log('[KUMA AUTO] Filling Claim Payment fields...');
