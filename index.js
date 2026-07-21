@@ -588,7 +588,24 @@ app.get('/api/gisx/template', async (req, res) => {
             { header: 'Account Head Count Desc', key: 'accHeadCountDesc', width: 30, required: false },
             { header: 'Account Line of Business *', key: 'accLineOfBusiness', width: 28, required: true },
             { header: 'Account Risk Level *', key: 'accRiskLevel', width: 22, required: true },
-            { header: 'Account Occupation Class *', key: 'accOccupationClass', width: 35, required: true }
+            { header: 'Account Occupation Class *', key: 'accOccupationClass', width: 35, required: true },
+
+            // Commission Rates (1 to 4)
+            { header: 'Commission Plan Type 1', key: 'commPlanType1', width: 25, required: false },
+            { header: 'Commission Rate 1 (%)', key: 'commRate1', width: 25, required: false },
+            { header: 'Additional Commission 1 (%)', key: 'addCommRate1', width: 25, required: false },
+
+            { header: 'Commission Plan Type 2', key: 'commPlanType2', width: 25, required: false },
+            { header: 'Commission Rate 2 (%)', key: 'commRate2', width: 25, required: false },
+            { header: 'Additional Commission 2 (%)', key: 'addCommRate2', width: 25, required: false },
+
+            { header: 'Commission Plan Type 3', key: 'commPlanType3', width: 25, required: false },
+            { header: 'Commission Rate 3 (%)', key: 'commRate3', width: 25, required: false },
+            { header: 'Additional Commission 3 (%)', key: 'addCommRate3', width: 25, required: false },
+
+            { header: 'Commission Plan Type 4', key: 'commPlanType4', width: 25, required: false },
+            { header: 'Commission Rate 4 (%)', key: 'commRate4', width: 25, required: false },
+            { header: 'Additional Commission 4 (%)', key: 'addCommRate4', width: 25, required: false }
         ];
 
         ws.columns = fields.map(f => ({ header: f.header, key: f.key, width: f.width }));
@@ -744,7 +761,7 @@ app.get('/api/gisx/template', async (req, res) => {
             ageAverage: '40',
             minAge: '2',
             maxAge: '80',
-            planNumber: '1',
+            planNumber: 4,
             planType: '1 : ชีวิต',
             modeOfPayment: 'Monthly, รายเดือน',
             channel: 'Agent (บุคคลธรรมดา)',
@@ -763,7 +780,21 @@ app.get('/api/gisx/template', async (req, res) => {
             accHeadCountDesc: '',
             accLineOfBusiness: 'Ordinary',
             accRiskLevel: 'Low',
-            accOccupationClass: 'Class 1'
+            accOccupationClass: 'Class 1',
+            
+            // Commission Rates (1 to 4) Demo Values
+            commPlanType1: '1 : ชีวิต',
+            commRate1: 10,
+            addCommRate1: 2,
+            commPlanType2: '2 : อุบัติเหตุ',
+            commRate2: 12,
+            addCommRate2: 3,
+            commPlanType3: '3 : ทุพพลภาพ',
+            commRate3: 8,
+            addCommRate3: 1,
+            commPlanType4: '4 : สุขภาพ',
+            commRate4: 15,
+            addCommRate4: 4
         };
 
         // Set response headers and transmit the template file
@@ -855,7 +886,19 @@ app.post('/api/gisx/upload', upload.single('file'), async (req, res) => {
             'Account Head Count Desc': 'accHeadCountDesc',
             'Account Line of Business *': 'accLineOfBusiness',
             'Account Risk Level *': 'accRiskLevel',
-            'Account Occupation Class *': 'accOccupationClass'
+            'Account Occupation Class *': 'accOccupationClass',
+            'Commission Plan Type 1': 'commPlanType1',
+            'Commission Rate 1 (%)': 'commRate1',
+            'Additional Commission 1 (%)': 'addCommRate1',
+            'Commission Plan Type 2': 'commPlanType2',
+            'Commission Rate 2 (%)': 'commRate2',
+            'Additional Commission 2 (%)': 'addCommRate2',
+            'Commission Plan Type 3': 'commPlanType3',
+            'Commission Rate 3 (%)': 'commRate3',
+            'Additional Commission 3 (%)': 'addCommRate3',
+            'Commission Plan Type 4': 'commPlanType4',
+            'Commission Rate 4 (%)': 'commRate4',
+            'Additional Commission 4 (%)': 'addCommRate4'
         };
 
         headerRow.eachCell((cell, colNumber) => {
@@ -871,7 +914,11 @@ app.post('/api/gisx/upload', upload.single('file'), async (req, res) => {
             'address1', 'address2', 'country', 'province', 'district', 'subDistrict', 'zipCode', 'contactName', 'contactPosition', 'contactMobile', 'contactPhone', 'contactEmail',
             'productType', 'subProduct', 'ageAverage', 'minAge', 'maxAge', 'planNumber', 'planType', 'modeOfPayment',
             'channel', 'agentBrokerCode', 'salesTeam', 'salesName', 'erType', 'lossRatio', 'refundRate',
-            'accTitle', 'accNameTh', 'accNameEn', 'accTaxId', 'accType', 'accHeadCountType', 'accHeadCountDesc', 'accLineOfBusiness', 'accRiskLevel', 'accOccupationClass'
+            'accTitle', 'accNameTh', 'accNameEn', 'accTaxId', 'accType', 'accHeadCountType', 'accHeadCountDesc', 'accLineOfBusiness', 'accRiskLevel', 'accOccupationClass',
+            'commPlanType1', 'commRate1', 'addCommRate1',
+            'commPlanType2', 'commRate2', 'addCommRate2',
+            'commPlanType3', 'commRate3', 'addCommRate3',
+            'commPlanType4', 'commRate4', 'addCommRate4'
         ];
 
         keysList.forEach((key, index) => {

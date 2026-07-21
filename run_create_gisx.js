@@ -55,7 +55,8 @@ if (inputFile && fs.existsSync(inputFile)) {
         endDate: '31/12/2026',
         endTime: '23:59:59',
         language: 'Thai',
-        copyCount: 1
+        copyCount: 1,
+        planNumber: 4
     }];
 }
 
@@ -91,7 +92,7 @@ const results = [];
         }
     }
 
-    async function fillDropdown(dataQaName, valueText = null) {
+    async function fillDropdown(dataQaName, valueText = null, index = 0) {
         try {
             // Apply QA environment mappings
             if (valueText) {
@@ -105,7 +106,7 @@ const results = [];
                     if (valClean === 'low') valueText = 'ความเสี่ยงต่ำ';
                     else if (valClean === 'medium') valueText = 'ความเสี่ยงปานกลาง';
                     else if (valClean === 'high') valueText = 'ความเสี่ยงสูง';
-                                } else if (dataQaName.includes('occup_classified')) {
+                } else if (dataQaName.includes('occup_classified')) {
                     if (valClean.includes('1') || valClean.includes('ชั้น 1')) valueText = 'ประเภทอาชีพ ชั้น 1';
                     else if (valClean.includes('2') || valClean.includes('ชั้น 2')) valueText = 'ประเภทอาชีพ ชั้น 2';
                     else if (valClean.includes('3') || valClean.includes('ชั้น 3')) valueText = 'ประเภทอาชีพ ชั้น 3';
@@ -117,12 +118,12 @@ const results = [];
                 }
             }
 
-            console.log(`[KUMA AUTO]   → Dropdown "${dataQaName}" = "${valueText ?? '(first option)'}"`);
+            console.log(`[KUMA AUTO]   → Dropdown "${dataQaName}" [index: ${index}] = "${valueText ?? '(first option)'}"`);
             await page.keyboard.press('Escape').catch(() => {});
             await page.waitForTimeout(300);
 
             const selector = `div[data-qa="${dataQaName}"] [data-qa="btn_dropdown_toggle_ddl"]`;
-            const trigger = page.locator(selector).first();
+            const trigger = page.locator(selector).nth(index);
             await trigger.scrollIntoViewIfNeeded().catch(() => {});
             await trigger.click({ force: true });
             await page.waitForTimeout(800);
@@ -472,8 +473,13 @@ const results = [];
                 await page.waitForTimeout(2000);
             } catch (e) {}
 
-            await fillDropdown('field_type_dropdown_name_coverage.coverage_table.plan_type', item.planType || '1 :, 2 :, 3 :, 4 :, 5 :, 6 :');
-            await fillDropdown('field_type_dropdown_name_coverage.coverage_table.mode_of_payment', item.modeOfPayment || 'Monthly, รายเดือน');
+            const ptSelector = 'div[data-qa="field_type_dropdown_name_coverage.coverage_table.plan_type"] [data-qa="btn_dropdown_toggle_ddl"]';
+            const countPlanType = await page.locator(ptSelector).count().catch(() => 0);
+            console.log(`[KUMA AUTO] Filling ${countPlanType} plan rows in Coverage table...`);
+            for (let i = 0; i < countPlanType; i++) {
+                await fillDropdown('field_type_dropdown_name_coverage.coverage_table.plan_type', item.planType || '1 :, 2 :, 3 :, 4 :, 5 :, 6 :', i);
+                await fillDropdown('field_type_dropdown_name_coverage.coverage_table.mode_of_payment', item.modeOfPayment || 'Monthly, รายเดือน', i);
+            }
 
             await clickEl('input[id$="-WAIVED"]');
 
@@ -503,6 +509,38 @@ const results = [];
 
             await fillDropdown('field_type_dropdown_name_agent_broker.mtl_sales_info.sales_team', item.salesTeam);
             await fillDropdown('field_type_dropdown_name_agent_broker.mtl_sales_info.sales_name', item.salesName);
+
+            // Click "+ Add Commission Rate" and fill commission fields
+            try {
+                const planCount = parseInt(item.planNumber || 1);
+                console.log(`[KUMA AUTO] Need to add commission rates for ${planCount} plans...`);
+
+                const addCommBtn = page.locator('button:has-text("Add Commission Rate"), button:has-text("Commission Rate"), button:has-text("คอมมิชชั่น")').first();
+                
+                for (let i = 0; i < planCount; i++) {
+                    if (await addCommBtn.isVisible().catch(() => false)) {
+                        console.log(`[KUMA AUTO] Clicking + Add Commission Rate button (Index ${i})...`);
+                        await addCommBtn.click({ force: true });
+                        await page.waitForTimeout(1000);
+                        
+                        // Fill Plan Type for this row
+                        const planTypeDdl = `field_type_dropdown_name_agent_broker.commission_rate.${i}.plan_type`;
+                        const userPlanType = item[`commPlanType${i+1}`];
+                        await fillDropdown(planTypeDdl, userPlanType || null, 0);
+
+                        // Fill Commission Rate
+                        const commRateVal = item[`commRate${i+1}`] !== undefined && item[`commRate${i+1}`] !== '' ? item[`commRate${i+1}`] : '10';
+                        await fillText(`input[name="agent_broker.commission_rate.${i}.commission_rate"]`, String(commRateVal));
+
+                        // Fill Additional Commission
+                        const addCommVal = item[`addCommRate${i+1}`] !== undefined && item[`addCommRate${i+1}`] !== '' ? item[`addCommRate${i+1}`] : '0';
+                        await fillText(`input[name="agent_broker.commission_rate.${i}.additional_commission"]`, String(addCommVal));
+                    }
+                }
+                await takeScreenshot(`${caseLabel}_04_agent_broker_commission_filled`);
+            } catch (e) {
+                console.log('[KUMA AUTO]   ⚠️  Commission Rate section error:', e.message);
+            }
 
             await takeScreenshot(`${caseLabel}_04_agent_broker`);
 
@@ -572,10 +610,28 @@ const results = [];
                 await takeScreenshot(`${caseLabel}_07_step2_create_account`);
 
                 // FILL ACCOUNT DETAIL MODAL
-                const modal = page.locator('[role="dialog"], div.fixed, div.absolute, [class*="modal" i]')
-                    .filter({ hasText: 'Account Detail' })
-                    .filter({ has: page.locator('input') })
+                const modal = page.locator('div.fixed, div.absolute, [role="dialog"]')
+                    .filter({ hasText: 'Account Information' })
                     .first();
+
+                // Dump all inputs inside modal to console so we can see them in logs
+                try {
+                    const modalInputs = await modal.evaluate((el) => {
+                        const inputs = Array.from(el.querySelectorAll('input, select, textarea'));
+                        return inputs.map((inp, idx) => ({
+                            idx,
+                            tagName: inp.tagName,
+                            placeholder: inp.getAttribute('placeholder') || '',
+                            name: inp.getAttribute('name') || '',
+                            id: inp.getAttribute('id') || '',
+                            dataQa: inp.getAttribute('data-qa') || '',
+                            outerHTML: inp.outerHTML.substring(0, 200)
+                        }));
+                    });
+                    console.log('[KUMA DUMP] Modal Inputs:', JSON.stringify(modalInputs, null, 2));
+                } catch (e) {
+                    console.log('[KUMA DUMP] Modal evaluation failed:', e.message);
+                }
                 
                 await modal.locator('input[placeholder*="Account Name" i]').nth(0).fill(item.accNameTh || item.nameTh || '');
                 await page.waitForTimeout(300);
