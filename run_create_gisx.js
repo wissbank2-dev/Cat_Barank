@@ -163,16 +163,29 @@ const results = [];
 
             if (valueText) {
                 if (valueText === 'Select All,เลือกทั้งหมด') {
-                    const items = activeOverlay.locator('[data-qa^="dropdown_item"], [id^="dropdown-overlay-item-"]');
-                    const count = await items.count().catch(() => 0);
-                    console.log(`[KUMA AUTO] Selecting all ${count} items one by one in "${dataQaName}"...`);
-                    for (let i = 0; i < count; i++) {
-                        await items.nth(i).click({ force: true });
-                        await page.waitForTimeout(200);
+                    const selectAllItem = activeOverlay.locator('[data-qa^="dropdown_item"], [id^="dropdown-overlay-item-"]').filter({ hasText: /^(Select all|เลือกทั้งหมด)$/i }).first();
+                    if (await selectAllItem.isVisible().catch(() => false)) {
+                        console.log(`[KUMA AUTO] Clicking "Select all" item in dropdown overlay for "${dataQaName}"...`);
+                        await selectAllItem.click({ force: true });
+                        await page.waitForTimeout(500);
+                    } else {
+                        const items = activeOverlay.locator('[data-qa^="dropdown_item"], [id^="dropdown-overlay-item-"]');
+                        const count = await items.count().catch(() => 0);
+                        console.log(`[KUMA AUTO] "Select all" item not found, selecting all ${count} items one by one in "${dataQaName}"...`);
+                        for (let i = 0; i < count; i++) {
+                            const text = await items.nth(i).textContent().catch(() => '');
+                            if (text.toLowerCase().includes('select all') || text.includes('เลือกทั้งหมด')) {
+                                continue;
+                            }
+                            await items.nth(i).click({ force: true });
+                            await page.waitForTimeout(200);
+                        }
                     }
+
                     if (hasApplyBtn) {
                         const applyBtn = activeOverlay.locator('[data-qa="btn_dropdown_confirm"], button:has-text("Apply"), button:has-text("ตกลง"), button:has-text("นำไปใช้"), button:has-text("OK")').first();
                         if (await applyBtn.isVisible().catch(() => false)) {
+                            console.log(`[KUMA AUTO] Clicking Apply button in dropdown overlay...`);
                             await applyBtn.click({ force: true });
                             await page.waitForTimeout(600);
                         }
