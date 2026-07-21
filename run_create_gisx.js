@@ -769,49 +769,29 @@ const results = [];
                 }
 
                 // Fill Claim Payment Tab
-                console.log('[KUMA AUTO] Filling Claim Payment tab in modal...');
-                const claimTab = page.locator('[role="dialog"] div:has-text("Claim Payment"), #account-detail-modal-content_Account\\ Detail div:has-text("Claim Payment")').last();
-                if (await claimTab.isVisible().catch(() => false)) {
-                    await claimTab.click({ force: true });
-                    await page.waitForTimeout(1000);
-
-                    // Locate visible dropdown toggles in modal
-                    const claimToggles = page.locator('[role="dialog"] [data-qa="btn_dropdown_toggle_ddl"]:visible');
-                    const toggleCount = await claimToggles.count().catch(() => 0);
-                    console.log(`[KUMA AUTO] Found ${toggleCount} dropdown toggles in Claim Payment tab.`);
-
-                    if (toggleCount >= 3) {
-                        // 1. Plan Type (Select all)
-                        console.log('[KUMA AUTO]   → Selecting all in Claim Payment Plan Type...');
-                        await claimToggles.nth(0).click({ force: true });
-                        await page.waitForTimeout(1000);
-
-                        const activeOverlay = page.locator('[data-qa="dropdown_overlay"]').last();
-                        const selectAllItem = activeOverlay.locator('label:has-text("Select all"), span:has-text("Select all"), :has-text("Select all")').last();
-                        await selectAllItem.click({ force: true }).catch(() => {});
-                        await page.waitForTimeout(300);
-
-                        const applyBtn = activeOverlay.locator('button:has-text("Apply"), button:has-text("ตกลง")').first();
-                        await applyBtn.click({ force: true }).catch(() => {});
-                        await page.waitForTimeout(500);
-
-                        // 2. Payment Type (Select first option)
-                        console.log('[KUMA AUTO]   → Selecting first option in Claim Payment Payment Type...');
-                        await claimToggles.nth(1).click({ force: true });
-                        await page.waitForTimeout(1000);
-                        const firstOpt1 = page.locator('[data-qa="dropdown_overlay"]').last().locator('[data-qa^="dropdown_item"], [id^="dropdown-overlay-item-"]').first();
-                        await firstOpt1.click({ force: true }).catch(() => {});
-                        await page.waitForTimeout(500);
-
-                        // 3. Paid To (Select first option)
-                        console.log('[KUMA AUTO]   → Selecting first option in Claim Payment Paid To...');
-                        await claimToggles.nth(2).click({ force: true });
-                        await page.waitForTimeout(1000);
-                        const firstOpt2 = page.locator('[data-qa="dropdown_overlay"]').last().locator('[data-qa^="dropdown_item"], [id^="dropdown-overlay-item-"]').first();
-                        await firstOpt2.click({ force: true }).catch(() => {});
-                        await page.waitForTimeout(500);
-                    }
+                console.log('[KUMA AUTO] Switching to Claim Payment tab in modal...');
+                let claimTab = page.locator('[role="dialog"] :text("Claim Payment"), #account-detail-modal-content_Account\\ Detail :text("Claim Payment")').first();
+                if (!(await claimTab.isVisible().catch(() => false))) {
+                    claimTab = page.locator('[role="dialog"] *:has-text("Claim Payment")').first();
                 }
+                
+                await claimTab.scrollIntoViewIfNeeded().catch(() => {});
+                await claimTab.click({ force: true });
+                await page.waitForTimeout(1000);
+
+                // Fill Claim Payment fields
+                console.log('[KUMA AUTO] Filling Claim Payment fields...');
+                // 1. Plan Type
+                await fillDropdown('field_type_dropdown_name_claim_payment_object.claim_payment.0.plan_type', 'Select All,เลือกทั้งหมด');
+                await page.waitForTimeout(300);
+
+                // 2. Payment Type (Select first option)
+                await fillDropdown('field_type_dropdown_name_claim_payment_object.claim_payment.0.payment_type', '(first option)');
+                await page.waitForTimeout(300);
+
+                // 3. Paid To (Select first option)
+                await fillDropdown('field_type_dropdown_name_claim_payment_object.claim_payment.0.paid_type', '(first option)');
+                await page.waitForTimeout(500);
 
                 // Submit modal
                 const modalSubmitBtn = page.locator('#account-detail-modal-content_Account\\ Detail button:has-text("Submit"), button:has-text("Submit"), button:has-text("ตกลง"), button:has-text("บันทึก")').first();
