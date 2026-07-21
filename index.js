@@ -527,7 +527,7 @@ app.get('/api/gisx/template', async (req, res) => {
         const workbook = new ExcelJS.Workbook();
         const ws = workbook.addWorksheet('Register Case');
 
-        // Fields config (all required per screenshot)
+        // Fields config (all required and optional fields from GISX screen layout)
         const fields = [
             { header: 'Quotation No. *', key: 'quotationNo', width: 25, required: true },
             { header: 'Policy Holder Title *', key: 'title', width: 25, required: true },
@@ -541,12 +541,59 @@ app.get('/api/gisx/template', async (req, res) => {
             { header: 'Policy End Date *', key: 'endDate', width: 25, required: true },
             { header: 'Policy End Time *', key: 'endTime', width: 25, required: true },
             { header: 'Policy Language *', key: 'language', width: 22, required: true },
-            { header: 'Copy of Policy *', key: 'copyCount', width: 20, required: true }
+            { header: 'Copy of Policy *', key: 'copyCount', width: 20, required: true },
+            
+            // Policy Holder Address / Contact info
+            { header: 'Address 1 *', key: 'address1', width: 30, required: true },
+            { header: 'Address 2', key: 'address2', width: 30, required: false },
+            { header: 'Country *', key: 'country', width: 20, required: true },
+            { header: 'Province *', key: 'province', width: 20, required: true },
+            { header: 'District *', key: 'district', width: 20, required: true },
+            { header: 'Sub District *', key: 'subDistrict', width: 25, required: true },
+            { header: 'Zip Code *', key: 'zipCode', width: 15, required: true },
+            { header: 'Contact Name *', key: 'contactName', width: 30, required: true },
+            { header: 'Contact Position *', key: 'contactPosition', width: 25, required: true },
+            { header: 'Contact Mobile', key: 'contactMobile', width: 20, required: false },
+            { header: 'Contact Phone', key: 'contactPhone', width: 20, required: false },
+            { header: 'Contact Email', key: 'contactEmail', width: 25, required: false },
+            
+            // Coverage section
+            { header: 'Product Type *', key: 'productType', width: 20, required: true },
+            { header: 'Sub Product *', key: 'subProduct', width: 20, required: true },
+            { header: 'Age Average *', key: 'ageAverage', width: 18, required: true },
+            { header: 'Min Age *', key: 'minAge', width: 15, required: true },
+            { header: 'Max Age *', key: 'maxAge', width: 15, required: true },
+            { header: 'Plan Number *', key: 'planNumber', width: 15, required: true },
+            { header: 'Plan Type *', key: 'planType', width: 45, required: true },
+            { header: 'Mode of Payment *', key: 'modeOfPayment', width: 25, required: true },
+            
+            // Agent/Broker
+            { header: 'Channel *', key: 'channel', width: 25, required: true },
+            { header: 'Agent/Broker Code *', key: 'agentBrokerCode', width: 22, required: true },
+            { header: 'Sales Team *', key: 'salesTeam', width: 22, required: true },
+            { header: 'Sales Name *', key: 'salesName', width: 25, required: true },
+            
+            // Experience Refund
+            { header: 'Experience Refund (ER) *', key: 'erType', width: 25, required: true },
+            { header: 'Loss Ratio', key: 'lossRatio', width: 15, required: false },
+            { header: 'Refund Rate', key: 'refundRate', width: 15, required: false },
+
+            // Account Detail modal fields
+            { header: 'Account Title *', key: 'accTitle', width: 25, required: true },
+            { header: 'Account Name (Thai) *', key: 'accNameTh', width: 35, required: true },
+            { header: 'Account Name (English) *', key: 'accNameEn', width: 35, required: true },
+            { header: 'Account Tax ID *', key: 'accTaxId', width: 25, required: true },
+            { header: 'Account Type *', key: 'accType', width: 25, required: true },
+            { header: 'Account Head Count Type *', key: 'accHeadCountType', width: 28, required: true },
+            { header: 'Account Head Count Desc', key: 'accHeadCountDesc', width: 30, required: false },
+            { header: 'Account Line of Business *', key: 'accLineOfBusiness', width: 28, required: true },
+            { header: 'Account Risk Level *', key: 'accRiskLevel', width: 22, required: true },
+            { header: 'Account Occupation Class *', key: 'accOccupationClass', width: 35, required: true }
         ];
 
         ws.columns = fields.map(f => ({ header: f.header, key: f.key, width: f.width }));
 
-        // Style the headers (All solid Red because they are required)
+        // Style the headers (Red for Required, Blue for Optional)
         const headerRow = ws.getRow(1);
         headerRow.height = 30;
         headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' } };
@@ -557,7 +604,7 @@ app.get('/api/gisx/template', async (req, res) => {
             cell.fill = {
                 type: 'pattern',
                 pattern: 'solid',
-                fgColor: { argb: 'FFEF4444' } // Red
+                fgColor: { argb: f.required ? 'FFEF4444' : 'FF3B82F6' } // Red for required, Blue for optional
             };
         });
 
@@ -587,6 +634,66 @@ app.get('/api/gisx/template', async (req, res) => {
                 type: 'list',
                 allowBlank: true,
                 formulae: ['"Thai,English"']
+            },
+            country: {
+                type: 'list',
+                allowBlank: true,
+                formulae: ['"Thailand"']
+            },
+            province: {
+                type: 'list',
+                allowBlank: true,
+                formulae: ['"กทม."']
+            },
+            productType: {
+                type: 'list',
+                allowBlank: true,
+                formulae: ['"01"']
+            },
+            planType: {
+                type: 'list',
+                allowBlank: true,
+                formulae: ['"1 : ชีวิต,2 : อุบัติเหตุ,3 : ทุพพลภาพ,4 : สุขภาพ,7 : อุบัติเหตุกลุ่มส่วนบุคคล,9 : QA"']
+            },
+            modeOfPayment: {
+                type: 'list',
+                allowBlank: true,
+                formulae: ['"Monthly, รายเดือน"']
+            },
+            channel: {
+                type: 'list',
+                allowBlank: true,
+                formulae: ['"Agent (บุคคลธรรมดา)"']
+            },
+            erType: {
+                type: 'list',
+                allowBlank: true,
+                formulae: ['"ER,NON_ER"']
+            },
+            accTitle: {
+                type: 'list',
+                allowBlank: true,
+                formulae: ['"นาย,นาง,นางสาว,เด็กชาย,เด็กหญิง,บจก.,บมจ."']
+            },
+            accHeadCountType: {
+                type: 'list',
+                allowBlank: true,
+                formulae: ['"Non Head Count,Head Count"']
+            },
+            accLineOfBusiness: {
+                type: 'list',
+                allowBlank: true,
+                formulae: ['"Ordinary,Group,Credit Life,Accident"']
+            },
+            accRiskLevel: {
+                type: 'list',
+                allowBlank: true,
+                formulae: ['"Low,Medium,High"']
+            },
+            accOccupationClass: {
+                type: 'list',
+                allowBlank: true,
+                formulae: ['"Class 1,Class 2,Class 3,Class 4"']
             }
         };
 
@@ -598,7 +705,7 @@ app.get('/api/gisx/template', async (req, res) => {
                 }
                 
                 // Format numeric styling
-                if (f.key === 'copyCount') {
+                if (f.key === 'copyCount' || f.key === 'planNumber') {
                     cell.numFmt = '0';
                 }
             });
@@ -607,19 +714,56 @@ app.get('/api/gisx/template', async (req, res) => {
         // Add a demo/example row on row 2 (first row under headers)
         const demoRow = ws.getRow(2);
         demoRow.values = {
-            quotationNo: 'QT20260716001',
+            quotationNo: 'QT20260721-DEMO',
             title: 'นาย',
-            nameTh: 'สมชาย มั่งคั่ง',
+            nameTh: 'สมชาย มั่งคั่งคุมะ',
             nameEn: 'Somchai Mangkang',
             lineOfBusiness: 'Ordinary',
             riskLevel: 'Low',
             occupationClass: 'Class 1',
-            effDate: '16/07/2026',
+            effDate: '21/07/2026',
             effTime: '00:00:00',
-            endDate: '15/07/2027',
+            endDate: '20/07/2027',
             endTime: '23:59:59',
             language: 'Thai',
-            copyCount: 1
+            copyCount: 1,
+            address1: '123/45 Kuma Tower',
+            address2: '',
+            country: 'Thailand',
+            province: 'กทม.',
+            district: 'วัฒนา',
+            subDistrict: 'คลองเตย',
+            zipCode: '10310',
+            contactName: 'สมชาย มั่งคั่งคุมะ',
+            contactPosition: 'ผู้จัดการ',
+            contactMobile: '',
+            contactPhone: '',
+            contactEmail: '',
+            productType: '01',
+            subProduct: '',
+            ageAverage: '40',
+            minAge: '2',
+            maxAge: '80',
+            planNumber: '1',
+            planType: '1 : ชีวิต',
+            modeOfPayment: 'Monthly, รายเดือน',
+            channel: 'Agent (บุคคลธรรมดา)',
+            agentBrokerCode: '144660',
+            salesTeam: '',
+            salesName: '',
+            erType: 'NON_ER',
+            lossRatio: '',
+            refundRate: '',
+            accTitle: 'นาย',
+            accNameTh: 'สมชาย มั่งคั่งคุมะ',
+            accNameEn: 'Somchai Mangkang',
+            accTaxId: '1101800262649',
+            accType: '4 : บุคคลธรรมดาทั่วไป',
+            accHeadCountType: 'Non Head Count',
+            accHeadCountDesc: '',
+            accLineOfBusiness: 'Ordinary',
+            accRiskLevel: 'Low',
+            accOccupationClass: 'Class 1'
         };
 
         // Set response headers and transmit the template file
@@ -649,7 +793,13 @@ app.post('/api/gisx/upload', upload.single('file'), async (req, res) => {
         }
 
         const cases = [];
-        const requiredFields = ['quotationNo', 'title', 'nameTh', 'nameEn', 'lineOfBusiness', 'riskLevel', 'occupationClass', 'effDate', 'effTime', 'endDate', 'endTime', 'language', 'copyCount'];
+        const requiredFields = [
+            'quotationNo', 'title', 'nameTh', 'nameEn', 'lineOfBusiness', 'riskLevel', 'occupationClass', 'effDate', 'effTime', 'endDate', 'endTime', 'language', 'copyCount',
+            'address1', 'country', 'province', 'district', 'subDistrict', 'zipCode', 'contactName', 'contactPosition',
+            'productType', 'subProduct', 'ageAverage', 'minAge', 'maxAge', 'planNumber', 'planType', 'modeOfPayment',
+            'channel', 'agentBrokerCode', 'salesTeam', 'salesName', 'erType',
+            'accTitle', 'accNameTh', 'accNameEn', 'accTaxId', 'accType', 'accHeadCountType', 'accLineOfBusiness', 'accRiskLevel', 'accOccupationClass'
+        ];
 
         // Map column indices dynamically based on headers in row 1
         const headerRow = ws.getRow(1);
@@ -668,7 +818,44 @@ app.post('/api/gisx/upload', upload.single('file'), async (req, res) => {
             'Policy End Date *': 'endDate',
             'Policy End Time *': 'endTime',
             'Policy Language *': 'language',
-            'Copy of Policy *': 'copyCount'
+            'Copy of Policy *': 'copyCount',
+            'Address 1 *': 'address1',
+            'Address 2': 'address2',
+            'Country *': 'country',
+            'Province *': 'province',
+            'District *': 'district',
+            'Sub District *': 'subDistrict',
+            'Zip Code *': 'zipCode',
+            'Contact Name *': 'contactName',
+            'Contact Position *': 'contactPosition',
+            'Contact Mobile': 'contactMobile',
+            'Contact Phone': 'contactPhone',
+            'Contact Email': 'contactEmail',
+            'Product Type *': 'productType',
+            'Sub Product *': 'subProduct',
+            'Age Average *': 'ageAverage',
+            'Min Age *': 'minAge',
+            'Max Age *': 'maxAge',
+            'Plan Number *': 'planNumber',
+            'Plan Type *': 'planType',
+            'Mode of Payment *': 'modeOfPayment',
+            'Channel *': 'channel',
+            'Agent/Broker Code *': 'agentBrokerCode',
+            'Sales Team *': 'salesTeam',
+            'Sales Name *': 'salesName',
+            'Experience Refund (ER) *': 'erType',
+            'Loss Ratio': 'lossRatio',
+            'Refund Rate': 'refundRate',
+            'Account Title *': 'accTitle',
+            'Account Name (Thai) *': 'accNameTh',
+            'Account Name (English) *': 'accNameEn',
+            'Account Tax ID *': 'accTaxId',
+            'Account Type *': 'accType',
+            'Account Head Count Type *': 'accHeadCountType',
+            'Account Head Count Desc': 'accHeadCountDesc',
+            'Account Line of Business *': 'accLineOfBusiness',
+            'Account Risk Level *': 'accRiskLevel',
+            'Account Occupation Class *': 'accOccupationClass'
         };
 
         headerRow.eachCell((cell, colNumber) => {
@@ -679,7 +866,14 @@ app.post('/api/gisx/upload', upload.single('file'), async (req, res) => {
         });
 
         // Fallback to absolute index positioning
-        const keysList = ['quotationNo', 'title', 'nameTh', 'nameEn', 'lineOfBusiness', 'riskLevel', 'occupationClass', 'effDate', 'effTime', 'endDate', 'endTime', 'language', 'copyCount'];
+        const keysList = [
+            'quotationNo', 'title', 'nameTh', 'nameEn', 'lineOfBusiness', 'riskLevel', 'occupationClass', 'effDate', 'effTime', 'endDate', 'endTime', 'language', 'copyCount',
+            'address1', 'address2', 'country', 'province', 'district', 'subDistrict', 'zipCode', 'contactName', 'contactPosition', 'contactMobile', 'contactPhone', 'contactEmail',
+            'productType', 'subProduct', 'ageAverage', 'minAge', 'maxAge', 'planNumber', 'planType', 'modeOfPayment',
+            'channel', 'agentBrokerCode', 'salesTeam', 'salesName', 'erType', 'lossRatio', 'refundRate',
+            'accTitle', 'accNameTh', 'accNameEn', 'accTaxId', 'accType', 'accHeadCountType', 'accHeadCountDesc', 'accLineOfBusiness', 'accRiskLevel', 'accOccupationClass'
+        ];
+
         keysList.forEach((key, index) => {
             if (!colMap[key]) {
                 colMap[key] = index + 1;
@@ -746,7 +940,148 @@ app.post('/api/gisx/upload', upload.single('file'), async (req, res) => {
     }
 });
 
+// ==================== GISX Run Automation (SSE Streaming) ====================
+const { spawn } = require('child_process');
+
+// Active run jobs: jobId -> { proc, clients }
+const gisxJobs = new Map();
+
+// 3. POST /api/gisx/run — start a new automation job
+app.post('/api/gisx/run', async (req, res) => {
+    try {
+        const { cases, headless } = req.body;
+
+        if (!cases || !Array.isArray(cases) || cases.length === 0) {
+            return res.status(400).json({ error: 'ไม่พบข้อมูล cases ที่ต้องการรัน' });
+        }
+
+        // Write cases to a temp JSON file
+        const jobId = 'gisx_job_' + Date.now();
+        const tmpDir = path.join(__dirname, 'gisx_tmp');
+        if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir, { recursive: true });
+
+        const inputFile = path.join(tmpDir, jobId + '_cases.json');
+        fs.writeFileSync(inputFile, JSON.stringify(cases, null, 2), 'utf8');
+
+        const screenshotDir = path.join(tmpDir, jobId + '_screenshots');
+
+        // Build CLI args
+        const scriptArgs = [
+            path.join(__dirname, 'run_create_gisx.js'),
+            '--input', inputFile,
+            '--screenshotDir', screenshotDir
+        ];
+        if (headless) scriptArgs.push('--headless');
+
+        console.log(`[GISX RUN] Starting job ${jobId} with ${cases.length} case(s)...`);
+
+        const proc = spawn('node', scriptArgs, {
+            cwd: __dirname,
+            env: { ...process.env }
+        });
+
+        gisxJobs.set(jobId, { proc, clients: new Set(), inputFile, screenshotDir });
+
+        proc.stdout.on('data', (data) => {
+            const text = data.toString();
+            process.stdout.write('[GISX PROC] ' + text);
+            broadcastJobLog(jobId, 'stdout', text);
+        });
+
+        proc.stderr.on('data', (data) => {
+            const text = data.toString();
+            process.stderr.write('[GISX PROC ERR] ' + text);
+            broadcastJobLog(jobId, 'stderr', text);
+        });
+
+        proc.on('close', (code) => {
+            console.log(`[GISX RUN] Job ${jobId} finished with code ${code}`);
+            broadcastJobLog(jobId, 'done', `\n[KUMA AUTO] ✅ กระบวนการเสร็จสิ้นแล้วครับเมี้ยว (exit code: ${code})\n`);
+
+            // Read and broadcast results if available
+            try {
+                const resultsFile = path.join(screenshotDir, 'batch_results.json');
+                if (fs.existsSync(resultsFile)) {
+                    const results = JSON.parse(fs.readFileSync(resultsFile, 'utf8'));
+                    broadcastJobLog(jobId, 'results', JSON.stringify(results));
+                }
+            } catch (e) {}
+
+            // Cleanup temp input file after 5 minutes
+            setTimeout(() => {
+                try { fs.unlinkSync(inputFile); } catch (e) {}
+                gisxJobs.delete(jobId);
+            }, 5 * 60 * 1000);
+        });
+
+        proc.on('error', (err) => {
+            console.error(`[GISX RUN] Job ${jobId} spawn error:`, err);
+            broadcastJobLog(jobId, 'stderr', `\n[ERROR] ไม่สามารถเริ่ม Playwright ได้: ${err.message}\n`);
+        });
+
+        res.json({ jobId, message: `เริ่มรัน Automation แล้วครับเมี้ยว! Job ID: ${jobId}` });
+
+    } catch (error) {
+        console.error('GISX Run Error:', error);
+        res.status(500).json({ error: 'เกิดข้อผิดพลาดในการเริ่มรัน: ' + error.message });
+    }
+});
+
+// 4. GET /api/gisx/run/:jobId/stream — SSE log stream
+app.get('/api/gisx/run/:jobId/stream', (req, res) => {
+    const { jobId } = req.params;
+    const job = gisxJobs.get(jobId);
+
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.setHeader('X-Accel-Buffering', 'no');
+    res.flushHeaders();
+
+    if (!job) {
+        res.write(`data: ${JSON.stringify({ type: 'stderr', text: 'ไม่พบ Job นี้ในระบบ หรือรันเสร็จไปแล้วครับ' })}\n\n`);
+        res.end();
+        return;
+    }
+
+    job.clients.add(res);
+
+    req.on('close', () => {
+        job.clients.delete(res);
+    });
+});
+
+// 5. POST /api/gisx/run/:jobId/stop — stop a running job
+app.post('/api/gisx/run/:jobId/stop', (req, res) => {
+    const { jobId } = req.params;
+    const job = gisxJobs.get(jobId);
+    if (!job) {
+        return res.status(404).json({ error: 'ไม่พบ Job นี้' });
+    }
+    try {
+        job.proc.kill('SIGTERM');
+        broadcastJobLog(jobId, 'stderr', '\n[KUMA AUTO] ⛔ ผู้ใช้หยุด Automation แล้วครับ\n');
+        res.json({ message: 'หยุดการรัน Automation แล้ว' });
+    } catch (e) {
+        res.status(500).json({ error: 'ไม่สามารถหยุดได้: ' + e.message });
+    }
+});
+
+function broadcastJobLog(jobId, type, text) {
+    const job = gisxJobs.get(jobId);
+    if (!job) return;
+    const payload = JSON.stringify({ type, text });
+    for (const client of job.clients) {
+        try {
+            client.write(`data: ${payload}\n\n`);
+        } catch (e) {
+            job.clients.delete(client);
+        }
+    }
+}
+
 // Start the server
 app.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);
 });
+

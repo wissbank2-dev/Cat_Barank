@@ -23,6 +23,7 @@
     "exceljs": "^4.4.0",
     "express": "^5.2.1",
     "multer": "^2.0.2",
+    "playwright": "^1.61.1",
     "xlsx": "^0.18.5"
   }
 }

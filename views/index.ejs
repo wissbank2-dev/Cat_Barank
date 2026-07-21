@@ -1485,7 +1485,7 @@
                     <h3 class="text-lg font-bold text-rose-500 flex items-center gap-2">
                         <span>📋</span> รายการผู้เอาประกันภัยที่พร้อมสร้าง (Register Cases)
                     </h3>
-                    <div class="flex flex-wrap gap-2">
+                    <div class="flex flex-wrap gap-2 items-center">
                         <button onclick="copyGisxBatchJson()"
                             class="bg-blue-50 text-blue-500 px-4 py-2 rounded-xl text-sm font-medium hover:bg-blue-100 transition-colors flex items-center gap-1 shadow-sm">
                             📋 คัดลอก JSON Payloads
@@ -1498,6 +1498,21 @@
                             class="bg-indigo-50 text-indigo-600 px-4 py-2 rounded-xl text-sm font-medium hover:bg-indigo-100 transition-colors flex items-center gap-1 shadow-sm">
                             🤖 โหลดสคริปต์ Robot Framework
                         </button>
+                        <!-- Run Automation Button -->
+                        <div class="flex items-center gap-2 ml-2 pl-2 border-l border-rose-100">
+                            <label class="flex items-center gap-1 text-xs text-gray-500 cursor-pointer select-none" title="รันแบบ Headless (ไม่แสดงหน้าต่าง Browser)">
+                                <input type="checkbox" id="gisxHeadlessCheck" class="rounded">
+                                <span>Headless</span>
+                            </label>
+                            <button id="gisxRunBtn" onclick="runGisxAutomation()"
+                                class="bg-gradient-to-r from-rose-500 to-pink-500 text-white px-5 py-2 rounded-xl text-sm font-bold hover:from-rose-600 hover:to-pink-600 transition-all flex items-center gap-2 shadow-md hover:shadow-lg active:scale-95">
+                                🤖 รัน Automation
+                            </button>
+                            <button id="gisxStopBtn" onclick="stopGisxAutomation()" style="display:none;"
+                                class="bg-gray-700 text-white px-4 py-2 rounded-xl text-sm font-bold hover:bg-gray-900 transition-all flex items-center gap-1 shadow-sm">
+                                ⛔ หยุด
+                            </button>
+                        </div>
                         <button onclick="clearGisxCases()"
                             class="bg-rose-50 text-rose-400 px-4 py-2 rounded-xl text-sm font-medium hover:bg-rose-100 transition-colors shadow-sm">
                             ล้างทั้งหมด
@@ -1528,6 +1543,36 @@
                             <!-- Dynamically loaded rows -->
                         </tbody>
                     </table>
+                </div>
+            </div>
+
+            <!-- ===== GISX Log Panel ===== -->
+            <div id="gisxLogPanel" class="hidden mt-6 bg-gray-950 rounded-[2rem] p-6 shadow-2xl border-2 border-gray-800 mb-8 relative overflow-hidden">
+                <!-- Glowing top border animation -->
+                <div class="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-rose-500 via-pink-400 to-rose-500 animate-pulse"></div>
+
+                <div class="flex justify-between items-center mb-4">
+                    <div class="flex items-center gap-3">
+                        <div id="gisxLogStatusDot" class="w-3 h-3 rounded-full bg-green-400 animate-pulse shadow-[0_0_8px_rgba(74,222,128,0.8)]"></div>
+                        <h3 class="text-sm font-bold text-gray-200 tracking-wide">🖥️ Automation Live Log</h3>
+                        <span id="gisxLogStatus" class="text-xs text-green-400 font-semibold">กำลังรัน...</span>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="clearGisxLog()" class="text-xs text-gray-500 hover:text-gray-300 px-3 py-1 border border-gray-700 rounded-lg transition-colors">ล้าง Log</button>
+                        <button onclick="toggleGisxLog()" id="gisxLogToggleBtn" class="text-xs text-gray-400 hover:text-white px-3 py-1 border border-gray-700 rounded-lg transition-colors">ซ่อน</button>
+                    </div>
+                </div>
+
+                <div id="gisxLogBody"
+                    class="bg-gray-900 rounded-xl p-4 overflow-y-auto font-mono text-xs text-green-300 leading-relaxed"
+                    style="min-height:180px; max-height:400px; white-space:pre-wrap; word-break:break-all;">
+                    <span class="text-gray-600">รอการเชื่อมต่อ...</span>
+                </div>
+
+                <!-- Results Summary (shown after done) -->
+                <div id="gisxRunResults" class="hidden mt-4 bg-gray-900 rounded-xl p-4 border border-gray-700">
+                    <h4 class="text-sm font-bold text-gray-200 mb-3 flex items-center gap-2">📊 สรุปผลการรัน</h4>
+                    <div id="gisxRunResultsBody" class="space-y-1"></div>
                 </div>
             </div>
         </div>
@@ -3721,6 +3766,10 @@ ${matrixTestCases.map((tc, i) => `${i + 1}. ${tc}`).join('\n')}`;
 
     <!-- Home Interactive Sections (Games & Fortune Telling) -->
     <script>
+        // ==================== GISX Automate State ====================
+        let gisxCases = [];
+        let editingGisxIdx = -1;
+
         // ==================== Home Interactive Sections ====================
         window.toggleHomeSection = function(section) {
             const container = document.getElementById('homeSectionsContainer');
@@ -4208,8 +4257,6 @@ ${matrixTestCases.map((tc, i) => `${i + 1}. ${tc}`).join('\n')}`;
         };
 
         // ==================== GISX Automate (Register Case) Script ====================
-        let gisxCases = [];
-        let editingGisxIdx = -1;
 
         // Initialize GISX cases from localStorage
         try {
@@ -4326,164 +4373,198 @@ ${matrixTestCases.map((tc, i) => `${i + 1}. ${tc}`).join('\n')}`;
             showToast('ลบรายการสำเร็จ! 🐾');
         };
 
-        window.openEditGisxModal = function (idx) {
-            editingGisxIdx = idx;
-            const item = gisxCases[idx];
-            if (!item) return;
 
-            const fields = ['appNo', 'salesChannel', 'agentCode', 'title', 'firstName', 'lastName', 'gender', 'dob', 'occupation', 'plan', 'sumAssured', 'mode', 'premium', 'remark'];
-            fields.forEach(f => {
-                const el = document.getElementById('edit_' + f);
-                if (el) {
-                    el.value = item[f] !== undefined ? item[f] : '';
-                }
-            });
 
-            document.getElementById('editGisxCaseModal').classList.remove('hidden');
-        };
+        // ==================== GISX Run Automation ====================
+        let currentGisxJobId = null;
+        let gisxSseSource = null;
+        let gisxLogVisible = true;
 
-        window.closeEditGisxModal = function () {
-            document.getElementById('editGisxCaseModal').classList.add('hidden');
-            editingGisxIdx = -1;
-        };
-
-        window.saveEditGisxCase = function () {
-            if (editingGisxIdx === -1) return;
-            const item = gisxCases[editingGisxIdx];
-            if (!item) return;
-
-            const fields = ['appNo', 'salesChannel', 'agentCode', 'title', 'firstName', 'lastName', 'gender', 'dob', 'occupation', 'plan', 'sumAssured', 'mode', 'premium', 'remark'];
-            fields.forEach(f => {
-                const el = document.getElementById('edit_' + f);
-                if (el) {
-                    // Save as number if fields are numeric
-                    if (f === 'sumAssured' || f === 'premium') {
-                        item[f] = el.value ? parseFloat(el.value) : '';
-                    } else {
-                        item[f] = el.value.trim();
-                    }
-                }
-            });
-
-            // Re-validate fields
-            const requiredFields = ['appNo', 'salesChannel', 'agentCode', 'firstName', 'lastName', 'gender', 'dob', 'plan', 'sumAssured', 'mode', 'premium'];
-            const missing = [];
-            requiredFields.forEach(f => {
-                if (item[f] === undefined || item[f] === null || item[f] === '') {
-                    missing.push(f);
-                }
-            });
-
-            item.isValid = missing.length === 0;
-            item.missingFields = missing;
-
-            localStorage.setItem('cat_gisx_cases', JSON.stringify(gisxCases));
-            closeEditGisxModal();
-            renderGisxCases();
-            showToast('บันทึกการแก้ไขเคสสำเร็จ! ✏️😻');
-        };
-
-        window.renderGisxCases = function () {
-            const body = document.getElementById('gisxCasesBody');
-            const statsSec = document.getElementById('gisxStatsSection');
-            const casesSec = document.getElementById('gisxCasesSection');
-            if (!body) return;
-
-            body.innerHTML = '';
-
+        window.runGisxAutomation = async function () {
             if (gisxCases.length === 0) {
-                statsSec.classList.add('hidden');
-                casesSec.classList.add('hidden');
+                showToast('ไม่มีข้อมูลเคสในตาราง กรุณาอัปโหลดไฟล์ Excel ก่อนนะเมี้ยว! 😿');
                 return;
             }
 
-            statsSec.classList.remove('hidden');
-            casesSec.classList.remove('hidden');
+            const validCases = gisxCases.filter(c => c.isValid);
+            if (validCases.length === 0) {
+                showToast('ไม่มีเคสที่ข้อมูลสมบูรณ์ครบถ้วน กรุณาแก้ไขก่อนรันครับเมี้ยว! ✕');
+                return;
+            }
 
-            let validCount = 0;
-            let invalidCount = 0;
+            if (!confirm(`🤖 คุณต้องการให้คุมะรัน Automation ${validCases.length} เคสบนเว็บ GISX จริงๆ ใช่ไหมครับ?\n\n⚠️ โปรดตรวจสอบข้อมูลให้ครบถ้วนก่อนกดยืนยัน!`)) return;
 
-            gisxCases.forEach((item, idx) => {
-                if (item.isValid) validCount++;
-                else invalidCount++;
+            const headless = document.getElementById('gisxHeadlessCheck')?.checked ?? false;
 
-                const tr = document.createElement('tr');
-                tr.className = 'border-b border-rose-50 hover:bg-rose-50/20 transition-colors text-xs text-gray-700';
+            // UI: Show log panel, disable run btn
+            document.getElementById('gisxLogPanel').classList.remove('hidden');
+            document.getElementById('gisxRunBtn').disabled = true;
+            document.getElementById('gisxRunBtn').classList.add('opacity-50', 'cursor-not-allowed');
+            document.getElementById('gisxStopBtn').style.display = 'inline-flex';
+            document.getElementById('gisxRunResults').classList.add('hidden');
+            document.getElementById('gisxLogStatus').textContent = 'กำลังเชื่อมต่อ...';
+            document.getElementById('gisxLogStatus').className = 'text-xs text-yellow-400 font-semibold';
+            document.getElementById('gisxLogStatusDot').className = 'w-3 h-3 rounded-full bg-yellow-400 animate-pulse shadow-[0_0_8px_rgba(250,204,21,0.8)]';
 
-                // Columns construction
-                const tdNum = document.createElement('td');
-                tdNum.className = 'py-3 px-3 text-center font-bold text-gray-400';
-                tdNum.textContent = idx + 1;
-                tr.appendChild(tdNum);
+            appendGisxLog('[KUMA AUTO] 🐾 เริ่มต้นส่งคำสั่งไปยัง Server...\n', 'sys');
+            document.getElementById('gisxLogPanel').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 
-                const tdAppNo = document.createElement('td');
-                tdAppNo.className = 'py-3 px-3 font-semibold text-rose-500';
-                tdAppNo.textContent = item.appNo || '(ไม่มีข้อมูล)';
-                tr.appendChild(tdAppNo);
+            // Clean up previous SSE source
+            if (gisxSseSource) { gisxSseSource.close(); gisxSseSource = null; }
 
-                const tdName = document.createElement('td');
-                tdName.className = 'py-3 px-3';
-                tdName.textContent = `${item.title || ''}${item.firstName || ''} ${item.lastName || ''}`.trim() || '(ไม่มีชื่อ)';
-                tr.appendChild(tdName);
+            try {
+                const cleanCases = validCases.map(({ isValid, missingFields, rowNum, ...rest }) => rest);
 
-                const tdChannel = document.createElement('td');
-                tdChannel.className = 'py-3 px-3';
-                tdChannel.textContent = item.salesChannel || '-';
-                tr.appendChild(tdChannel);
+                const startRes = await fetch('/api/gisx/run', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ cases: cleanCases, headless })
+                });
 
-                const tdDob = document.createElement('td');
-                tdDob.className = 'py-3 px-3 text-gray-500';
-                tdDob.textContent = `${item.dob || '-'} (${item.gender || '-'})`;
-                tr.appendChild(tdDob);
-
-                const tdPlan = document.createElement('td');
-                tdPlan.className = 'py-3 px-3 text-gray-600 font-medium truncate max-w-[150px]';
-                tdPlan.title = item.plan || '-';
-                tdPlan.textContent = item.plan || '-';
-                tr.appendChild(tdPlan);
-
-                const tdPremium = document.createElement('td');
-                tdPremium.className = 'py-3 px-3 text-right font-bold text-gray-800';
-                const premiumVal = parseFloat(item.premium);
-                tdPremium.textContent = isNaN(premiumVal) ? '-' : premiumVal.toLocaleString('th-TH', { minimumFractionDigits: 2 });
-                tr.appendChild(tdPremium);
-
-                // Validation Status
-                const tdStatus = document.createElement('td');
-                tdStatus.className = 'py-3 px-3 text-center';
-                if (item.isValid) {
-                    tdStatus.innerHTML = '<span class="inline-flex items-center bg-green-50 text-green-700 px-2 py-1 rounded-full font-bold">ข้อมูลสมบูรณ์ ✔️</span>';
-                } else {
-                    const missingLabel = item.missingFields.join(', ');
-                    tdStatus.innerHTML = `
-                        <span class="inline-flex items-center bg-red-50 text-red-500 px-2 py-1 rounded-full font-bold cursor-help" title="ฟิลด์ที่ขาด: ${missingLabel}">
-                            ข้อมูลไม่ครบ ✕ (ขาด: ${item.missingFields.length})
-                        </span>
-                    `;
+                const startData = await startRes.json();
+                if (!startRes.ok || startData.error) {
+                    appendGisxLog('[ERROR] ' + (startData.error || 'ไม่สามารถเริ่มรันได้'), 'err');
+                    resetGisxRunUI(false);
+                    return;
                 }
-                tr.appendChild(tdStatus);
 
-                // Actions cell
-                const tdActions = document.createElement('td');
-                tdActions.className = 'py-3 px-3 text-center flex items-center justify-center gap-1.5';
-                tdActions.innerHTML = `
-                    <button onclick="openEditGisxModal(${idx})" class="bg-amber-50 hover:bg-amber-100 text-amber-600 p-1.5 rounded-lg transition-colors font-bold text-[10px]" title="แก้ไขข้อมูล">
-                        ✏️ แก้ไข
-                    </button>
-                    <button onclick="deleteGisxCase(${idx})" class="bg-rose-50 hover:bg-rose-100 text-rose-500 p-1.5 rounded-lg transition-colors font-bold text-[10px]" title="ลบเคส">
-                        🗑️ ลบ
-                    </button>
+                currentGisxJobId = startData.jobId;
+                appendGisxLog(`[KUMA AUTO] Job ID: ${currentGisxJobId}\n`, 'sys');
+                appendGisxLog(`[KUMA AUTO] กำลังรัน ${validCases.length} เคส...\n`, 'sys');
+
+                document.getElementById('gisxLogStatus').textContent = 'กำลังรัน...';
+                document.getElementById('gisxLogStatus').className = 'text-xs text-green-400 font-semibold';
+                document.getElementById('gisxLogStatusDot').className = 'w-3 h-3 rounded-full bg-green-400 animate-pulse shadow-[0_0_8px_rgba(74,222,128,0.8)]';
+
+                // Open SSE stream
+                gisxSseSource = new EventSource(`/api/gisx/run/${currentGisxJobId}/stream`);
+
+                gisxSseSource.onmessage = function (e) {
+                    try {
+                        const msg = JSON.parse(e.data);
+                        if (msg.type === 'stdout') {
+                            appendGisxLog(msg.text, 'out');
+                        } else if (msg.type === 'stderr') {
+                            appendGisxLog(msg.text, 'err');
+                        } else if (msg.type === 'done') {
+                            appendGisxLog(msg.text, 'sys');
+                            gisxSseSource.close();
+                            gisxSseSource = null;
+                            resetGisxRunUI(true);
+                        } else if (msg.type === 'results') {
+                            try {
+                                const results = JSON.parse(msg.text);
+                                renderGisxRunResults(results);
+                            } catch (e) {}
+                        }
+                    } catch (ex) {
+                        appendGisxLog(e.data, 'out');
+                    }
+                };
+
+                gisxSseSource.onerror = function () {
+                    appendGisxLog('[KUMA AUTO] ⚠️ การเชื่อมต่อ SSE ขาด — หยุดรับ Log\n', 'err');
+                    if (gisxSseSource) { gisxSseSource.close(); gisxSseSource = null; }
+                    resetGisxRunUI(false);
+                };
+
+            } catch (err) {
+                appendGisxLog('[ERROR] ' + err.message, 'err');
+                resetGisxRunUI(false);
+            }
+        };
+
+        window.stopGisxAutomation = async function () {
+            if (!currentGisxJobId) return;
+            try {
+                await fetch(`/api/gisx/run/${currentGisxJobId}/stop`, { method: 'POST' });
+                showToast('ส่งคำสั่งหยุด Automation แล้วครับ ⛔');
+            } catch (err) {
+                showToast('ไม่สามารถหยุดได้: ' + err.message);
+            }
+        };
+
+        function resetGisxRunUI(success) {
+            const runBtn = document.getElementById('gisxRunBtn');
+            const stopBtn = document.getElementById('gisxStopBtn');
+            const statusEl = document.getElementById('gisxLogStatus');
+            const dotEl = document.getElementById('gisxLogStatusDot');
+
+            if (runBtn) {
+                runBtn.disabled = false;
+                runBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            }
+            if (stopBtn) stopBtn.style.display = 'none';
+
+            if (success) {
+                if (statusEl) { statusEl.textContent = 'เสร็จสิ้น ✅'; statusEl.className = 'text-xs text-emerald-400 font-semibold'; }
+                if (dotEl) dotEl.className = 'w-3 h-3 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.6)]';
+            } else {
+                if (statusEl) { statusEl.textContent = 'หยุด / Error ⚠️'; statusEl.className = 'text-xs text-red-400 font-semibold'; }
+                if (dotEl) dotEl.className = 'w-3 h-3 rounded-full bg-red-400 shadow-[0_0_8px_rgba(248,113,113,0.6)]';
+            }
+            currentGisxJobId = null;
+        }
+
+        function appendGisxLog(text, type = 'out') {
+            const el = document.getElementById('gisxLogBody');
+            if (!el) return;
+
+            // Remove placeholder text
+            if (el.querySelector('span.text-gray-600')) el.innerHTML = '';
+
+            const span = document.createElement('span');
+            span.textContent = text;
+            if (type === 'err') span.className = 'text-red-400';
+            else if (type === 'sys') span.className = 'text-yellow-300';
+            else span.className = 'text-green-300';
+
+            el.appendChild(span);
+
+            // Auto-scroll to bottom
+            el.scrollTop = el.scrollHeight;
+        }
+
+        window.clearGisxLog = function () {
+            const el = document.getElementById('gisxLogBody');
+            if (el) el.innerHTML = '<span class="text-gray-600">ล้าง Log แล้ว...</span>';
+            document.getElementById('gisxRunResults')?.classList.add('hidden');
+        };
+
+        window.toggleGisxLog = function () {
+            const body = document.getElementById('gisxLogBody');
+            const btn = document.getElementById('gisxLogToggleBtn');
+            gisxLogVisible = !gisxLogVisible;
+            if (body) body.style.display = gisxLogVisible ? '' : 'none';
+            if (btn) btn.textContent = gisxLogVisible ? 'ซ่อน' : 'แสดง';
+        };
+
+        function renderGisxRunResults(results) {
+            const container = document.getElementById('gisxRunResults');
+            const body = document.getElementById('gisxRunResultsBody');
+            if (!container || !body) return;
+
+            body.innerHTML = '';
+            results.forEach(r => {
+                const div = document.createElement('div');
+                const icon = r.status === 'success' ? '✅' : '❌';
+                const color = r.status === 'success' ? 'text-emerald-400' : 'text-red-400';
+                div.className = `flex items-center justify-between text-xs py-1 border-b border-gray-700`;
+                div.innerHTML = `
+                    <span class="text-gray-400">Case ${r.caseIndex}: <span class="text-white font-semibold">${r.quotationNo || '-'}</span> — ${r.nameTh || ''}</span>
+                    <span class="${color} font-bold">${icon} ${r.status}</span>
                 `;
-                tr.appendChild(tdActions);
-
-                body.appendChild(tr);
+                body.appendChild(div);
             });
 
-            // Update stats indicators
-            document.getElementById('gisxStatTotal').textContent = gisxCases.length;
-            document.getElementById('gisxStatValid').textContent = validCount;
-            document.getElementById('gisxStatInvalid').textContent = invalidCount;
-        };
+            const successCount = results.filter(r => r.status === 'success').length;
+            const summary = document.createElement('div');
+            summary.className = 'mt-2 text-xs text-gray-400 font-semibold';
+            summary.innerHTML = `รวมทั้งหมด: ${results.length} | <span class="text-emerald-400">สำเร็จ: ${successCount}</span> | <span class="text-red-400">ล้มเหลว: ${results.length - successCount}</span>`;
+            body.appendChild(summary);
+
+            container.classList.remove('hidden');
+        }
 
         window.copyGisxBatchJson = function () {
             if (gisxCases.length === 0) return;
