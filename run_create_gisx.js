@@ -131,10 +131,26 @@ const results = [];
             await trigger.click({ force: true });
             await page.waitForTimeout(800);
 
-            // Wait for dropdown overlay to render
-            // Wait for the newly opened dropdown overlay to become visible in DOM
-            const activeOverlay = page.locator('[data-qa="dropdown_overlay"]').last();
-            await activeOverlay.waitFor({ state: 'visible', timeout: 5000 }).catch(() => {});
+            // Find the active visible dropdown overlay in DOM
+            let activeOverlay = null;
+            for (let attempt = 0; attempt < 30; attempt++) {
+                const overlays = page.locator('[data-qa="dropdown_overlay"]');
+                const count = await overlays.count().catch(() => 0);
+                for (let i = 0; i < count; i++) {
+                    const ov = overlays.nth(i);
+                    const isVisible = await ov.isVisible().catch(() => false);
+                    if (isVisible) {
+                        activeOverlay = ov;
+                        break;
+                    }
+                }
+                if (activeOverlay) break;
+                await page.waitForTimeout(100);
+            }
+            if (!activeOverlay) {
+                console.log('[KUMA AUTO] No visible dropdown overlay found via visibility check, using last() fallback');
+                activeOverlay = page.locator('[data-qa="dropdown_overlay"]').last();
+            }
 
             // Wait for at least one dropdown item inside this active overlay to render and become visible
             await activeOverlay.locator('[data-qa^="dropdown_item"], [id^="dropdown-overlay-item-"]').first()
