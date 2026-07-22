@@ -56,7 +56,16 @@ if (inputFile && fs.existsSync(inputFile)) {
         endTime: '23:59:59',
         language: 'Thai',
         copyCount: 1,
-        planNumber: 4
+        planNumber: 4,
+        accTitle: 'บริษัท',
+        accNameTh: 'บริษัท สมชาย มั่งคั่งคุมะ จำกัด',
+        accNameEn: 'Somchai MangkangKuma Co., Ltd.',
+        accTaxId: '0105561000123',
+        accType: 'Compulsory (Base Account)',
+        accHeadCountType: 'Non Head Count',
+        accLineOfBusiness: 'Ordinary',
+        accRiskLevel: 'Low',
+        accOccupationClass: 'Class 1'
     }];
 }
 
@@ -78,6 +87,12 @@ const results = [];
 
     const context = await browser.newContext({ viewport: null });
     const page = await context.newPage();
+
+    // Speed up timeouts by 50%
+    const originalWaitForTimeout = page.waitForTimeout.bind(page);
+    page.waitForTimeout = async (ms) => {
+        return originalWaitForTimeout(Math.round(ms * 0.5));
+    };
 
     // ---------- Helpers ----------
 
@@ -225,6 +240,7 @@ const results = [];
                 }
 
                 const alternatives = valueText.split(',').map(v => v.trim());
+                console.log(`[KUMA AUTO]   → alternatives to select: ${JSON.stringify(alternatives)} | hasApplyBtn: ${hasApplyBtn}`);
 
                 if (hasApplyBtn) {
                     for (const alt of alternatives) {
@@ -239,18 +255,23 @@ const results = [];
                             if (!match && value.length === 1) {
                                 match = items.find(el => el.textContent.trim().toUpperCase().startsWith(value.toUpperCase()));
                             }
+                            if (!match && /^\d+\s*:/.test(value)) {
+                                const prefix = value.match(/^\d+\s*:/)[0].trim().toLowerCase();
+                                match = items.find(el => el.textContent.trim().toLowerCase().startsWith(prefix));
+                            }
                             if (match) {
                                 if (match.getAttribute('data-qa')) {
-                                    return { type: 'data-qa', value: match.getAttribute('data-qa') };
+                                    return { type: 'data-qa', value: match.getAttribute('data-qa'), text: match.textContent.trim() };
                                 }
                                 if (match.getAttribute('id')) {
-                                    return { type: 'id', value: match.getAttribute('id') };
+                                    return { type: 'id', value: match.getAttribute('id'), text: match.textContent.trim() };
                                 }
                             }
                             return null;
                         }, { value: alt });
 
                         if (matched) {
+                            console.log(`[KUMA AUTO]     Matched "${alt}" to overlay item: "${matched.text}" (${matched.type}: ${matched.value})`);
                             let item;
                             if (matched.type === 'data-qa') {
                                 item = activeOverlay.locator(`[data-qa="${matched.value}"]`).first();
@@ -259,12 +280,17 @@ const results = [];
                             }
                             await item.click({ force: true });
                             await page.waitForTimeout(300);
+                        } else {
+                            console.log(`[KUMA AUTO]     ⚠️ Could not match alternative "${alt}"`);
                         }
                     }
                     const applyBtn = activeOverlay.locator('[data-qa="btn_dropdown_confirm"], button:has-text("Apply"), button:has-text("ตกลง"), button:has-text("นำไปใช้"), button:has-text("OK")').first();
                     if (await applyBtn.isVisible().catch(() => false)) {
+                        console.log(`[KUMA AUTO]     Clicking Apply button...`);
                         await applyBtn.click({ force: true });
                         await page.waitForTimeout(600);
+                    } else {
+                        console.log(`[KUMA AUTO]     ⚠️ Apply button not visible!`);
                     }
                 } else {
                     let matched = null;
@@ -280,12 +306,16 @@ const results = [];
                             if (!match && value.length === 1) {
                                 match = items.find(el => el.textContent.trim().toUpperCase().startsWith(value.toUpperCase()));
                             }
+                            if (!match && /^\d+\s*:/.test(value)) {
+                                const prefix = value.match(/^\d+\s*:/)[0].trim().toLowerCase();
+                                match = items.find(el => el.textContent.trim().toLowerCase().startsWith(prefix));
+                            }
                             if (match) {
                                 if (match.getAttribute('data-qa')) {
-                                    return { type: 'data-qa', value: match.getAttribute('data-qa') };
+                                    return { type: 'data-qa', value: match.getAttribute('data-qa'), text: match.textContent.trim() };
                                 }
                                 if (match.getAttribute('id')) {
-                                    return { type: 'id', value: match.getAttribute('id') };
+                                    return { type: 'id', value: match.getAttribute('id'), text: match.textContent.trim() };
                                 }
                             }
                             return null;
@@ -294,6 +324,7 @@ const results = [];
                     }
 
                     if (matched) {
+                        console.log(`[KUMA AUTO]     Matched "${valueText}" to overlay item: "${matched.text}" (${matched.type}: ${matched.value})`);
                         let option;
                         if (matched.type === 'data-qa') {
                             option = activeOverlay.locator(`[data-qa="${matched.value}"]`).first();
@@ -609,6 +640,7 @@ const results = [];
             }
 
             await fillDropdown('field_type_dropdown_name_agent_broker.mtl_sales_info.sales_team', item.salesTeam);
+            await page.waitForTimeout(2000); // Wait for sales names to load based on team selection
             await fillDropdown('field_type_dropdown_name_agent_broker.mtl_sales_info.sales_name', item.salesName);
 
             // Click "+ Add Commission Rate" and fill commission fields
@@ -831,20 +863,20 @@ const results = [];
                 await fillDropdown('field_type_dropdown_name_account_detail.account_information.account_type', item.accType || defaultAccType);
                 await page.waitForTimeout(300);
 
-                // 3. Line of Business (only if custom value specified)
-                if (item.accLineOfBusiness && item.accLineOfBusiness !== 'Ordinary' && item.accLineOfBusiness !== 'O') {
+                // 3. Line of Business
+                if (item.accLineOfBusiness) {
                     await fillDropdown('field_type_dropdown_name_account_detail.account_information.line_of_business', item.accLineOfBusiness);
                     await page.waitForTimeout(300);
                 }
 
-                // 4. Risk Level (only if custom value specified)
-                if (item.accRiskLevel && item.accRiskLevel !== 'Low') {
+                // 4. Risk Level
+                if (item.accRiskLevel) {
                     await fillDropdown('field_type_dropdown_name_account_detail.account_information.risk_level', item.accRiskLevel);
                     await page.waitForTimeout(300);
                 }
 
-                // 5. Occupational Classification (only if custom value specified)
-                if (item.accOccupationClass && item.accOccupationClass !== 'Class 1') {
+                // 5. Occupational Classification
+                if (item.accOccupationClass) {
                     await fillDropdown('field_type_dropdown_name_account_detail.account_information.occupational_classification', item.accOccupationClass);
                     await page.waitForTimeout(1000);
                 }
