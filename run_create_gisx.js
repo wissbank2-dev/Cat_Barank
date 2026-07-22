@@ -102,6 +102,10 @@ const results = [];
     }
 
     async function fillDropdown(dataQaName, valueText = null, index = 0) {
+        const safeClick = async (loc) => {
+            await loc.scrollIntoViewIfNeeded().catch(() => {});
+            await loc.click().catch(() => loc.click({ force: true }));
+        };
         try {
             // Apply QA environment mappings
             if (valueText) {
@@ -305,7 +309,7 @@ const results = [];
                                 } else {
                                     item = activeOverlay.locator(`#${matched.value}`).first();
                                 }
-                                await item.click({ force: true });
+                                await safeClick(item);
                                 await page.waitForTimeout(300);
                             }
                         } else {
@@ -315,7 +319,7 @@ const results = [];
                     const applyBtn = activeOverlay.locator('[data-qa="btn_dropdown_confirm"], button:has-text("Apply"), button:has-text("ตกลง"), button:has-text("นำไปใช้"), button:has-text("OK")').first();
                     if (await applyBtn.isVisible().catch(() => false)) {
                         console.log(`[KUMA AUTO]     Clicking Apply button...`);
-                        await applyBtn.click({ force: true });
+                        await safeClick(applyBtn);
                         await page.waitForTimeout(600);
                     } else {
                         console.log(`[KUMA AUTO]     ⚠️ Apply button not visible!`);
@@ -359,13 +363,13 @@ const results = [];
                         } else {
                             option = activeOverlay.locator(`#${matched.value}`).first();
                         }
-                        await option.click({ force: true });
+                        await safeClick(option);
                         await page.waitForTimeout(600);
                     } else {
                         // Fallback: select first option in list
                         const firstOpt = activeOverlay.locator('[data-qa^="dropdown_item"], [id^="dropdown-overlay-item-"]').first();
                         if (await firstOpt.isVisible().catch(() => false)) {
-                            await firstOpt.click({ force: true });
+                            await safeClick(firstOpt);
                             await page.waitForTimeout(600);
                         } else {
                             console.log(`[KUMA AUTO]   ⚠️  Option "${valueText}" not found in "${dataQaName}"`);
@@ -378,13 +382,13 @@ const results = [];
                 const firstItem = activeOverlay.locator('[data-qa^="dropdown_item"], [id^="dropdown-overlay-item-"]').first();
                 await firstItem.waitFor({ state: 'visible', timeout: 4000 }).catch(() => {});
                 if (await firstItem.isVisible().catch(() => false)) {
-                    await firstItem.click({ force: true });
+                    await safeClick(firstItem);
                     await page.waitForTimeout(600);
                 }
                 if (hasApplyBtn) {
                     const applyBtn = activeOverlay.locator('[data-qa="btn_dropdown_confirm"], button:has-text("Apply"), button:has-text("ตกลง"), button:has-text("นำไปใช้"), button:has-text("OK")').first();
                     if (await applyBtn.isVisible().catch(() => false)) {
-                        await applyBtn.click({ force: true });
+                        await safeClick(applyBtn);
                         await page.waitForTimeout(600);
                     }
                 }
