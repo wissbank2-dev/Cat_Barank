@@ -147,6 +147,25 @@ const results = [];
                     await trigger.click({ force: true });
                     await page.waitForTimeout(800);
 
+                    // Scroll the modal and page to the bottom to make the Apply button visible!
+                    try {
+                        console.log('[KUMA AUTO]   Scrolling modal/page to bottom inside fillDropdown...');
+                        await page.evaluate(() => {
+                            const scrollables = Array.from(document.querySelectorAll('*')).filter(
+                                el => el.scrollHeight > el.clientHeight && 
+                                      (window.getComputedStyle(el).overflowY === 'auto' || 
+                                       window.getComputedStyle(el).overflowY === 'scroll' ||
+                                       el.className.includes('modal') ||
+                                       el.className.includes('dialog'))
+                            );
+                            scrollables.forEach(el => {
+                                el.scrollTop = el.scrollHeight;
+                            });
+                            window.scrollTo(0, document.body.scrollHeight);
+                        });
+                        await page.waitForTimeout(800);
+                    } catch (e) {}
+
                 // Find the active visible dropdown overlay in DOM that has actual option items loaded
                 let activeOverlay = null;
                 for (let attempt2 = 0; attempt2 < 30; attempt2++) {
