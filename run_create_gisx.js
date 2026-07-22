@@ -167,17 +167,31 @@ const results = [];
                 .waitFor({ state: 'visible', timeout: 5000 })
                 .catch(() => {});
 
-            // Scroll dropdown overlay to load all paginated items (Ant Design virtual list)
+            // Scroll dropdown overlay to load all paginated items (Ant Design virtual list / select dropdown)
             try {
-                const scrollContainer = activeOverlay.locator('.rc-virtual-list-holder, [class*="list-holder"], [class*="scroll"]').first();
-                if (await scrollContainer.isVisible().catch(() => false)) {
-                    console.log('[KUMA AUTO]   Dropdown is scrollable. Scrolling to load all options...');
-                    for (let s = 0; s < 8; s++) {
-                        await scrollContainer.evaluate(el => el.scrollTop = el.scrollHeight);
-                        await page.waitForTimeout(150);
-                    }
+                console.log('[KUMA AUTO]   Attempting to scroll overlay to load all options...');
+                for (let s = 0; s < 10; s++) {
+                    await page.evaluate(() => {
+                        const overlays = Array.from(document.querySelectorAll('[data-qa="dropdown_overlay"]'));
+                        const activeOverlay = overlays.find(el => el.getBoundingClientRect().height > 0) || overlays[overlays.length - 1];
+                        if (activeOverlay) {
+                            const scrollable = Array.from(activeOverlay.querySelectorAll('*')).find(
+                                el => el.scrollHeight > el.clientHeight && 
+                                      (window.getComputedStyle(el).overflowY === 'auto' || 
+                                       window.getComputedStyle(el).overflowY === 'scroll' || 
+                                       el.classList.contains('rc-virtual-list-holder') || 
+                                       el.tagName === 'UL')
+                            ) || activeOverlay;
+                            if (scrollable) {
+                                scrollable.scrollTop = scrollable.scrollHeight;
+                            }
+                        }
+                    });
+                    await page.waitForTimeout(150);
                 }
-            } catch (e) {}
+            } catch (e) {
+                console.log('[KUMA AUTO]   Scroll error:', e.message);
+            }
 
             // Dump dropdown options to console!
             try {
