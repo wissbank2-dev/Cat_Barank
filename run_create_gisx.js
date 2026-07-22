@@ -988,18 +988,26 @@ const results = [];
                 console.log('[KUMA AUTO] Filling Claim Payment fields...');
                 // Scroll the modal body/main page to the bottom to make dropdown and apply button visible!
                 try {
+                    console.log('[KUMA AUTO] Scrolling modal and page to the bottom...');
                     await page.evaluate(() => {
-                        const modalBody = document.querySelector('[role="dialog"] .ant-modal-body, [role="dialog"] .modal-body, [role="dialog"] .ant-modal-content, [role="dialog"]');
-                        if (modalBody) {
-                            modalBody.scrollTop = modalBody.scrollHeight;
-                            const scrollableDiv = modalBody.querySelector('div[class*="body"], div[class*="content"]');
-                            if (scrollableDiv) scrollableDiv.scrollTop = scrollableDiv.scrollHeight;
-                        } else {
-                            window.scrollTo(0, document.body.scrollHeight);
-                        }
+                        const dialogs = document.querySelectorAll('[role="dialog"], .ant-modal, .modal, div[class*="modal"], div[class*="dialog"]');
+                        dialogs.forEach(dialog => {
+                            const scrollables = Array.from(dialog.querySelectorAll('*')).filter(
+                                el => el.scrollHeight > el.clientHeight && 
+                                      (window.getComputedStyle(el).overflowY === 'auto' || 
+                                       window.getComputedStyle(el).overflowY === 'scroll')
+                            );
+                            scrollables.forEach(el => {
+                                el.scrollTop = el.scrollHeight;
+                            });
+                            dialog.scrollTop = dialog.scrollHeight;
+                        });
+                        window.scrollTo(0, document.body.scrollHeight);
                     });
                     await page.waitForTimeout(1000);
-                } catch (e) {}
+                } catch (e) {
+                    console.log('[KUMA AUTO] Scroll error:', e.message);
+                }
 
                 // 1. Plan Type
                 await fillDropdown('field_type_dropdown_name_claim_payment_object.claim_payment.0.plan_type', '1 :, 2 :, 3 :, 4 :, 5 :, 6 :');
