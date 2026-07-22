@@ -590,22 +590,10 @@ app.get('/api/gisx/template', async (req, res) => {
             { header: 'Account Risk Level *', key: 'accRiskLevel', width: 22, required: true },
             { header: 'Account Occupation Class *', key: 'accOccupationClass', width: 35, required: true },
 
-            // Commission Rates (1 to 4)
-            { header: 'Commission Plan Type 1', key: 'commPlanType1', width: 25, required: false },
-            { header: 'Commission Rate 1 (%)', key: 'commRate1', width: 25, required: false },
-            { header: 'Additional Commission 1 (%)', key: 'addCommRate1', width: 25, required: false },
-
-            { header: 'Commission Plan Type 2', key: 'commPlanType2', width: 25, required: false },
-            { header: 'Commission Rate 2 (%)', key: 'commRate2', width: 25, required: false },
-            { header: 'Additional Commission 2 (%)', key: 'addCommRate2', width: 25, required: false },
-
-            { header: 'Commission Plan Type 3', key: 'commPlanType3', width: 25, required: false },
-            { header: 'Commission Rate 3 (%)', key: 'commRate3', width: 25, required: false },
-            { header: 'Additional Commission 3 (%)', key: 'addCommRate3', width: 25, required: false },
-
-            { header: 'Commission Plan Type 4', key: 'commPlanType4', width: 25, required: false },
-            { header: 'Commission Rate 4 (%)', key: 'commRate4', width: 25, required: false },
-            { header: 'Additional Commission 4 (%)', key: 'addCommRate4', width: 25, required: false }
+            // Commission Rates
+            { header: 'Commission Plan Type', key: 'commPlanType1', width: 25, required: false },
+            { header: 'Commission Rate (%)', key: 'commRate1', width: 25, required: false },
+            { header: 'Additional Commission (%)', key: 'addCommRate1', width: 25, required: false }
         ];
 
         ws.columns = fields.map(f => ({ header: f.header, key: f.key, width: f.width }));
@@ -670,7 +658,12 @@ app.get('/api/gisx/template', async (req, res) => {
             planType: {
                 type: 'list',
                 allowBlank: true,
-                formulae: ['"1 : ชีวิต,2 : อุบัติเหตุ,3 : ทุพพลภาพ,4 : สุขภาพ,7 : อุบัติเหตุกลุ่มส่วนบุคคล,9 : QA"']
+                formulae: ['"1 : ชีวิต,2 : อุบัติเหตุ,3 : ทุพพลภาพ,4 : สุขภาพ,5 : โรคร้ายแรง,6 : ชดเชยรายได้,7 : อุบัติเหตุกลุ่มส่วนบุคคล,9 : QA"']
+            },
+            commPlanType1: {
+                type: 'list',
+                allowBlank: true,
+                formulae: ['"Select All,เลือกทั้งหมด,1 : ชีวิต,2 : อุบัติเหตุ,3 : ทุพพลภาพ,4 : สุขภาพ,5 : โรคร้ายแรง,6 : ชดเชยรายได้,7 : อุบัติเหตุกลุ่มส่วนบุคคล,9 : QA"']
             },
             modeOfPayment: {
                 type: 'list',
@@ -782,19 +775,10 @@ app.get('/api/gisx/template', async (req, res) => {
             accRiskLevel: 'Low',
             accOccupationClass: 'Class 1',
             
-            // Commission Rates (1 to 4) Demo Values
+            // Commission Rates Demo Values
             commPlanType1: '1 : ชีวิต',
             commRate1: 10,
-            addCommRate1: 2,
-            commPlanType2: '2 : อุบัติเหตุ',
-            commRate2: 12,
-            addCommRate2: 3,
-            commPlanType3: '3 : ทุพพลภาพ',
-            commRate3: 8,
-            addCommRate3: 1,
-            commPlanType4: '4 : สุขภาพ',
-            commRate4: 15,
-            addCommRate4: 4
+            addCommRate1: 2
         };
 
         // Set response headers and transmit the template file
@@ -887,6 +871,9 @@ app.post('/api/gisx/upload', upload.single('file'), async (req, res) => {
             'Account Line of Business *': 'accLineOfBusiness',
             'Account Risk Level *': 'accRiskLevel',
             'Account Occupation Class *': 'accOccupationClass',
+            'Commission Plan Type': 'commPlanType1',
+            'Commission Rate (%)': 'commRate1',
+            'Additional Commission (%)': 'addCommRate1',
             'Commission Plan Type 1': 'commPlanType1',
             'Commission Rate 1 (%)': 'commRate1',
             'Additional Commission 1 (%)': 'addCommRate1',

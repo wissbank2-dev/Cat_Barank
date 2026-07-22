@@ -131,7 +131,7 @@ const results = [];
             await trigger.click({ force: true });
             await page.waitForTimeout(800);
 
-            // Find the active visible dropdown overlay in DOM
+            // Find the active visible dropdown overlay in DOM that has actual option items loaded
             let activeOverlay = null;
             for (let attempt = 0; attempt < 30; attempt++) {
                 const overlays = page.locator('[data-qa="dropdown_overlay"]');
@@ -139,7 +139,8 @@ const results = [];
                 for (let i = 0; i < count; i++) {
                     const ov = overlays.nth(i);
                     const isVisible = await ov.isVisible().catch(() => false);
-                    if (isVisible) {
+                    const hasItems = (await ov.locator('[data-qa^="dropdown_item"], [id^="dropdown-overlay-item-"]').count().catch(() => 0)) > 0;
+                    if (isVisible && hasItems) {
                         activeOverlay = ov;
                         break;
                     }
@@ -148,7 +149,7 @@ const results = [];
                 await page.waitForTimeout(100);
             }
             if (!activeOverlay) {
-                console.log('[KUMA AUTO] No visible dropdown overlay found via visibility check, using last() fallback');
+                console.log('[KUMA AUTO] No visible dropdown overlay found via visibility and item check, using last() fallback');
                 activeOverlay = page.locator('[data-qa="dropdown_overlay"]').last();
             }
 
@@ -616,22 +617,52 @@ const results = [];
                 const hasCustomComm = item.commPlanType1 || item.commRate1 || item.addCommRate1;
                 
                 if (hasCustomComm) {
-                    const planCount = parseInt(item.planNumber || 1);
-                    console.log(`[KUMA AUTO] Need to add custom commission rates for ${planCount} plans...`);
-                    for (let i = 0; i < planCount; i++) {
+                    // Collect all populated commission rows (supporting both old 1-4 format and new single dropdown format)
+                    const commRows = [];
+                    if (item.commPlanType1 || item.commRate1 || item.addCommRate1) {
+                        commRows.push({
+                            planType: item.commPlanType1,
+                            commRate: item.commRate1,
+                            addCommRate: item.addCommRate1
+                        });
+                    }
+                    if (item.commPlanType2 || item.commRate2 || item.addCommRate2) {
+                        commRows.push({
+                            planType: item.commPlanType2,
+                            commRate: item.commRate2,
+                            addCommRate: item.addCommRate2
+                        });
+                    }
+                    if (item.commPlanType3 || item.commRate3 || item.addCommRate3) {
+                        commRows.push({
+                            planType: item.commPlanType3,
+                            commRate: item.commRate3,
+                            addCommRate: item.addCommRate3
+                        });
+                    }
+                    if (item.commPlanType4 || item.commRate4 || item.addCommRate4) {
+                        commRows.push({
+                            planType: item.commPlanType4,
+                            commRate: item.commRate4,
+                            addCommRate: item.addCommRate4
+                        });
+                    }
+
+                    console.log(`[KUMA AUTO] Need to add custom commission rates for ${commRows.length} plans...`);
+                    for (let i = 0; i < commRows.length; i++) {
                         if (await addCommBtn.isVisible().catch(() => false)) {
                             console.log(`[KUMA AUTO] Clicking + Add Commission Rate button (Index ${i})...`);
                             await addCommBtn.click({ force: true });
                             await page.waitForTimeout(1000);
                             
                             const planTypeDdl = `field_type_dropdown_name_agent_broker.commission_rate.${i}.plan_type`;
-                            const userPlanType = item[`commPlanType${i+1}`];
-                            await fillDropdown(planTypeDdl, userPlanType || null, 0);
+                            const row = commRows[i];
+                            await fillDropdown(planTypeDdl, row.planType || null, 0);
 
-                            const commRateVal = item[`commRate${i+1}`] !== undefined && item[`commRate${i+1}`] !== '' ? item[`commRate${i+1}`] : '10';
+                            const commRateVal = row.commRate !== undefined && row.commRate !== '' ? row.commRate : '10';
                             await fillText(`input[name="agent_broker.commission_rate.${i}.commission_rate"]`, String(commRateVal));
 
-                            const addCommVal = item[`addCommRate${i+1}`] !== undefined && item[`addCommRate${i+1}`] !== '' ? item[`addCommRate${i+1}`] : '0';
+                            const addCommVal = row.addCommRate !== undefined && row.addCommRate !== '' ? row.addCommRate : '0';
                             await fillText(`input[name="agent_broker.commission_rate.${i}.additional_commission"]`, String(addCommVal));
                         }
                     }
