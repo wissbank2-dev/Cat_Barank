@@ -149,7 +149,7 @@ const results = [];
 
                     // Scroll the modal and page to the bottom ONLY if we are inside a modal dialog (Account Detail modal)
                     try {
-                        const isInModal = await trigger.evaluate(el => !!el.closest('[role="dialog"], .ant-modal, .modal, div[class*="modal"]')).catch(() => false);
+                        const isInModal = dataQaName.includes('account_detail') || dataQaName.includes('claim_payment_object') || dataQaName.includes('account_information');
                         if (isInModal) {
                             console.log('[KUMA AUTO]   Scrolling modal/page to bottom inside fillDropdown...');
                             await page.evaluate(() => {
