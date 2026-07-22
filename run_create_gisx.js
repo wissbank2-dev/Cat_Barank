@@ -147,23 +147,26 @@ const results = [];
                     await trigger.click({ force: true });
                     await page.waitForTimeout(800);
 
-                    // Scroll the modal and page to the bottom to make the Apply button visible!
+                    // Scroll the modal and page to the bottom ONLY if we are inside a modal dialog (Account Detail modal)
                     try {
-                        console.log('[KUMA AUTO]   Scrolling modal/page to bottom inside fillDropdown...');
-                        await page.evaluate(() => {
-                            const scrollables = Array.from(document.querySelectorAll('*')).filter(
-                                el => el.scrollHeight > el.clientHeight && 
-                                      (window.getComputedStyle(el).overflowY === 'auto' || 
-                                       window.getComputedStyle(el).overflowY === 'scroll' ||
-                                       el.className.includes('modal') ||
-                                       el.className.includes('dialog'))
-                            );
-                            scrollables.forEach(el => {
-                                el.scrollTop = el.scrollHeight;
+                        const isInModal = await trigger.evaluate(el => !!el.closest('[role="dialog"], .ant-modal, .modal, div[class*="modal"]')).catch(() => false);
+                        if (isInModal) {
+                            console.log('[KUMA AUTO]   Scrolling modal/page to bottom inside fillDropdown...');
+                            await page.evaluate(() => {
+                                const scrollables = Array.from(document.querySelectorAll('*')).filter(
+                                    el => el.scrollHeight > el.clientHeight && 
+                                          (window.getComputedStyle(el).overflowY === 'auto' || 
+                                           window.getComputedStyle(el).overflowY === 'scroll' ||
+                                           el.className.includes('modal') ||
+                                           el.className.includes('dialog'))
+                                );
+                                scrollables.forEach(el => {
+                                    el.scrollTop = el.scrollHeight;
+                                });
+                                window.scrollTo(0, document.body.scrollHeight);
                             });
-                            window.scrollTo(0, document.body.scrollHeight);
-                        });
-                        await page.waitForTimeout(800);
+                            await page.waitForTimeout(800);
+                        }
                     } catch (e) {}
 
                 // Find the active visible dropdown overlay in DOM that has actual option items loaded
@@ -1077,6 +1080,29 @@ const results = [];
             const dummyPath = path.join(__dirname, 'dummy.png');
             if (!fs.existsSync(dummyPath)) {
                 fs.writeFileSync(dummyPath, 'Dummy image content');
+            }
+
+            // Log inputs and buttons on Step 3
+            try {
+                const inputsInfo = await page.evaluate(() => {
+                    return Array.from(document.querySelectorAll('input')).map(el => ({
+                        type: el.type,
+                        name: el.name,
+                        id: el.id,
+                        outerHTML: el.outerHTML.substring(0, 150)
+                    }));
+                });
+                console.log('[KUMA DUMP] Step 3 inputs in DOM:', JSON.stringify(inputsInfo, null, 2));
+
+                const buttonsInfo = await page.evaluate(() => {
+                    return Array.from(document.querySelectorAll('button')).map(el => ({
+                        text: el.textContent.trim(),
+                        outerHTML: el.outerHTML.substring(0, 150)
+                    }));
+                });
+                console.log('[KUMA DUMP] Step 3 buttons in DOM:', JSON.stringify(buttonsInfo, null, 2));
+            } catch (e) {
+                console.log('[KUMA DUMP] Step 3 elements log failed:', e.message);
             }
 
             // Find all file inputs on the Step 3 page
