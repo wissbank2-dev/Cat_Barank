@@ -88,12 +88,6 @@ const results = [];
     const context = await browser.newContext({ viewport: null });
     const page = await context.newPage();
 
-    // Speed up timeouts by 50%
-    const originalWaitForTimeout = page.waitForTimeout.bind(page);
-    page.waitForTimeout = async (ms) => {
-        return originalWaitForTimeout(Math.round(ms * 0.5));
-    };
-
     // ---------- Helpers ----------
 
     async function takeScreenshot(label) {
@@ -244,6 +238,16 @@ const results = [];
 
                 if (hasApplyBtn) {
                     for (const alt of alternatives) {
+                        try {
+                            let searchInput = activeOverlay.locator('input[type="text"]').first();
+                            if (!(await searchInput.isVisible().catch(() => false))) {
+                                searchInput = page.locator(`div[data-qa="${dataQaName}"] input[type="text"]`).first();
+                            }
+                            if (await searchInput.isVisible().catch(() => false)) {
+                                await searchInput.fill(alt);
+                                await page.waitForTimeout(400);
+                            }
+                        } catch (e) {}
                         const matched = await page.evaluate(({ value }) => {
                             const overlays = Array.from(document.querySelectorAll('[data-qa="dropdown_overlay"]'));
                             const activeOverlay = overlays.find(el => el.getBoundingClientRect().height > 0) || overlays[overlays.length - 1] || document;
@@ -295,6 +299,16 @@ const results = [];
                 } else {
                     let matched = null;
                     for (const alt of alternatives) {
+                        try {
+                            let searchInput = activeOverlay.locator('input[type="text"]').first();
+                            if (!(await searchInput.isVisible().catch(() => false))) {
+                                searchInput = page.locator(`div[data-qa="${dataQaName}"] input[type="text"]`).first();
+                            }
+                            if (await searchInput.isVisible().catch(() => false)) {
+                                await searchInput.fill(alt);
+                                await page.waitForTimeout(400);
+                            }
+                        } catch (e) {}
                         matched = await page.evaluate(({ value }) => {
                             const overlays = Array.from(document.querySelectorAll('[data-qa="dropdown_overlay"]'));
                             const activeOverlay = overlays.find(el => el.getBoundingClientRect().height > 0) || overlays[overlays.length - 1] || document;
@@ -863,20 +877,20 @@ const results = [];
                 await fillDropdown('field_type_dropdown_name_account_detail.account_information.account_type', item.accType || defaultAccType);
                 await page.waitForTimeout(300);
 
-                // 3. Line of Business
-                if (item.accLineOfBusiness) {
+                // 3. Line of Business (only if custom value specified)
+                if (item.accLineOfBusiness && item.accLineOfBusiness !== 'Ordinary' && item.accLineOfBusiness !== 'O') {
                     await fillDropdown('field_type_dropdown_name_account_detail.account_information.line_of_business', item.accLineOfBusiness);
                     await page.waitForTimeout(300);
                 }
 
-                // 4. Risk Level
-                if (item.accRiskLevel) {
+                // 4. Risk Level (only if custom value specified)
+                if (item.accRiskLevel && item.accRiskLevel !== 'Low' && item.accRiskLevel !== 'ความเสี่ยงต่ำ') {
                     await fillDropdown('field_type_dropdown_name_account_detail.account_information.risk_level', item.accRiskLevel);
                     await page.waitForTimeout(300);
                 }
 
-                // 5. Occupational Classification
-                if (item.accOccupationClass) {
+                // 5. Occupational Classification (only if custom value specified)
+                if (item.accOccupationClass && item.accOccupationClass !== 'Class 1' && item.accOccupationClass !== 'ประเภทอาชีพ ชั้น 1') {
                     await fillDropdown('field_type_dropdown_name_account_detail.account_information.occupational_classification', item.accOccupationClass);
                     await page.waitForTimeout(1000);
                 }
