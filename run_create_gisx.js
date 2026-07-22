@@ -984,8 +984,23 @@ const results = [];
                 await claimTab.click({ force: true });
                 await page.waitForTimeout(1500);
 
-                // Fill Claim Payment fields
+                 // Fill Claim Payment fields
                 console.log('[KUMA AUTO] Filling Claim Payment fields...');
+                // Scroll the modal body/main page to the bottom to make dropdown and apply button visible!
+                try {
+                    await page.evaluate(() => {
+                        const modalBody = document.querySelector('[role="dialog"] .ant-modal-body, [role="dialog"] .modal-body, [role="dialog"] .ant-modal-content, [role="dialog"]');
+                        if (modalBody) {
+                            modalBody.scrollTop = modalBody.scrollHeight;
+                            const scrollableDiv = modalBody.querySelector('div[class*="body"], div[class*="content"]');
+                            if (scrollableDiv) scrollableDiv.scrollTop = scrollableDiv.scrollHeight;
+                        } else {
+                            window.scrollTo(0, document.body.scrollHeight);
+                        }
+                    });
+                    await page.waitForTimeout(1000);
+                } catch (e) {}
+
                 // 1. Plan Type
                 await fillDropdown('field_type_dropdown_name_claim_payment_object.claim_payment.0.plan_type', '1 :, 2 :, 3 :, 4 :, 5 :, 6 :');
                 await page.waitForTimeout(300);
@@ -1001,7 +1016,19 @@ const results = [];
                 // Submit modal
                 const modalSubmitBtn = page.locator('#account-detail-modal-content_Account\\ Detail button:has-text("Submit"), button:has-text("Submit"), button:has-text("ตกลง"), button:has-text("บันทึก")').first();
                 await modalSubmitBtn.click().catch(() => modalSubmitBtn.click({ force: true }));
-                await page.waitForTimeout(4000);
+                await page.waitForTimeout(2000);
+
+                // Handle Saving Confirmation dialog if it appears
+                try {
+                    const confirmBtn = page.locator('[role="dialog"] button:has-text("Confirm"), button:has-text("Confirm"), button:has-text("ตกลง"), button:has-text("ยืนยัน")').last();
+                    if (await confirmBtn.isVisible().catch(() => false)) {
+                        console.log('[KUMA AUTO] Confirmation pop-up detected. Clicking Confirm...');
+                        await confirmBtn.click({ force: true });
+                        await page.waitForTimeout(4000);
+                    }
+                } catch (e) {
+                    console.log('[KUMA AUTO] No confirmation pop-up handled:', e.message);
+                }
 
                 // Verify modal is closed
                 if (await page.locator('#account-detail-modal-content_Account\\ Detail').isVisible().catch(() => false)) {
