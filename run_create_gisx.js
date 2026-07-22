@@ -984,23 +984,21 @@ const results = [];
                 await claimTab.click({ force: true });
                 await page.waitForTimeout(1500);
 
-                 // Fill Claim Payment fields
+                // Fill Claim Payment fields
                 console.log('[KUMA AUTO] Filling Claim Payment fields...');
                 // Scroll the modal body/main page to the bottom to make dropdown and apply button visible!
                 try {
                     console.log('[KUMA AUTO] Scrolling modal and page to the bottom...');
                     await page.evaluate(() => {
-                        const dialogs = document.querySelectorAll('[role="dialog"], .ant-modal, .modal, div[class*="modal"], div[class*="dialog"]');
-                        dialogs.forEach(dialog => {
-                            const scrollables = Array.from(dialog.querySelectorAll('*')).filter(
-                                el => el.scrollHeight > el.clientHeight && 
-                                      (window.getComputedStyle(el).overflowY === 'auto' || 
-                                       window.getComputedStyle(el).overflowY === 'scroll')
-                            );
-                            scrollables.forEach(el => {
-                                el.scrollTop = el.scrollHeight;
-                            });
-                            dialog.scrollTop = dialog.scrollHeight;
+                        const scrollables = Array.from(document.querySelectorAll('*')).filter(
+                            el => el.scrollHeight > el.clientHeight && 
+                                  (window.getComputedStyle(el).overflowY === 'auto' || 
+                                   window.getComputedStyle(el).overflowY === 'scroll' ||
+                                   el.className.includes('modal') ||
+                                   el.className.includes('dialog'))
+                        );
+                        scrollables.forEach(el => {
+                            el.scrollTop = el.scrollHeight;
                         });
                         window.scrollTo(0, document.body.scrollHeight);
                     });
