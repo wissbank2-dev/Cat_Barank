@@ -306,10 +306,17 @@ const results = [];
                                     match = items.find(el => el.textContent.trim().toLowerCase().startsWith(prefix));
                                 }
                                 if (match) {
+                                    const container = match.closest('.ant-select-item-option, .ant-select-item, [class*="option"], [class*="item"]') || match;
+                                    const checkbox = container.querySelector('input[type="checkbox"]');
                                     const isSelected = match.classList.contains('ant-select-item-option-selected') || 
                                                        match.getAttribute('aria-selected') === 'true' || 
                                                        match.classList.contains('selected') ||
-                                                       !!match.querySelector('.ant-select-item-option-state-icon, [class*="selected-icon"]');
+                                                       container.classList.contains('ant-select-item-option-selected') || 
+                                                       container.getAttribute('aria-selected') === 'true' || 
+                                                       container.classList.contains('selected') ||
+                                                       container.classList.contains('checked') ||
+                                                       (checkbox && checkbox.checked) ||
+                                                       !!container.querySelector('.ant-select-item-option-state-icon, [class*="selected-icon"], [class*="checked-icon"]');
                                     if (match.getAttribute('data-qa')) {
                                         return { type: 'data-qa', value: match.getAttribute('data-qa'), text: match.textContent.trim(), isSelected };
                                     }
