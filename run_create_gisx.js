@@ -264,26 +264,34 @@ const results = [];
                                 match = items.find(el => el.textContent.trim().toLowerCase().startsWith(prefix));
                             }
                             if (match) {
+                                const isSelected = match.classList.contains('ant-select-item-option-selected') || 
+                                                   match.getAttribute('aria-selected') === 'true' || 
+                                                   match.classList.contains('selected') ||
+                                                   !!match.querySelector('.ant-select-item-option-state-icon, [class*="selected-icon"]');
                                 if (match.getAttribute('data-qa')) {
-                                    return { type: 'data-qa', value: match.getAttribute('data-qa'), text: match.textContent.trim() };
+                                    return { type: 'data-qa', value: match.getAttribute('data-qa'), text: match.textContent.trim(), isSelected };
                                 }
                                 if (match.getAttribute('id')) {
-                                    return { type: 'id', value: match.getAttribute('id'), text: match.textContent.trim() };
+                                    return { type: 'id', value: match.getAttribute('id'), text: match.textContent.trim(), isSelected };
                                 }
                             }
                             return null;
                         }, { value: alt });
 
                         if (matched) {
-                            console.log(`[KUMA AUTO]     Matched "${alt}" to overlay item: "${matched.text}" (${matched.type}: ${matched.value})`);
-                            let item;
-                            if (matched.type === 'data-qa') {
-                                item = activeOverlay.locator(`[data-qa="${matched.value}"]`).first();
+                            if (matched.isSelected) {
+                                console.log(`[KUMA AUTO]     Option "${alt}" ("${matched.text}") is already selected, skipping click.`);
                             } else {
-                                item = activeOverlay.locator(`#${matched.value}`).first();
+                                console.log(`[KUMA AUTO]     Matched "${alt}" to overlay item: "${matched.text}" (${matched.type}: ${matched.value})`);
+                                let item;
+                                if (matched.type === 'data-qa') {
+                                    item = activeOverlay.locator(`[data-qa="${matched.value}"]`).first();
+                                } else {
+                                    item = activeOverlay.locator(`#${matched.value}`).first();
+                                }
+                                await item.click({ force: true });
+                                await page.waitForTimeout(300);
                             }
-                            await item.click({ force: true });
-                            await page.waitForTimeout(300);
                         } else {
                             console.log(`[KUMA AUTO]     ⚠️ Could not match alternative "${alt}"`);
                         }
