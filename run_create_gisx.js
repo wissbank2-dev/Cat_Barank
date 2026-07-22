@@ -122,7 +122,7 @@ const results = [];
                     else if (valClean.includes('4') || valClean.includes('ชั้น 4')) valueText = 'ประเภทอาชีพ ชั้น 4';
                 } else if (dataQaName.includes('title')) {
                     if (valClean === 'บริษัท' || valClean.includes('บริษัท') || valClean.includes('บจก') || valClean.includes('บมจ')) {
-                        valueText = 'บริษัท,บจก.,บมจ.';
+                        valueText = 'บริษัทจำกัด,บริษัท,บจก.,บมจ.';
                     }
                 }
                 if (valClean === 'select all' || valClean.includes('select all') || valClean === 'เลือกทั้งหมด' || valClean.includes('เลือกทั้งหมด')) {
@@ -166,6 +166,18 @@ const results = [];
             await activeOverlay.locator('[data-qa^="dropdown_item"], [id^="dropdown-overlay-item-"]').first()
                 .waitFor({ state: 'visible', timeout: 5000 })
                 .catch(() => {});
+
+            // Scroll dropdown overlay to load all paginated items (Ant Design virtual list)
+            try {
+                const scrollContainer = activeOverlay.locator('.rc-virtual-list-holder, [class*="list-holder"], [class*="scroll"]').first();
+                if (await scrollContainer.isVisible().catch(() => false)) {
+                    console.log('[KUMA AUTO]   Dropdown is scrollable. Scrolling to load all options...');
+                    for (let s = 0; s < 8; s++) {
+                        await scrollContainer.evaluate(el => el.scrollTop = el.scrollHeight);
+                        await page.waitForTimeout(150);
+                    }
+                }
+            } catch (e) {}
 
             // Dump dropdown options to console!
             try {
@@ -238,16 +250,6 @@ const results = [];
 
                 if (hasApplyBtn) {
                     for (const alt of alternatives) {
-                        try {
-                            let searchInput = activeOverlay.locator('input[type="text"]').first();
-                            if (!(await searchInput.isVisible().catch(() => false))) {
-                                searchInput = page.locator(`div[data-qa="${dataQaName}"] input[type="text"]`).first();
-                            }
-                            if (await searchInput.isVisible().catch(() => false)) {
-                                await searchInput.fill(alt);
-                                await page.waitForTimeout(400);
-                            }
-                        } catch (e) {}
                         const matched = await page.evaluate(({ value }) => {
                             const overlays = Array.from(document.querySelectorAll('[data-qa="dropdown_overlay"]'));
                             const activeOverlay = overlays.find(el => el.getBoundingClientRect().height > 0) || overlays[overlays.length - 1] || document;
@@ -307,16 +309,6 @@ const results = [];
                 } else {
                     let matched = null;
                     for (const alt of alternatives) {
-                        try {
-                            let searchInput = activeOverlay.locator('input[type="text"]').first();
-                            if (!(await searchInput.isVisible().catch(() => false))) {
-                                searchInput = page.locator(`div[data-qa="${dataQaName}"] input[type="text"]`).first();
-                            }
-                            if (await searchInput.isVisible().catch(() => false)) {
-                                await searchInput.fill(alt);
-                                await page.waitForTimeout(400);
-                            }
-                        } catch (e) {}
                         matched = await page.evaluate(({ value }) => {
                             const overlays = Array.from(document.querySelectorAll('[data-qa="dropdown_overlay"]'));
                             const activeOverlay = overlays.find(el => el.getBoundingClientRect().height > 0) || overlays[overlays.length - 1] || document;
