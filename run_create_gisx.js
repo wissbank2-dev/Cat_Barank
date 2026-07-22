@@ -292,6 +292,28 @@ const results = [];
                         }
 
                         if (hasApplyBtn) {
+                            // Scroll the modal and page to the bottom if we are in modal to make sure Apply is visible!
+                            try {
+                                const isInModal = dataQaName.includes('account_detail') || dataQaName.includes('claim_payment_object') || dataQaName.includes('account_information');
+                                if (isInModal) {
+                                    console.log('[KUMA AUTO] Scrolling modal/page to bottom before clicking Apply (Select All)...');
+                                    await page.evaluate(() => {
+                                        const scrollables = Array.from(document.querySelectorAll('*')).filter(
+                                            el => el.scrollHeight > el.clientHeight && 
+                                                  (window.getComputedStyle(el).overflowY === 'auto' || 
+                                                   window.getComputedStyle(el).overflowY === 'scroll' ||
+                                                   el.className.includes('modal') ||
+                                                   el.className.includes('dialog'))
+                                        );
+                                        scrollables.forEach(el => {
+                                            el.scrollTop = el.scrollHeight;
+                                        });
+                                        window.scrollTo(0, document.body.scrollHeight);
+                                    });
+                                    await page.waitForTimeout(600);
+                                }
+                            } catch (e) {}
+
                             const applyBtn = activeOverlay.locator('[data-qa="btn_dropdown_confirm"], button:has-text("Apply"), button:has-text("ตกลง"), button:has-text("นำไปใช้"), button:has-text("OK")').first();
                             if (await applyBtn.isVisible().catch(() => false)) {
                                 console.log(`[KUMA AUTO] Clicking Apply button in dropdown overlay...`);
@@ -367,6 +389,28 @@ const results = [];
                                 console.log(`[KUMA AUTO]     ⚠️ Could not match alternative "${alt}"`);
                             }
                         }
+                        // Scroll the modal and page to the bottom if we are in modal to make sure Apply is visible!
+                        try {
+                            const isInModal = dataQaName.includes('account_detail') || dataQaName.includes('claim_payment_object') || dataQaName.includes('account_information');
+                            if (isInModal) {
+                                console.log('[KUMA AUTO] Scrolling modal/page to bottom before clicking Apply (Alternatives)...');
+                                await page.evaluate(() => {
+                                    const scrollables = Array.from(document.querySelectorAll('*')).filter(
+                                        el => el.scrollHeight > el.clientHeight && 
+                                              (window.getComputedStyle(el).overflowY === 'auto' || 
+                                               window.getComputedStyle(el).overflowY === 'scroll' ||
+                                               el.className.includes('modal') ||
+                                               el.className.includes('dialog'))
+                                    );
+                                    scrollables.forEach(el => {
+                                        el.scrollTop = el.scrollHeight;
+                                    });
+                                    window.scrollTo(0, document.body.scrollHeight);
+                                });
+                                await page.waitForTimeout(600);
+                            }
+                        } catch (e) {}
+
                         const applyBtn = activeOverlay.locator('[data-qa="btn_dropdown_confirm"], button:has-text("Apply"), button:has-text("ตกลง"), button:has-text("นำไปใช้"), button:has-text("OK")').first();
                         if (await applyBtn.isVisible().catch(() => false)) {
                             console.log(`[KUMA AUTO]     Clicking Apply button...`);
@@ -1082,38 +1126,46 @@ const results = [];
                 fs.writeFileSync(dummyPath, 'Dummy image content');
             }
 
-            // Log inputs and buttons on Step 3
+            // Wait for the document table (specifically "Upload File" buttons) to be visible in the DOM
             try {
-                const inputsInfo = await page.evaluate(() => {
-                    return Array.from(document.querySelectorAll('input')).map(el => ({
-                        type: el.type,
-                        name: el.name,
-                        id: el.id,
-                        outerHTML: el.outerHTML.substring(0, 150)
-                    }));
-                });
-                console.log('[KUMA DUMP] Step 3 inputs in DOM:', JSON.stringify(inputsInfo, null, 2));
-
-                const buttonsInfo = await page.evaluate(() => {
-                    return Array.from(document.querySelectorAll('button')).map(el => ({
-                        text: el.textContent.trim(),
-                        outerHTML: el.outerHTML.substring(0, 150)
-                    }));
-                });
-                console.log('[KUMA DUMP] Step 3 buttons in DOM:', JSON.stringify(buttonsInfo, null, 2));
-            } catch (e) {
-                console.log('[KUMA DUMP] Step 3 elements log failed:', e.message);
+                console.log('[KUMA AUTO] Waiting for document upload table to render...');
+                const uploadBtn = page.locator('button:has-text("Upload File"), span:has-text("Upload File"), div:has-text("Upload File")').first();
+                await uploadBtn.waitFor({ state: 'visible', timeout: 15000 });
+                console.log('[KUMA AUTO] Document upload table loaded successfully.');
+            } catch (err) {
+                console.log('[KUMA AUTO]   ⚠️ Upload File button did not become visible within 15s:', err.message);
             }
 
             // Find all file inputs on the Step 3 page
-            const fileInputs = await page.locator('input[type="file"]').all();
-            console.log(`[KUMA AUTO] Found ${fileInputs.length} file inputs for upload. Uploading dummy.png to all...`);
-            for (let idx = 0; idx < fileInputs.length; idx++) {
-                try {
-                    await fileInputs[idx].setInputFiles(dummyPath);
-                    await page.waitForTimeout(600); // Small delay to let UI process the file
-                } catch (e) {
-                    console.log(`[KUMA AUTO]   ⚠️ Failed to upload file to input index ${idx}:`, e.message);
+            let fileInputs = await page.locator('input[type="file"]').all();
+            console.log(`[KUMA AUTO] Found ${fileInputs.length} file inputs for upload.`);
+
+            if (fileInputs.length > 0) {
+                console.log(`[KUMA AUTO] Uploading dummy.png directly to file inputs...`);
+                for (let idx = 0; idx < fileInputs.length; idx++) {
+                    try {
+                        await fileInputs[idx].setInputFiles(dummyPath);
+                        await page.waitForTimeout(800); // Small delay to let UI process the file
+                    } catch (e) {
+                        console.log(`[KUMA AUTO]   ⚠️ Failed direct upload for index ${idx}:`, e.message);
+                    }
+                }
+            } else {
+                console.log('[KUMA AUTO] Direct file inputs not found. Attempting filechooser intercept on Upload File buttons...');
+                const uploadButtons = await page.locator('button:has-text("Upload File"), span:has-text("Upload File"), div:has-text("Upload File")').all();
+                console.log(`[KUMA AUTO] Found ${uploadButtons.length} Upload File click targets.`);
+                for (let idx = 0; idx < uploadButtons.length; idx++) {
+                    try {
+                        console.log(`[KUMA AUTO] Uploading file via click intercept for index ${idx}...`);
+                        const fileChooserPromise = page.waitForEvent('filechooser', { timeout: 4000 });
+                        await uploadButtons[idx].scrollIntoViewIfNeeded().catch(() => {});
+                        await uploadButtons[idx].click({ force: true });
+                        const fileChooser = await fileChooserPromise;
+                        await fileChooser.setFiles(dummyPath);
+                        await page.waitForTimeout(1000); // Wait for upload completion
+                    } catch (e) {
+                        console.log(`[KUMA AUTO]   ⚠️ Failed upload via click intercept for index ${idx}:`, e.message);
+                    }
                 }
             }
 
