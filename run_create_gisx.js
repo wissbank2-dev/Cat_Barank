@@ -153,15 +153,11 @@ const results = [];
                         if (isInModal) {
                             console.log('[KUMA AUTO]   Scrolling modal/page to bottom inside fillDropdown...');
                             await page.evaluate(() => {
-                                const scrollables = Array.from(document.querySelectorAll('*')).filter(
-                                    el => el.scrollHeight > el.clientHeight && 
-                                          (window.getComputedStyle(el).overflowY === 'auto' || 
-                                           window.getComputedStyle(el).overflowY === 'scroll' ||
-                                           el.className.includes('modal') ||
-                                           el.className.includes('dialog'))
-                                );
-                                scrollables.forEach(el => {
-                                    el.scrollTop = el.scrollHeight;
+                                const els = Array.from(document.querySelectorAll('*'));
+                                els.forEach(el => {
+                                    if (el.scrollHeight > el.clientHeight) {
+                                        el.scrollTop = el.scrollHeight;
+                                    }
                                 });
                                 window.scrollTo(0, document.body.scrollHeight);
                             });
@@ -298,15 +294,11 @@ const results = [];
                                 if (isInModal) {
                                     console.log('[KUMA AUTO] Scrolling modal/page to bottom before clicking Apply (Select All)...');
                                     await page.evaluate(() => {
-                                        const scrollables = Array.from(document.querySelectorAll('*')).filter(
-                                            el => el.scrollHeight > el.clientHeight && 
-                                                  (window.getComputedStyle(el).overflowY === 'auto' || 
-                                                   window.getComputedStyle(el).overflowY === 'scroll' ||
-                                                   el.className.includes('modal') ||
-                                                   el.className.includes('dialog'))
-                                        );
-                                        scrollables.forEach(el => {
-                                            el.scrollTop = el.scrollHeight;
+                                        const els = Array.from(document.querySelectorAll('*'));
+                                        els.forEach(el => {
+                                            if (el.scrollHeight > el.clientHeight) {
+                                                el.scrollTop = el.scrollHeight;
+                                            }
                                         });
                                         window.scrollTo(0, document.body.scrollHeight);
                                     });
@@ -395,15 +387,11 @@ const results = [];
                             if (isInModal) {
                                 console.log('[KUMA AUTO] Scrolling modal/page to bottom before clicking Apply (Alternatives)...');
                                 await page.evaluate(() => {
-                                    const scrollables = Array.from(document.querySelectorAll('*')).filter(
-                                        el => el.scrollHeight > el.clientHeight && 
-                                              (window.getComputedStyle(el).overflowY === 'auto' || 
-                                               window.getComputedStyle(el).overflowY === 'scroll' ||
-                                               el.className.includes('modal') ||
-                                               el.className.includes('dialog'))
-                                    );
-                                    scrollables.forEach(el => {
-                                        el.scrollTop = el.scrollHeight;
+                                    const els = Array.from(document.querySelectorAll('*'));
+                                    els.forEach(el => {
+                                        if (el.scrollHeight > el.clientHeight) {
+                                            el.scrollTop = el.scrollHeight;
+                                        }
                                     });
                                     window.scrollTo(0, document.body.scrollHeight);
                                 });
