@@ -1069,9 +1069,32 @@ const results = [];
             }
 
             // ====================================================
-            // STEP 3 — Document Upload (click NEXT to proceed)
+            // STEP 3 — Document Upload
             // ====================================================
-            console.log('[KUMA AUTO] --- STEP 3: Upload Document → Click Next ---');
+            console.log('[KUMA AUTO] --- STEP 3: Upload Documents ---');
+            
+            // Use the user's provided PNG file for uploading
+            const dummyPath = path.join(__dirname, 'dummy.png');
+            if (!fs.existsSync(dummyPath)) {
+                fs.writeFileSync(dummyPath, 'Dummy image content');
+            }
+
+            // Find all file inputs on the Step 3 page
+            const fileInputs = await page.locator('input[type="file"]').all();
+            console.log(`[KUMA AUTO] Found ${fileInputs.length} file inputs for upload. Uploading dummy.png to all...`);
+            for (let idx = 0; idx < fileInputs.length; idx++) {
+                try {
+                    await fileInputs[idx].setInputFiles(dummyPath);
+                    await page.waitForTimeout(600); // Small delay to let UI process the file
+                } catch (e) {
+                    console.log(`[KUMA AUTO]   ⚠️ Failed to upload file to input index ${idx}:`, e.message);
+                }
+            }
+
+            await page.waitForTimeout(2000);
+            await takeScreenshot(`${caseLabel}_08_step3_uploaded`);
+
+            console.log('[KUMA AUTO] Clicking Next button on Step 3...');
             const nextBtn3 = page.locator('button:has-text("Next"), button:has-text("ถัดไป")').last();
             await nextBtn3.scrollIntoViewIfNeeded().catch(() => {});
             await nextBtn3.click({ force: true });
@@ -1082,19 +1105,30 @@ const results = [];
             // STEP 4 — Case Summary → Submit
             // ====================================================
             console.log('[KUMA AUTO] --- STEP 4: Case Summary → Submit ---');
+            // Select the actual Submit/Confirm/สร้าง button (avoiding Draft/บันทึกร่าง/Save Draft)
             const submitBtn = page.locator(
-                'button:has-text("Submit"), button:has-text("Confirm"), button:has-text("บันทึก"), button:has-text("ตกลง"), button:has-text("สร้าง")'
+                'button:text-is("Submit"), button:text-is("Confirm"), button:text-is("สร้าง"), button:text-is("ส่งใบสมัคร"), button:has-text("Submit Case")'
             ).first();
 
             if (await submitBtn.isVisible().catch(() => false)) {
-                console.log('[KUMA AUTO] Clicking final Submit/Confirm button...');
+                console.log('[KUMA AUTO] Clicking final Submit button...');
                 await submitBtn.click({ force: true });
                 await page.waitForTimeout(8000);
                 await takeScreenshot(`${caseLabel}_09_DONE`);
                 console.log(`[KUMA AUTO] ✅ Case ${caseIdx + 1} submitted successfully!`);
             } else {
-                console.log('[KUMA AUTO]   ℹ️  Submit button not visible — may require manual review.');
-                await takeScreenshot(`${caseLabel}_09_submit_not_found`);
+                console.log('[KUMA AUTO]   ℹ️  Submit button not visible — attempting backup selector...');
+                // Fallback to general Submit but make sure it isn't "Save Draft" or "บันทึกร่าง"
+                const fallbackSubmit = page.locator('button:has-text("Submit"), button:has-text("สร้าง")').filter({ hasNotText: 'Draft' }).filter({ hasNotText: 'ร่าง' }).first();
+                if (await fallbackSubmit.isVisible().catch(() => false)) {
+                    await fallbackSubmit.click({ force: true });
+                    await page.waitForTimeout(8000);
+                    await takeScreenshot(`${caseLabel}_09_DONE`);
+                    console.log(`[KUMA AUTO] ✅ Case ${caseIdx + 1} submitted successfully (via fallback selector)!`);
+                } else {
+                    console.log('[KUMA AUTO]   ℹ️  Submit button not found — may require manual review.');
+                    await takeScreenshot(`${caseLabel}_09_submit_not_found`);
+                }
             }
 
         } catch (err) {
