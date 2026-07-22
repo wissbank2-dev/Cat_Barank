@@ -140,262 +140,310 @@ const results = [];
 
             const selector = `div[data-qa="${dataQaName}"] [data-qa="btn_dropdown_toggle_ddl"]`;
             const trigger = page.locator(selector).nth(index);
-            await trigger.scrollIntoViewIfNeeded().catch(() => {});
-            await trigger.click({ force: true });
-            await page.waitForTimeout(800);
 
-            // Find the active visible dropdown overlay in DOM that has actual option items loaded
-            let activeOverlay = null;
-            for (let attempt = 0; attempt < 30; attempt++) {
-                const overlays = page.locator('[data-qa="dropdown_overlay"]');
-                const count = await overlays.count().catch(() => 0);
-                for (let i = 0; i < count; i++) {
-                    const ov = overlays.nth(i);
-                    const isVisible = await ov.isVisible().catch(() => false);
-                    const hasItems = (await ov.locator('[data-qa^="dropdown_item"], [id^="dropdown-overlay-item-"]').count().catch(() => 0)) > 0;
-                    if (isVisible && hasItems) {
-                        activeOverlay = ov;
-                        break;
+            for (let attempt = 1; attempt <= 3; attempt++) {
+                try {
+                    await trigger.scrollIntoViewIfNeeded().catch(() => {});
+                    await trigger.click({ force: true });
+                    await page.waitForTimeout(800);
+
+                // Find the active visible dropdown overlay in DOM that has actual option items loaded
+                let activeOverlay = null;
+                for (let attempt2 = 0; attempt2 < 30; attempt2++) {
+                    const overlays = page.locator('[data-qa="dropdown_overlay"]');
+                    const count = await overlays.count().catch(() => 0);
+                    for (let i = 0; i < count; i++) {
+                        const ov = overlays.nth(i);
+                        const isVisible = await ov.isVisible().catch(() => false);
+                        const hasItems = (await ov.locator('[data-qa^="dropdown_item"], [id^="dropdown-overlay-item-"]').count().catch(() => 0)) > 0;
+                        if (isVisible && hasItems) {
+                            const isHidden = await ov.evaluate(el => {
+                                const rect = el.getBoundingClientRect();
+                                const style = window.getComputedStyle(el);
+                                return rect.height === 0 || rect.width === 0 || style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0' || el.className.includes('hidden') || el.classList.contains('ant-select-dropdown-hidden');
+                            }).catch(() => true);
+                            if (!isHidden) {
+                                activeOverlay = ov;
+                                break;
+                            }
+                        }
                     }
+                    if (activeOverlay) break;
+                    await page.waitForTimeout(100);
                 }
-                if (activeOverlay) break;
-                await page.waitForTimeout(100);
-            }
-            if (!activeOverlay) {
-                console.log('[KUMA AUTO] No visible dropdown overlay found via visibility and item check, using last() fallback');
-                activeOverlay = page.locator('[data-qa="dropdown_overlay"]').last();
-            }
+                if (!activeOverlay) {
+                    console.log('[KUMA AUTO] No visible dropdown overlay found via visibility and item check, using last() fallback');
+                    activeOverlay = page.locator('[data-qa="dropdown_overlay"]').last();
+                }
 
-            // Wait for at least one dropdown item inside this active overlay to render and become visible
-            await activeOverlay.locator('[data-qa^="dropdown_item"], [id^="dropdown-overlay-item-"]').first()
-                .waitFor({ state: 'visible', timeout: 5000 })
-                .catch(() => {});
+                // Wait for at least one dropdown item inside this active overlay to render and become visible
+                await activeOverlay.locator('[data-qa^="dropdown_item"], [id^="dropdown-overlay-item-"]').first()
+                    .waitFor({ state: 'visible', timeout: 5000 })
+                    .catch(() => {});
 
-            // Scroll dropdown overlay to load all paginated items (Ant Design virtual list / select dropdown)
-            try {
-                console.log('[KUMA AUTO]   Attempting to scroll overlay to load all options...');
-                for (let s = 0; s < 10; s++) {
-                    await page.evaluate(() => {
+                // Scroll dropdown overlay to load all paginated items (Ant Design virtual list / select dropdown)
+                try {
+                    console.log('[KUMA AUTO]   Attempting to scroll overlay to load all options...');
+                    for (let s = 0; s < 10; s++) {
+                        await page.evaluate(() => {
+                            const overlays = Array.from(document.querySelectorAll('[data-qa="dropdown_overlay"]'));
+                            const activeOverlay = overlays.find(el => {
+                                const rect = el.getBoundingClientRect();
+                                const style = window.getComputedStyle(el);
+                                return rect.height > 0 && rect.width > 0 && style.display !== 'none' && style.visibility !== 'hidden' && style.opacity !== '0' && !el.className.includes('hidden') && !el.classList.contains('ant-select-dropdown-hidden');
+                            }) || overlays[overlays.length - 1];
+                            if (activeOverlay) {
+                                const scrollable = Array.from(activeOverlay.querySelectorAll('*')).find(
+                                    el => el.scrollHeight > el.clientHeight && 
+                                          (window.getComputedStyle(el).overflowY === 'auto' || 
+                                           window.getComputedStyle(el).overflowY === 'scroll' || 
+                                           el.classList.contains('rc-virtual-list-holder') || 
+                                           el.tagName === 'UL')
+                                ) || activeOverlay;
+                                if (scrollable) {
+                                    scrollable.scrollTop = scrollable.scrollHeight;
+                                }
+                            }
+                        });
+                        await page.waitForTimeout(150);
+                    }
+                } catch (e) {
+                    console.log('[KUMA AUTO]   Scroll error:', e.message);
+                }
+
+                // Dump dropdown options to console!
+                try {
+                    const optionsText = await page.evaluate(() => {
                         const overlays = Array.from(document.querySelectorAll('[data-qa="dropdown_overlay"]'));
-                        const activeOverlay = overlays.find(el => el.getBoundingClientRect().height > 0) || overlays[overlays.length - 1];
-                        if (activeOverlay) {
-                            const scrollable = Array.from(activeOverlay.querySelectorAll('*')).find(
-                                el => el.scrollHeight > el.clientHeight && 
-                                      (window.getComputedStyle(el).overflowY === 'auto' || 
-                                       window.getComputedStyle(el).overflowY === 'scroll' || 
-                                       el.classList.contains('rc-virtual-list-holder') || 
-                                       el.tagName === 'UL')
-                            ) || activeOverlay;
-                            if (scrollable) {
-                                scrollable.scrollTop = scrollable.scrollHeight;
-                            }
-                        }
+                        const activeOverlay = overlays.find(el => {
+                            const rect = el.getBoundingClientRect();
+                            const style = window.getComputedStyle(el);
+                            return rect.height > 0 && rect.width > 0 && style.display !== 'none' && style.visibility !== 'hidden' && style.opacity !== '0' && !el.className.includes('hidden') && !el.classList.contains('ant-select-dropdown-hidden');
+                        }) || overlays[overlays.length - 1] || document;
+                        const items = Array.from(activeOverlay.querySelectorAll('[data-qa^="dropdown_item"], [id^="dropdown-overlay-item-"]'));
+                        return items.map(el => el.textContent.trim());
                     });
-                    await page.waitForTimeout(150);
+                    console.log(`[KUMA DUMP] Dropdown "${dataQaName}" options:`, JSON.stringify(optionsText));
+                } catch (e) {
+                    console.log(`[KUMA DUMP] Dropdown "${dataQaName}" options evaluation failed:`, e.message);
                 }
-            } catch (e) {
-                console.log('[KUMA AUTO]   Scroll error:', e.message);
-            }
+                
+                // Check for Apply button presence in DOM (multi-select)
+                const hasApplyBtn = (await activeOverlay
+                    .locator('[data-qa="btn_dropdown_confirm"], button:has-text("Apply"), button:has-text("ตกลง"), button:has-text("นำไปใช้"), button:has-text("OK")')
+                    .count().catch(() => 0)) > 0;
 
-            // Dump dropdown options to console!
-            try {
-                const optionsText = await page.evaluate(() => {
-                    const overlays = Array.from(document.querySelectorAll('[data-qa="dropdown_overlay"]'));
-                    const activeOverlay = overlays.find(el => el.getBoundingClientRect().height > 0) || overlays[overlays.length - 1] || document;
-                    const items = Array.from(activeOverlay.querySelectorAll('[data-qa^="dropdown_item"], [id^="dropdown-overlay-item-"]'));
-                    return items.map(el => el.textContent.trim());
-                });
-                console.log(`[KUMA DUMP] Dropdown "${dataQaName}" options:`, JSON.stringify(optionsText));
-            } catch (e) {
-                console.log(`[KUMA DUMP] Dropdown "${dataQaName}" options evaluation failed:`, e.message);
-            }
-            
-            // Check for Apply button presence in DOM (multi-select)
-            const hasApplyBtn = (await activeOverlay
-                .locator('[data-qa="btn_dropdown_confirm"], button:has-text("Apply"), button:has-text("ตกลง"), button:has-text("นำไปใช้"), button:has-text("OK")')
-                .count().catch(() => 0)) > 0;
-
-            if (valueText) {
-                if (valueText === 'Select All,เลือกทั้งหมด') {
-                    let selectAllItem = activeOverlay.getByText('Select all', { exact: false }).first();
-                    if (!(await selectAllItem.isVisible().catch(() => false))) {
-                        selectAllItem = activeOverlay.getByText('เลือกทั้งหมด', { exact: false }).first();
-                    }
-
-                    const isSelectAllVisible = await selectAllItem.isVisible().catch(() => false);
-                    console.log(`[KUMA AUTO] "Select all" element visibility: ${isSelectAllVisible}`);
-
-                    if (isSelectAllVisible) {
-                        console.log(`[KUMA AUTO] Clicking "Select all" item in dropdown overlay for "${dataQaName}"...`);
-                        await selectAllItem.scrollIntoViewIfNeeded().catch(() => {});
-                        await selectAllItem.click().catch(() => selectAllItem.click({ force: true }));
-                        await page.waitForTimeout(500);
-                    } else {
-                        const items = activeOverlay.locator('[data-qa^="dropdown_item"], [id^="dropdown-overlay-item-"]');
-                        const count = await items.count().catch(() => 0);
-                        console.log(`[KUMA AUTO] "Select all" item not found. Total items in overlay: ${count}`);
-                        for (let i = 0; i < count; i++) {
-                            const text = await items.nth(i).textContent().catch(() => '');
-                            console.log(`[KUMA AUTO] Item ${i} text: "${text.trim()}"`);
+                if (valueText) {
+                    if (valueText === 'Select All,เลือกทั้งหมด') {
+                        let selectAllItem = activeOverlay.getByText('Select all', { exact: false }).first();
+                        if (!(await selectAllItem.isVisible().catch(() => false))) {
+                            selectAllItem = activeOverlay.getByText('เลือกทั้งหมด', { exact: false }).first();
                         }
 
-                        console.log(`[KUMA AUTO] Selecting all ${count} items one by one in "${dataQaName}"...`);
-                        for (let i = 0; i < count; i++) {
-                            const text = await items.nth(i).textContent().catch(() => '');
-                            if (text.toLowerCase().includes('select all') || text.includes('เลือกทั้งหมด')) {
-                                continue;
+                        const isSelectAllVisible = await selectAllItem.isVisible().catch(() => false);
+                        console.log(`[KUMA AUTO] "Select all" element visibility: ${isSelectAllVisible}`);
+
+                        if (isSelectAllVisible) {
+                            console.log(`[KUMA AUTO] Clicking "Select all" item in dropdown overlay for "${dataQaName}"...`);
+                            await selectAllItem.scrollIntoViewIfNeeded().catch(() => {});
+                            await selectAllItem.click().catch(() => selectAllItem.click({ force: true }));
+                            await page.waitForTimeout(500);
+                        } else {
+                            const items = activeOverlay.locator('[data-qa^="dropdown_item"], [id^="dropdown-overlay-item-"]');
+                            const count = await items.count().catch(() => 0);
+                            console.log(`[KUMA AUTO] "Select all" item not found. Total items in overlay: ${count}`);
+                            for (let i = 0; i < count; i++) {
+                                const text = await items.nth(i).textContent().catch(() => '');
+                                console.log(`[KUMA AUTO] Item ${i} text: "${text.trim()}"`);
                             }
-                            await items.nth(i).scrollIntoViewIfNeeded().catch(() => {});
-                            await items.nth(i).click().catch(() => items.nth(i).click({ force: true }));
-                            await page.waitForTimeout(200);
+
+                            console.log(`[KUMA AUTO] Selecting all ${count} items one by one in "${dataQaName}"...`);
+                            for (let i = 0; i < count; i++) {
+                                const text = await items.nth(i).textContent().catch(() => '');
+                                if (text.toLowerCase().includes('select all') || text.includes('เลือกทั้งหมด')) {
+                                    continue;
+                                }
+                                await items.nth(i).scrollIntoViewIfNeeded().catch(() => {});
+                                await items.nth(i).click().catch(() => items.nth(i).click({ force: true }));
+                                await page.waitForTimeout(200);
+                            }
                         }
+
+                        if (hasApplyBtn) {
+                            const applyBtn = activeOverlay.locator('[data-qa="btn_dropdown_confirm"], button:has-text("Apply"), button:has-text("ตกลง"), button:has-text("นำไปใช้"), button:has-text("OK")').first();
+                            if (await applyBtn.isVisible().catch(() => false)) {
+                                console.log(`[KUMA AUTO] Clicking Apply button in dropdown overlay...`);
+                                await applyBtn.scrollIntoViewIfNeeded().catch(() => {});
+                                await applyBtn.click().catch(() => applyBtn.click({ force: true }));
+                                await page.waitForTimeout(1000);
+                            }
+                        }
+                        return;
                     }
 
+                    const alternatives = valueText.split(',').map(v => v.trim());
+                    console.log(`[KUMA AUTO]   → alternatives to select: ${JSON.stringify(alternatives)} | hasApplyBtn: ${hasApplyBtn}`);
+
+                    if (hasApplyBtn) {
+                        for (const alt of alternatives) {
+                            const matched = await page.evaluate(({ value }) => {
+                                const overlays = Array.from(document.querySelectorAll('[data-qa="dropdown_overlay"]'));
+                                const activeOverlay = overlays.find(el => {
+                                    const rect = el.getBoundingClientRect();
+                                    const style = window.getComputedStyle(el);
+                                    return rect.height > 0 && rect.width > 0 && style.display !== 'none' && style.visibility !== 'hidden' && style.opacity !== '0' && !el.className.includes('hidden') && !el.classList.contains('ant-select-dropdown-hidden');
+                                }) || overlays[overlays.length - 1] || document;
+                                const items = Array.from(activeOverlay.querySelectorAll('[data-qa^="dropdown_item"], [id^="dropdown-overlay-item-"]'));
+                                let match = items.find(el => el.textContent.trim().toLowerCase() === value.toLowerCase());
+                                if (!match) {
+                                    match = items.find(el => el.textContent.trim().toLowerCase().includes(value.toLowerCase()));
+                                }
+                                if (!match && value.length === 1) {
+                                    match = items.find(el => el.textContent.trim().toUpperCase().startsWith(value.toUpperCase()));
+                                }
+                                if (!match && /^\d+\s*:/.test(value)) {
+                                    const prefix = value.match(/^\d+\s*:/)[0].trim().toLowerCase();
+                                    match = items.find(el => el.textContent.trim().toLowerCase().startsWith(prefix));
+                                }
+                                if (match) {
+                                    const isSelected = match.classList.contains('ant-select-item-option-selected') || 
+                                                       match.getAttribute('aria-selected') === 'true' || 
+                                                       match.classList.contains('selected') ||
+                                                       !!match.querySelector('.ant-select-item-option-state-icon, [class*="selected-icon"]');
+                                    if (match.getAttribute('data-qa')) {
+                                        return { type: 'data-qa', value: match.getAttribute('data-qa'), text: match.textContent.trim(), isSelected };
+                                    }
+                                    if (match.getAttribute('id')) {
+                                        return { type: 'id', value: match.getAttribute('id'), text: match.textContent.trim(), isSelected };
+                                    }
+                                }
+                                return null;
+                            }, { value: alt });
+
+                            if (matched) {
+                                if (matched.isSelected) {
+                                    console.log(`[KUMA AUTO]     Option "${alt}" ("${matched.text}") is already selected, skipping click.`);
+                                } else {
+                                    console.log(`[KUMA AUTO]     Matched "${alt}" to overlay item: "${matched.text}" (${matched.type}: ${matched.value})`);
+                                    let item;
+                                    if (matched.type === 'data-qa') {
+                                        item = activeOverlay.locator(`[data-qa="${matched.value}"]`).first();
+                                    } else {
+                                        item = activeOverlay.locator(`#${matched.value}`).first();
+                                    }
+                                    await safeClick(item);
+                                    await page.waitForTimeout(300);
+                                }
+                            } else {
+                                console.log(`[KUMA AUTO]     ⚠️ Could not match alternative "${alt}"`);
+                            }
+                        }
+                        const applyBtn = activeOverlay.locator('[data-qa="btn_dropdown_confirm"], button:has-text("Apply"), button:has-text("ตกลง"), button:has-text("นำไปใช้"), button:has-text("OK")').first();
+                        if (await applyBtn.isVisible().catch(() => false)) {
+                            console.log(`[KUMA AUTO]     Clicking Apply button...`);
+                            await safeClick(applyBtn);
+                            await page.waitForTimeout(600);
+                        } else {
+                            console.log(`[KUMA AUTO]     ⚠️ Apply button not visible!`);
+                        }
+                    } else {
+                        let matched = null;
+                        for (const alt of alternatives) {
+                            matched = await page.evaluate(({ value }) => {
+                                const overlays = Array.from(document.querySelectorAll('[data-qa="dropdown_overlay"]'));
+                                const activeOverlay = overlays.find(el => {
+                                    const rect = el.getBoundingClientRect();
+                                    const style = window.getComputedStyle(el);
+                                    return rect.height > 0 && rect.width > 0 && style.display !== 'none' && style.visibility !== 'hidden' && style.opacity !== '0' && !el.className.includes('hidden') && !el.classList.contains('ant-select-dropdown-hidden');
+                                }) || overlays[overlays.length - 1] || document;
+                                const items = Array.from(activeOverlay.querySelectorAll('[data-qa^="dropdown_item"], [id^="dropdown-overlay-item-"]'));
+                                let match = items.find(el => el.textContent.trim().toLowerCase() === value.toLowerCase());
+                                if (!match) {
+                                    match = items.find(el => el.textContent.trim().toLowerCase().includes(value.toLowerCase()));
+                                }
+                                if (!match && value.length === 1) {
+                                    match = items.find(el => el.textContent.trim().toUpperCase().startsWith(value.toUpperCase()));
+                                }
+                                if (!match && /^\d+\s*:/.test(value)) {
+                                    const prefix = value.match(/^\d+\s*:/)[0].trim().toLowerCase();
+                                    match = items.find(el => el.textContent.trim().toLowerCase().startsWith(prefix));
+                                }
+                                if (match) {
+                                    if (match.getAttribute('data-qa')) {
+                                        return { type: 'data-qa', value: match.getAttribute('data-qa'), text: match.textContent.trim() };
+                                    }
+                                    if (match.getAttribute('id')) {
+                                        return { type: 'id', value: match.getAttribute('id'), text: match.textContent.trim() };
+                                    }
+                                }
+                                return null;
+                            }, { value: alt });
+                            if (matched) break;
+                        }
+
+                        if (matched) {
+                            console.log(`[KUMA AUTO]     Matched "${valueText}" to overlay item: "${matched.text}" (${matched.type}: ${matched.value})`);
+                            let option;
+                            if (matched.type === 'data-qa') {
+                                option = activeOverlay.locator(`[data-qa="${matched.value}"]`).first();
+                            } else {
+                                option = activeOverlay.locator(`#${matched.value}`).first();
+                            }
+                            await safeClick(option);
+                            await page.waitForTimeout(600);
+                        } else {
+                            // Fallback: select first option in list
+                            const firstOpt = activeOverlay.locator('[data-qa^="dropdown_item"], [id^="dropdown-overlay-item-"]').first();
+                            if (await firstOpt.isVisible().catch(() => false)) {
+                                await safeClick(firstOpt);
+                                await page.waitForTimeout(600);
+                            } else {
+                                console.log(`[KUMA AUTO]   ⚠️  Option "${valueText}" not found in "${dataQaName}"`);
+                                await page.keyboard.press('Escape').catch(() => {});
+                            }
+                        }
+                    }
+                } else {
+                    // Pick first option
+                    const firstItem = activeOverlay.locator('[data-qa^="dropdown_item"], [id^="dropdown-overlay-item-"]').first();
+                    await firstItem.waitFor({ state: 'visible', timeout: 4000 }).catch(() => {});
+                    if (await firstItem.isVisible().catch(() => false)) {
+                        await safeClick(firstItem);
+                        await page.waitForTimeout(600);
+                    }
                     if (hasApplyBtn) {
                         const applyBtn = activeOverlay.locator('[data-qa="btn_dropdown_confirm"], button:has-text("Apply"), button:has-text("ตกลง"), button:has-text("นำไปใช้"), button:has-text("OK")').first();
                         if (await applyBtn.isVisible().catch(() => false)) {
-                            console.log(`[KUMA AUTO] Clicking Apply button in dropdown overlay...`);
-                            await applyBtn.scrollIntoViewIfNeeded().catch(() => {});
-                            await applyBtn.click().catch(() => applyBtn.click({ force: true }));
-                            await page.waitForTimeout(1000);
-                        }
-                    }
-                    return;
-                }
-
-                const alternatives = valueText.split(',').map(v => v.trim());
-                console.log(`[KUMA AUTO]   → alternatives to select: ${JSON.stringify(alternatives)} | hasApplyBtn: ${hasApplyBtn}`);
-
-                if (hasApplyBtn) {
-                    for (const alt of alternatives) {
-                        const matched = await page.evaluate(({ value }) => {
-                            const overlays = Array.from(document.querySelectorAll('[data-qa="dropdown_overlay"]'));
-                            const activeOverlay = overlays.find(el => el.getBoundingClientRect().height > 0) || overlays[overlays.length - 1] || document;
-                            const items = Array.from(activeOverlay.querySelectorAll('[data-qa^="dropdown_item"], [id^="dropdown-overlay-item-"]'));
-                            let match = items.find(el => el.textContent.trim().toLowerCase() === value.toLowerCase());
-                            if (!match) {
-                                match = items.find(el => el.textContent.trim().toLowerCase().includes(value.toLowerCase()));
-                            }
-                            if (!match && value.length === 1) {
-                                match = items.find(el => el.textContent.trim().toUpperCase().startsWith(value.toUpperCase()));
-                            }
-                            if (!match && /^\d+\s*:/.test(value)) {
-                                const prefix = value.match(/^\d+\s*:/)[0].trim().toLowerCase();
-                                match = items.find(el => el.textContent.trim().toLowerCase().startsWith(prefix));
-                            }
-                            if (match) {
-                                const isSelected = match.classList.contains('ant-select-item-option-selected') || 
-                                                   match.getAttribute('aria-selected') === 'true' || 
-                                                   match.classList.contains('selected') ||
-                                                   !!match.querySelector('.ant-select-item-option-state-icon, [class*="selected-icon"]');
-                                if (match.getAttribute('data-qa')) {
-                                    return { type: 'data-qa', value: match.getAttribute('data-qa'), text: match.textContent.trim(), isSelected };
-                                }
-                                if (match.getAttribute('id')) {
-                                    return { type: 'id', value: match.getAttribute('id'), text: match.textContent.trim(), isSelected };
-                                }
-                            }
-                            return null;
-                        }, { value: alt });
-
-                        if (matched) {
-                            if (matched.isSelected) {
-                                console.log(`[KUMA AUTO]     Option "${alt}" ("${matched.text}") is already selected, skipping click.`);
-                            } else {
-                                console.log(`[KUMA AUTO]     Matched "${alt}" to overlay item: "${matched.text}" (${matched.type}: ${matched.value})`);
-                                let item;
-                                if (matched.type === 'data-qa') {
-                                    item = activeOverlay.locator(`[data-qa="${matched.value}"]`).first();
-                                } else {
-                                    item = activeOverlay.locator(`#${matched.value}`).first();
-                                }
-                                await safeClick(item);
-                                await page.waitForTimeout(300);
-                            }
-                        } else {
-                            console.log(`[KUMA AUTO]     ⚠️ Could not match alternative "${alt}"`);
-                        }
-                    }
-                    const applyBtn = activeOverlay.locator('[data-qa="btn_dropdown_confirm"], button:has-text("Apply"), button:has-text("ตกลง"), button:has-text("นำไปใช้"), button:has-text("OK")').first();
-                    if (await applyBtn.isVisible().catch(() => false)) {
-                        console.log(`[KUMA AUTO]     Clicking Apply button...`);
-                        await safeClick(applyBtn);
-                        await page.waitForTimeout(600);
-                    } else {
-                        console.log(`[KUMA AUTO]     ⚠️ Apply button not visible!`);
-                    }
-                } else {
-                    let matched = null;
-                    for (const alt of alternatives) {
-                        matched = await page.evaluate(({ value }) => {
-                            const overlays = Array.from(document.querySelectorAll('[data-qa="dropdown_overlay"]'));
-                            const activeOverlay = overlays.find(el => el.getBoundingClientRect().height > 0) || overlays[overlays.length - 1] || document;
-                            const items = Array.from(activeOverlay.querySelectorAll('[data-qa^="dropdown_item"], [id^="dropdown-overlay-item-"]'));
-                            let match = items.find(el => el.textContent.trim().toLowerCase() === value.toLowerCase());
-                            if (!match) {
-                                match = items.find(el => el.textContent.trim().toLowerCase().includes(value.toLowerCase()));
-                            }
-                            if (!match && value.length === 1) {
-                                match = items.find(el => el.textContent.trim().toUpperCase().startsWith(value.toUpperCase()));
-                            }
-                            if (!match && /^\d+\s*:/.test(value)) {
-                                const prefix = value.match(/^\d+\s*:/)[0].trim().toLowerCase();
-                                match = items.find(el => el.textContent.trim().toLowerCase().startsWith(prefix));
-                            }
-                            if (match) {
-                                if (match.getAttribute('data-qa')) {
-                                    return { type: 'data-qa', value: match.getAttribute('data-qa'), text: match.textContent.trim() };
-                                }
-                                if (match.getAttribute('id')) {
-                                    return { type: 'id', value: match.getAttribute('id'), text: match.textContent.trim() };
-                                }
-                            }
-                            return null;
-                        }, { value: alt });
-                        if (matched) break;
-                    }
-
-                    if (matched) {
-                        console.log(`[KUMA AUTO]     Matched "${valueText}" to overlay item: "${matched.text}" (${matched.type}: ${matched.value})`);
-                        let option;
-                        if (matched.type === 'data-qa') {
-                            option = activeOverlay.locator(`[data-qa="${matched.value}"]`).first();
-                        } else {
-                            option = activeOverlay.locator(`#${matched.value}`).first();
-                        }
-                        await safeClick(option);
-                        await page.waitForTimeout(600);
-                    } else {
-                        // Fallback: select first option in list
-                        const firstOpt = activeOverlay.locator('[data-qa^="dropdown_item"], [id^="dropdown-overlay-item-"]').first();
-                        if (await firstOpt.isVisible().catch(() => false)) {
-                            await safeClick(firstOpt);
+                            await safeClick(applyBtn);
                             await page.waitForTimeout(600);
-                        } else {
-                            console.log(`[KUMA AUTO]   ⚠️  Option "${valueText}" not found in "${dataQaName}"`);
-                            await page.keyboard.press('Escape').catch(() => {});
                         }
                     }
                 }
-            } else {
-                // Pick first option
-                const firstItem = activeOverlay.locator('[data-qa^="dropdown_item"], [id^="dropdown-overlay-item-"]').first();
-                await firstItem.waitFor({ state: 'visible', timeout: 4000 }).catch(() => {});
-                if (await firstItem.isVisible().catch(() => false)) {
-                    await safeClick(firstItem);
-                    await page.waitForTimeout(600);
-                }
-                if (hasApplyBtn) {
-                    const applyBtn = activeOverlay.locator('[data-qa="btn_dropdown_confirm"], button:has-text("Apply"), button:has-text("ตกลง"), button:has-text("นำไปใช้"), button:has-text("OK")').first();
-                    if (await applyBtn.isVisible().catch(() => false)) {
-                        await safeClick(applyBtn);
-                        await page.waitForTimeout(600);
+
+                // Check verification
+                if (valueText) {
+                    await page.waitForTimeout(500);
+                    const triggerText = (await trigger.textContent().catch(() => '')).trim();
+                    const isStillEmpty = !triggerText || 
+                                         triggerText.toLowerCase().includes('select') || 
+                                         triggerText.includes('เลือก') || 
+                                         triggerText.toLowerCase().includes('empty') ||
+                                         triggerText.includes('cannot be empty');
+                    if (!isStillEmpty) {
+                        console.log(`[KUMA AUTO]   Successfully selected value for "${dataQaName}": "${triggerText}"`);
+                        break;
                     }
+                    console.log(`[KUMA AUTO]   ⚠️ Selection attempt ${attempt} for "${dataQaName}" appears empty. Retrying...`);
+                } else {
+                    break;
                 }
+            } catch (err) {
+                console.log(`[KUMA AUTO]   ⚠️ Dropdown "${dataQaName}" attempt ${attempt} error: ${err.message}`);
+                await page.keyboard.press('Escape').catch(() => {});
             }
-        } catch (err) {
-            console.log(`[KUMA AUTO]   ⚠️  Dropdown "${dataQaName}" error: ${err.message}`);
-            await page.keyboard.press('Escape').catch(() => {});
+        }
+        } catch (outerErr) {
+            console.log(`[KUMA AUTO]   ⚠️ Outer Dropdown "${dataQaName}" error: ${outerErr.message}`);
         }
     }
 
