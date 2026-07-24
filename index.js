@@ -257,11 +257,13 @@ function extractJsonObjects(text) {
 const fs = require('fs');
 const statsFilePath = path.join(__dirname, 'stats.json');
 
-let stats = { total: 0, today: 0, lastDate: '' };
+let stats = { total: 0, today: 0, lastDate: '', todayVisitors: [], totalVisitors: [] };
 
 try {
     if (fs.existsSync(statsFilePath)) {
         stats = JSON.parse(fs.readFileSync(statsFilePath, 'utf8'));
+        if (!stats.todayVisitors) stats.todayVisitors = [];
+        if (!stats.totalVisitors) stats.totalVisitors = [];
     }
 } catch (e) {
     console.error('Failed to read stats.json:', e);
@@ -276,7 +278,8 @@ function saveStats() {
 }
 
 const activeUsers = new Map(); // visitorId -> lastSeenTimestamp
-const todayVisitors = new Set(); // Keep track of unique visitors counted today (resets on day change/server reboot)
+const todayVisitors = new Set(stats.todayVisitors);
+const totalVisitors = new Set(stats.totalVisitors);
 
 setInterval(() => {
     const now = Date.now();
@@ -301,6 +304,7 @@ app.post('/api/visitor-heartbeat', (req, res) => {
     if (stats.lastDate !== thDateStr) {
         stats.today = 0;
         stats.lastDate = thDateStr;
+        stats.todayVisitors = [];
         todayVisitors.clear(); // Reset today's tracking set
         saveStats();
     }
@@ -308,11 +312,22 @@ app.post('/api/visitor-heartbeat', (req, res) => {
     // Update last seen
     activeUsers.set(visitorId, Date.now());
 
-    // Deduplicate unique visitors on backend (in case client is already active or reloads)
+    // Deduplicate unique visitors on backend
+    let updated = false;
+    if (!totalVisitors.has(visitorId)) {
+        totalVisitors.add(visitorId);
+        stats.totalVisitors.push(visitorId);
+        stats.total = totalVisitors.size;
+        updated = true;
+    }
     if (!todayVisitors.has(visitorId)) {
         todayVisitors.add(visitorId);
-        stats.total++;
-        stats.today++;
+        stats.todayVisitors.push(visitorId);
+        stats.today = todayVisitors.size;
+        updated = true;
+    }
+
+    if (updated) {
         saveStats();
     }
 
