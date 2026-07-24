@@ -644,9 +644,29 @@ app.get('/api/gisx/template', async (req, res) => {
         const prodsList = (options.productTypes || []).map(p => `${p.code} : ${p.name}`);
         const teamsList = (options.salesTeams || []).map(t => `${t.code} : ${t.name}`);
 
+        const subProdsList = [
+            "01 : ประกันกลุ่มลูกค้าทั่วไป",
+            "A : PTTGC Group",
+            "B : PTT Group",
+            "C : AIS Group",
+            "D : IRPC (PTT) Group",
+            "E : Intouch Advance AIS Group",
+            "F : Group Voluntary HIP",
+            "G : The Mall Group",
+            "P : Phra Dhammakaya Group",
+            "Q : Makro Group",
+            "R : PTTAC Group",
+            "S : PTTEP Group",
+            "SG01 : Group Compulsory Employee Benefit",
+            "T : TOP Group",
+            "U : PTTEP Services Group",
+            "V : PTTEP ED Group",
+            "W : OR Group"
+        ];
+
         // Populate DropdownData headers and values
-        ddWs.getRow(1).values = ['Titles', 'Provinces', 'AccountLOBs', 'Reinsurances', 'ProductTypes', 'SalesTeams'];
-        const maxLen = Math.max(titlesList.length, provincesList.length, accLobsList.length, reinsList.length, prodsList.length, teamsList.length);
+        ddWs.getRow(1).values = ['Titles', 'Provinces', 'AccountLOBs', 'Reinsurances', 'ProductTypes', 'SalesTeams', 'SubProducts'];
+        const maxLen = Math.max(titlesList.length, provincesList.length, accLobsList.length, reinsList.length, prodsList.length, teamsList.length, subProdsList.length);
         for (let i = 0; i < maxLen; i++) {
             const row = ddWs.getRow(i + 2);
             if (i < titlesList.length) row.getCell(1).value = titlesList[i];
@@ -655,6 +675,7 @@ app.get('/api/gisx/template', async (req, res) => {
             if (i < reinsList.length) row.getCell(4).value = reinsList[i];
             if (i < prodsList.length) row.getCell(5).value = prodsList[i];
             if (i < teamsList.length) row.getCell(6).value = teamsList[i];
+            if (i < subProdsList.length) row.getCell(7).value = subProdsList[i];
         }
 
         // Add validations for rows 2 to 100
@@ -710,6 +731,11 @@ app.get('/api/gisx/template', async (req, res) => {
                 type: 'list',
                 allowBlank: true,
                 formulae: ['"01"']
+            },
+            subProduct: {
+                type: 'list',
+                allowBlank: true,
+                formulae: [`=DropdownData!$G$2:$G$${subProdsList.length + 1}`]
             },
             planType: {
                 type: 'list',
@@ -819,7 +845,7 @@ app.get('/api/gisx/template', async (req, res) => {
             contactPhone: '',
             contactEmail: '',
             productType: '01',
-            subProduct: '',
+            subProduct: '01 : ประกันกลุ่มลูกค้าทั่วไป',
             ageAverage: '40',
             minAge: '2',
             maxAge: '80',
