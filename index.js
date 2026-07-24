@@ -760,7 +760,11 @@ app.get('/api/gisx/template', async (req, res) => {
             planType: {
                 type: 'list',
                 allowBlank: true,
-                formulae: ['"1 : ชีวิต,2 : อุบัติเหตุ,3 : ทุพพลภาพ,4 : สุขภาพ,5 : โรคร้ายแรง,6 : รพก.,7 : อุบัติเหตุกลุ่มส่วนบุคคล,9 : QA"']
+                formulae: ['"1 : ชีวิต,2 : อุบัติเหตุ,3 : ทุพพลภาพ,4 : สุขภาพ,5 : โรคร้ายแรง,6 : รพก.,7 : อุบัติเหตุกลุ่มส่วนบุคคล,9 : QA"'],
+                showErrorMessage: false,
+                showInputMessage: true,
+                promptTitle: 'เลือกแผนความคุ้มครอง',
+                prompt: 'เลือกแผนเดียวจากดรอปดาวน์ หรือพิมพ์เลือกหลายแผนแยกด้วยเครื่องหมายจุลภาค (,) เช่น: 1 : ชีวิต, 2 : อุบัติเหตุ (หรือระบุ: Select All เพื่อเลือกทั้งหมด)'
             },
             commPlanType1: {
                 type: 'list',
@@ -870,7 +874,7 @@ app.get('/api/gisx/template', async (req, res) => {
             minAge: '2',
             maxAge: '80',
             planNumber: 4,
-            planType: '1 : ชีวิต',
+            planType: '1 : ชีวิต, 2 : อุบัติเหตุ, 3 : ทุพพลภาพ',
             modeOfPayment: 'Monthly, รายเดือน',
             channel: 'Agent (บุคคลธรรมดา)',
             agentBrokerCode: '144660',
