@@ -621,13 +621,33 @@ app.get('/api/gisx/template', async (req, res) => {
             riskLevels: [{code:"Low",th:"Low"},{code:"Medium",th:"Medium"},{code:"High",th:"High"}],
             occupations: [{code:"Class 1",th:"Class 1"},{code:"Class 2",th:"Class 2"},{code:"Class 3",th:"Class 3"},{code:"Class 4",th:"Class 4"}],
             channels: [{code:"Agent (บุคคลธรรมดา)",th:"Agent (บุคคลธรรมดา)"}],
-            modeOfPayments: [{code:"Monthly",th:"รายเดือน"}]
+            modeOfPayments: [{code:"Monthly",th:"รายเดือน"}],
+            productTypes: [
+                { code: "00", name: "QA ทดสอบ" },
+                { code: "01", name: "ประกันกลุ่มลูกค้าทั่วไป" },
+                { code: "02", name: "ประกันอุบัติเหตุกลุ่ม" },
+                { code: "03", name: "ประกันอุบัติเหตุกลุ่ม Plus" },
+                { code: "04", name: "ประกันอุบัติเหตุกลุ่มระยะสั้น" },
+                { code: "05", name: "ประกันอุบัติเหตุกลุ่มระยะสั้น Plus" },
+                { code: "06", name: "ประกันตะกาฟุล" },
+                { code: "10", name: "ประกัน SME Package" },
+                { code: "11", name: "ประกัน House keeping" },
+                { code: "12", name: "ประกันสมัครใจ" },
+                { code: "13", name: "ประกันสินเชื่อ" },
+                { code: "14", name: "ประกันพิทักษ์สินเชื่อส่วนบุคคล (Credit shield)" },
+                { code: "15", name: "ประกัน Micro Insurance - Short Policy" },
+                { code: "16", name: "กองทุนหมู่บ้านและชุมชนเมือง" },
+                { code: "17", name: "ประกันสินเชื่อ Mortgage" },
+                { code: "18", name: "ประกัน CP Group" },
+                { code: "19", name: "ประกันกลุุ่ม DHealth" }
+            ]
         };
 
         const optionsPath = path.join(__dirname, 'dataset', 'gisx_options.json');
         if (fs.existsSync(optionsPath)) {
             try {
-                options = JSON.parse(fs.readFileSync(optionsPath, 'utf8'));
+                const synced = JSON.parse(fs.readFileSync(optionsPath, 'utf8'));
+                options = { ...options, ...synced };
             } catch (e) {
                 console.error('Error reading gisx_options.json:', e);
             }
@@ -730,7 +750,7 @@ app.get('/api/gisx/template', async (req, res) => {
             } : {
                 type: 'list',
                 allowBlank: true,
-                formulae: ['"01"']
+                formulae: ['"01 : ประกันกลุ่มลูกค้าทั่วไป"']
             },
             subProduct: {
                 type: 'list',
@@ -844,7 +864,7 @@ app.get('/api/gisx/template', async (req, res) => {
             contactMobile: '',
             contactPhone: '',
             contactEmail: '',
-            productType: '01',
+            productType: '01 : ประกันกลุ่มลูกค้าทั่วไป',
             subProduct: '01 : ประกันกลุ่มลูกค้าทั่วไป',
             ageAverage: '40',
             minAge: '2',
