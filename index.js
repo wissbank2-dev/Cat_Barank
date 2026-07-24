@@ -571,7 +571,6 @@ app.get('/api/gisx/template', async (req, res) => {
             { header: 'Plan: 5 โรคร้ายแรง (Yes/No) *', key: 'plan5', width: 22, required: true },
             { header: 'Plan: 6 รพก. (Yes/No) *', key: 'plan6', width: 22, required: true },
             { header: 'Plan: 7 อุบัติเหตุกลุ่มส่วนบุคคล (Yes/No) *', key: 'plan7', width: 32, required: true },
-            { header: 'Plan: 9 QA (Yes/No) *', key: 'plan9', width: 22, required: true },
             { header: 'Mode of Payment *', key: 'modeOfPayment', width: 25, required: true },
             
             // Agent/Broker
@@ -849,7 +848,6 @@ app.get('/api/gisx/template', async (req, res) => {
             plan5: { type: 'list', allowBlank: false, formulae: ['"Yes,No"'] },
             plan6: { type: 'list', allowBlank: false, formulae: ['"Yes,No"'] },
             plan7: { type: 'list', allowBlank: false, formulae: ['"Yes,No"'] },
-            plan9: { type: 'list', allowBlank: false, formulae: ['"Yes,No"'] },
             commPlanType1: {
                 type: 'list',
                 allowBlank: true,
@@ -990,7 +988,6 @@ app.get('/api/gisx/template', async (req, res) => {
             plan5: 'No',
             plan6: 'No',
             plan7: 'No',
-            plan9: 'No',
             modeOfPayment: 'Monthly, รายเดือน',
             channel: 'Agent (บุคคลธรรมดา)',
             agentBrokerCode: '144660',
@@ -1047,7 +1044,7 @@ app.post('/api/gisx/upload', upload.single('file'), async (req, res) => {
             'quotationNo', 'title', 'nameTh', 'nameEn', 'lineOfBusiness', 'riskLevel', 'occupationClass', 'effDate', 'effTime', 'endDate', 'endTime', 'language', 'copyCount',
             'address1', 'country', 'province', 'district', 'subDistrict', 'zipCode', 'contactName', 'contactPosition',
             'productType', 'subProduct', 'ageAverage', 'minAge', 'maxAge', 'planNumber',
-            'plan1', 'plan2', 'plan3', 'plan4', 'plan5', 'plan6', 'plan7', 'plan9',
+            'plan1', 'plan2', 'plan3', 'plan4', 'plan5', 'plan6', 'plan7',
             'modeOfPayment',
             'channel', 'agentBrokerCode', 'salesTeam', 'salesName', 'erType',
             'accTitle', 'accNameTh', 'accNameEn', 'accTaxId', 'accType', 'accHeadCountType', 'accLineOfBusiness', 'accRiskLevel', 'accOccupationClass'
@@ -1096,7 +1093,6 @@ app.post('/api/gisx/upload', upload.single('file'), async (req, res) => {
             'Plan: 5 โรคร้ายแรง (Yes/No) *': 'plan5',
             'Plan: 6 รพก. (Yes/No) *': 'plan6',
             'Plan: 7 อุบัติเหตุกลุ่มส่วนบุคคล (Yes/No) *': 'plan7',
-            'Plan: 9 QA (Yes/No) *': 'plan9',
             'Mode of Payment *': 'modeOfPayment',
             'Channel *': 'channel',
             'Agent/Broker Code *': 'agentBrokerCode',
@@ -1144,7 +1140,7 @@ app.post('/api/gisx/upload', upload.single('file'), async (req, res) => {
             'quotationNo', 'title', 'nameTh', 'nameEn', 'lineOfBusiness', 'riskLevel', 'occupationClass', 'effDate', 'effTime', 'endDate', 'endTime', 'language', 'copyCount',
             'address1', 'address2', 'country', 'province', 'district', 'subDistrict', 'zipCode', 'contactName', 'contactPosition', 'contactMobile', 'contactPhone', 'contactEmail',
             'productType', 'subProduct', 'ageAverage', 'minAge', 'maxAge', 'planNumber',
-            'plan1', 'plan2', 'plan3', 'plan4', 'plan5', 'plan6', 'plan7', 'plan9',
+            'plan1', 'plan2', 'plan3', 'plan4', 'plan5', 'plan6', 'plan7',
             'modeOfPayment',
             'channel', 'agentBrokerCode', 'salesTeam', 'salesName', 'erType', 'lossRatio', 'refundRate',
             'accTitle', 'accNameTh', 'accNameEn', 'accTaxId', 'accType', 'accHeadCountType', 'accHeadCountDesc', 'accLineOfBusiness', 'accRiskLevel', 'accOccupationClass',
@@ -1207,7 +1203,6 @@ app.post('/api/gisx/upload', upload.single('file'), async (req, res) => {
             if (String(rowData.plan5).toLowerCase() === 'yes') selectedPlans.push('5 : โรคร้ายแรง');
             if (String(rowData.plan6).toLowerCase() === 'yes') selectedPlans.push('6 : รพก.');
             if (String(rowData.plan7).toLowerCase() === 'yes') selectedPlans.push('7 : อุบัติเหตุกลุ่มส่วนบุคคล');
-            if (String(rowData.plan9).toLowerCase() === 'yes') selectedPlans.push('9 : QA');
             rowData.planType = selectedPlans.join(', ');
 
             // Validate fields
