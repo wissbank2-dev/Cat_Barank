@@ -305,37 +305,51 @@ const results = [];
 
                 if (valueText) {
                     if (valueText === 'Select All,เลือกทั้งหมด') {
-                        let selectAllItem = activeOverlay.getByText('Select all', { exact: false }).first();
-                        if (!(await selectAllItem.isVisible().catch(() => false))) {
-                            selectAllItem = activeOverlay.getByText('เลือกทั้งหมด', { exact: false }).first();
-                        }
+                        console.log(`[KUMA AUTO] Selecting all items one-by-one by checking selection state...`);
+                        const itemsToClick = await page.evaluate(() => {
+                            const overlays = Array.from(document.querySelectorAll('[data-qa="dropdown_overlay"]'));
+                            const activeOverlay = overlays.find(el => {
+                                const rect = el.getBoundingClientRect();
+                                const style = window.getComputedStyle(el);
+                                return rect.height > 0 && rect.width > 0 && style.display !== 'none' && style.visibility !== 'hidden' && style.opacity !== '0' && !el.className.includes('hidden') && !el.classList.contains('ant-select-dropdown-hidden');
+                            }) || overlays[overlays.length - 1] || document;
+                            
+                            const items = Array.from(activeOverlay.querySelectorAll('[data-qa^="dropdown_item"], [id^="dropdown-overlay-item-"], .ant-select-item-option'));
+                            return items.map(el => {
+                                const container = el.closest('.ant-select-item-option, .ant-select-item, [class*="option"], [class*="item"]') || el;
+                                const checkbox = container.querySelector('input[type="checkbox"]');
+                                const isSelected = el.classList.contains('ant-select-item-option-selected') || 
+                                                   el.getAttribute('aria-selected') === 'true' || 
+                                                   el.classList.contains('selected') ||
+                                                   container.classList.contains('ant-select-item-option-selected') || 
+                                                   container.getAttribute('aria-selected') === 'true' || 
+                                                   container.classList.contains('selected') ||
+                                                   container.classList.contains('checked') ||
+                                                   (checkbox && checkbox.checked) ||
+                                                   !!container.querySelector('.ant-select-item-option-state-icon, [class*="selected-icon"], [class*="checked-icon"]');
+                                return {
+                                    type: el.getAttribute('data-qa') ? 'data-qa' : (el.getAttribute('id') ? 'id' : null),
+                                    value: el.getAttribute('data-qa') || el.getAttribute('id'),
+                                    text: el.textContent.trim(),
+                                    isSelected
+                                };
+                            }).filter(item => item.value && !item.text.toLowerCase().includes('select all') && !item.text.includes('เลือกทั้งหมด'));
+                        });
 
-                        const isSelectAllVisible = await selectAllItem.isVisible().catch(() => false);
-                        console.log(`[KUMA AUTO] "Select all" element visibility: ${isSelectAllVisible}`);
-
-                        if (isSelectAllVisible) {
-                            console.log(`[KUMA AUTO] Clicking "Select all" item in dropdown overlay for "${dataQaName}"...`);
-                            await selectAllItem.scrollIntoViewIfNeeded().catch(() => {});
-                            await selectAllItem.click().catch(() => selectAllItem.click({ force: true }));
-                            await page.waitForTimeout(500);
-                        } else {
-                            const items = activeOverlay.locator('[data-qa^="dropdown_item"], [id^="dropdown-overlay-item-"], .ant-select-item-option');
-                            const count = await items.count().catch(() => 0);
-                            console.log(`[KUMA AUTO] "Select all" item not found. Total items in overlay: ${count}`);
-                            for (let i = 0; i < count; i++) {
-                                const text = await items.nth(i).textContent().catch(() => '');
-                                console.log(`[KUMA AUTO] Item ${i} text: "${text.trim()}"`);
-                            }
-
-                            console.log(`[KUMA AUTO] Selecting all ${count} items one by one in "${dataQaName}"...`);
-                            for (let i = 0; i < count; i++) {
-                                const text = await items.nth(i).textContent().catch(() => '');
-                                if (text.toLowerCase().includes('select all') || text.includes('เลือกทั้งหมด')) {
-                                    continue;
+                        console.log(`[KUMA AUTO] Found ${itemsToClick.length} total options:`, JSON.stringify(itemsToClick));
+                        for (const itemInfo of itemsToClick) {
+                            if (itemInfo.isSelected) {
+                                console.log(`[KUMA AUTO]     Option "${itemInfo.text}" is already selected, skipping.`);
+                            } else {
+                                console.log(`[KUMA AUTO]     Clicking unselected option: "${itemInfo.text}" (${itemInfo.type}: ${itemInfo.value})`);
+                                let itemLoc;
+                                if (itemInfo.type === 'data-qa') {
+                                    itemLoc = activeOverlay.locator(`[data-qa="${itemInfo.value}"]`).first();
+                                } else {
+                                    itemLoc = activeOverlay.locator(`#${itemInfo.value}`).first();
                                 }
-                                await items.nth(i).scrollIntoViewIfNeeded().catch(() => {});
-                                await items.nth(i).click().catch(() => items.nth(i).click({ force: true }));
-                                await page.waitForTimeout(200);
+                                await safeClick(itemLoc);
+                                await page.waitForTimeout(600);
                             }
                         }
 
