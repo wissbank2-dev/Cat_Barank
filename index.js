@@ -1033,7 +1033,9 @@ app.post('/api/gisx/upload', upload.single('file'), async (req, res) => {
         const requiredFields = [
             'quotationNo', 'title', 'nameTh', 'nameEn', 'lineOfBusiness', 'riskLevel', 'occupationClass', 'effDate', 'effTime', 'endDate', 'endTime', 'language', 'copyCount',
             'address1', 'country', 'province', 'district', 'subDistrict', 'zipCode', 'contactName', 'contactPosition',
-            'productType', 'subProduct', 'ageAverage', 'minAge', 'maxAge', 'planNumber', 'planType', 'modeOfPayment',
+            'productType', 'subProduct', 'ageAverage', 'minAge', 'maxAge', 'planNumber',
+            'plan1', 'plan2', 'plan3', 'plan4', 'plan5', 'plan6', 'plan7', 'plan9',
+            'modeOfPayment',
             'channel', 'agentBrokerCode', 'salesTeam', 'salesName', 'erType',
             'accTitle', 'accNameTh', 'accNameEn', 'accTaxId', 'accType', 'accHeadCountType', 'accLineOfBusiness', 'accRiskLevel', 'accOccupationClass'
         ];
@@ -1074,7 +1076,14 @@ app.post('/api/gisx/upload', upload.single('file'), async (req, res) => {
             'Min Age *': 'minAge',
             'Max Age *': 'maxAge',
             'Plan Number *': 'planNumber',
-            'Plan Type *': 'planType',
+            'Plan: 1 ชีวิต (Yes/No) *': 'plan1',
+            'Plan: 2 อุบัติเหตุ (Yes/No) *': 'plan2',
+            'Plan: 3 ทุพพลภาพ (Yes/No) *': 'plan3',
+            'Plan: 4 สุขภาพ (Yes/No) *': 'plan4',
+            'Plan: 5 โรคร้ายแรง (Yes/No) *': 'plan5',
+            'Plan: 6 รพก. (Yes/No) *': 'plan6',
+            'Plan: 7 อุบัติเหตุกลุ่มส่วนบุคคล (Yes/No) *': 'plan7',
+            'Plan: 9 QA (Yes/No) *': 'plan9',
             'Mode of Payment *': 'modeOfPayment',
             'Channel *': 'channel',
             'Agent/Broker Code *': 'agentBrokerCode',
@@ -1121,7 +1130,9 @@ app.post('/api/gisx/upload', upload.single('file'), async (req, res) => {
         const keysList = [
             'quotationNo', 'title', 'nameTh', 'nameEn', 'lineOfBusiness', 'riskLevel', 'occupationClass', 'effDate', 'effTime', 'endDate', 'endTime', 'language', 'copyCount',
             'address1', 'address2', 'country', 'province', 'district', 'subDistrict', 'zipCode', 'contactName', 'contactPosition', 'contactMobile', 'contactPhone', 'contactEmail',
-            'productType', 'subProduct', 'ageAverage', 'minAge', 'maxAge', 'planNumber', 'planType', 'modeOfPayment',
+            'productType', 'subProduct', 'ageAverage', 'minAge', 'maxAge', 'planNumber',
+            'plan1', 'plan2', 'plan3', 'plan4', 'plan5', 'plan6', 'plan7', 'plan9',
+            'modeOfPayment',
             'channel', 'agentBrokerCode', 'salesTeam', 'salesName', 'erType', 'lossRatio', 'refundRate',
             'accTitle', 'accNameTh', 'accNameEn', 'accTaxId', 'accType', 'accHeadCountType', 'accHeadCountDesc', 'accLineOfBusiness', 'accRiskLevel', 'accOccupationClass',
             'commPlanType1', 'commRate1', 'addCommRate1',
@@ -1173,6 +1184,18 @@ app.post('/api/gisx/upload', upload.single('file'), async (req, res) => {
             // Skip empty rows
             const isRowEmpty = Object.values(rowData).every(v => v === '');
             if (isRowEmpty) return;
+ 
+            // Combine individual plan selections into a single planType string
+            const selectedPlans = [];
+            if (String(rowData.plan1).toLowerCase() === 'yes') selectedPlans.push('1 : ชีวิต');
+            if (String(rowData.plan2).toLowerCase() === 'yes') selectedPlans.push('2 : อุบัติเหตุ');
+            if (String(rowData.plan3).toLowerCase() === 'yes') selectedPlans.push('3 : ทุพพลภาพ');
+            if (String(rowData.plan4).toLowerCase() === 'yes') selectedPlans.push('4 : สุขภาพ');
+            if (String(rowData.plan5).toLowerCase() === 'yes') selectedPlans.push('5 : โรคร้ายแรง');
+            if (String(rowData.plan6).toLowerCase() === 'yes') selectedPlans.push('6 : รพก.');
+            if (String(rowData.plan7).toLowerCase() === 'yes') selectedPlans.push('7 : อุบัติเหตุกลุ่มส่วนบุคคล');
+            if (String(rowData.plan9).toLowerCase() === 'yes') selectedPlans.push('9 : QA');
+            rowData.planType = selectedPlans.join(', ');
 
             // Validate fields
             const missing = [];
