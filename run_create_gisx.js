@@ -571,11 +571,17 @@ const results = [];
             const tableLocator = page.locator('table tbody tr').first();
             await tableLocator.waitFor({ state: 'visible', timeout: 15000 }).catch(() => {});
 
-            // Find and click the first row Case No link to enter detail view
-            const firstRowLink = page.locator('table tbody tr').first().locator('a').first();
-            const linkText = await firstRowLink.textContent().catch(() => '');
-            console.log(`[KUMA AUTO] Clicking Case link: "${linkText.trim()}" to enter detail page...`);
-            await firstRowLink.click({ force: true });
+            // Find and click the first row Case No cell (column index 1) to enter detail view
+            const caseCell = page.locator('table tbody tr').first().locator('td').nth(1);
+            const linkText = await caseCell.textContent().catch(() => '');
+            console.log(`[KUMA AUTO] Clicking Case No cell text: "${linkText.trim()}" to enter detail page...`);
+            
+            const cellClickable = caseCell.locator('a, span, button, div').first();
+            if (await cellClickable.count() > 0) {
+                await cellClickable.click({ force: true });
+            } else {
+                await caseCell.click({ force: true });
+            }
             await page.waitForTimeout(4000); // Wait for detail page to load
 
             // Wait for Approve button to be visible
