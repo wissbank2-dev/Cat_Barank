@@ -1306,27 +1306,14 @@ const results = [];
                 try {
                     await page.waitForTimeout(3000);
                     console.log('[KUMA AUTO] Searching for Submit Case confirmation modal...');
-                    const clicked = await page.evaluate(() => {
-                        const modalElement = document.querySelector('.ant-modal-content, .ant-modal, [role="dialog"], div[class*="modal"]');
-                        if (modalElement) {
-                            const modalButtons = Array.from(modalElement.querySelectorAll('button'));
-                            const modalSubmit = modalButtons.find(b => {
-                                const text = b.textContent.trim();
-                                return text === 'Submit' || text === 'ตกลง' || text === 'ยืนยัน' || text === 'สร้าง';
-                            });
-                            if (modalSubmit) {
-                                modalSubmit.click();
-                                return true;
-                            }
-                        }
-                        return false;
-                    });
+                    const modalSubmit = page.locator('.ant-modal-content:visible button:has-text("Submit"), [role="dialog"]:visible button:has-text("Submit"), .ant-modal:visible button:has-text("Submit"), [role="dialog"]:visible button:has-text("ตกลง"), [role="dialog"]:visible button:has-text("ยืนยัน")').first();
                     
-                    if (clicked) {
-                        console.log('[KUMA AUTO] Successfully clicked Submit inside the confirmation modal.');
+                    if (await modalSubmit.isVisible().catch(() => false)) {
+                        console.log('[KUMA AUTO] Clicking Submit button inside the visible confirmation modal...');
+                        await modalSubmit.click({ force: true });
                         await page.waitForTimeout(10000); // Wait for submit request to finish
                     } else {
-                        console.log('[KUMA AUTO] Confirm Submit Case modal button not found via DOM path check.');
+                        console.log('[KUMA AUTO] Confirm Submit Case modal button not found via visible locator.');
                     }
                 } catch (e) {
                     console.log('[KUMA AUTO] Failed to handle confirm submit inside modal:', e.message);
