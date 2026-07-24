@@ -595,7 +595,13 @@ app.get('/api/gisx/template', async (req, res) => {
             { header: 'Account Line of Business *', key: 'accLineOfBusiness', width: 28, required: true },
             { header: 'Account Risk Level *', key: 'accRiskLevel', width: 22, required: true },
             { header: 'Account Occupation Class *', key: 'accOccupationClass', width: 35, required: true },
-            { header: 'Account Plan Type', key: 'accPlanType', width: 30, required: false },
+            { header: 'AccPlan: 1 ชีวิต (Yes/No) *', key: 'accPlan1', width: 25, required: true },
+            { header: 'AccPlan: 2 อุบัติเหตุ (Yes/No) *', key: 'accPlan2', width: 25, required: true },
+            { header: 'AccPlan: 3 ทุพพลภาพ (Yes/No) *', key: 'accPlan3', width: 25, required: true },
+            { header: 'AccPlan: 4 สุขภาพ (Yes/No) *', key: 'accPlan4', width: 25, required: true },
+            { header: 'AccPlan: 5 โรคร้ายแรง (Yes/No) *', key: 'accPlan5', width: 25, required: true },
+            { header: 'AccPlan: 6 รพก. (Yes/No) *', key: 'accPlan6', width: 25, required: true },
+            { header: 'AccPlan: 7 อุบัติเหตุกลุ่มส่วนบุคคล (Yes/No) *', key: 'accPlan7', width: 35, required: true },
             { header: 'Account Payment Type *', key: 'accPaymentType', width: 25, required: true },
             { header: 'Account Paid To *', key: 'accPaidTo', width: 28, required: true },
             { header: 'Account Payment Description', key: 'accPaymentDesc', width: 30, required: false },
@@ -927,15 +933,13 @@ app.get('/api/gisx/template', async (req, res) => {
                 allowBlank: true,
                 formulae: ['"Class 1,Class 2,Class 3,Class 4"']
             },
-            accPlanType: {
-                type: 'list',
-                allowBlank: true,
-                formulae: ['"Select All,เลือกทั้งหมด,1 : ชีวิต,2 : อุบัติเหตุ,3 : ทุพพลภาพ,4 : สุขภาพ,5 : โรคร้ายแรง,6 : รพก.,7 : อุบัติเหตุกลุ่มส่วนบุคคล"'],
-                showErrorMessage: false,
-                showInputMessage: true,
-                promptTitle: 'เลือกแผนสำหรับบัญชี',
-                prompt: 'เลือกแผนเดียวจากดรอปดาวน์ หรือพิมพ์เลือกหลายแผนแยกด้วยเครื่องหมายจุลภาค (,) เช่น: 1 : ชีวิต, 2 : อุบัติเหตุ (หรือระบุ: Select All เพื่อเลือกทั้งหมด)'
-            },
+            accPlan1: { type: 'list', allowBlank: false, formulae: ['"Yes,No"'] },
+            accPlan2: { type: 'list', allowBlank: false, formulae: ['"Yes,No"'] },
+            accPlan3: { type: 'list', allowBlank: false, formulae: ['"Yes,No"'] },
+            accPlan4: { type: 'list', allowBlank: false, formulae: ['"Yes,No"'] },
+            accPlan5: { type: 'list', allowBlank: false, formulae: ['"Yes,No"'] },
+            accPlan6: { type: 'list', allowBlank: false, formulae: ['"Yes,No"'] },
+            accPlan7: { type: 'list', allowBlank: false, formulae: ['"Yes,No"'] },
             accPaymentType: {
                 type: 'list',
                 allowBlank: true,
@@ -1046,7 +1050,13 @@ app.get('/api/gisx/template', async (req, res) => {
             accLineOfBusiness: 'Ordinary',
             accRiskLevel: 'Low',
             accOccupationClass: 'Class 1',
-            accPlanType: 'Select All,เลือกทั้งหมด',
+            accPlan1: 'Yes',
+            accPlan2: 'Yes',
+            accPlan3: 'Yes',
+            accPlan4: 'No',
+            accPlan5: 'No',
+            accPlan6: 'No',
+            accPlan7: 'No',
             accPaymentType: 'Bank Transfer',
             accPaidTo: 'ผู้ถือกรมธรรม์ (Account)',
             accPaymentDesc: 'จ่ายค่าสินไหมทดแทน',
@@ -1091,7 +1101,8 @@ app.post('/api/gisx/upload', upload.single('file'), async (req, res) => {
             'plan1', 'plan2', 'plan3', 'plan4', 'plan5', 'plan6', 'plan7',
             'modeOfPayment',
             'channel', 'agentBrokerCode', 'salesTeam', 'salesName', 'erType',
-            'accTitle', 'accNameTh', 'accNameEn', 'accTaxId', 'accType', 'accHeadCountType', 'accLineOfBusiness', 'accRiskLevel', 'accOccupationClass', 'accPaymentType', 'accPaidTo'
+            'accTitle', 'accNameTh', 'accNameEn', 'accTaxId', 'accType', 'accHeadCountType', 'accLineOfBusiness', 'accRiskLevel', 'accOccupationClass', 'accPaymentType', 'accPaidTo',
+            'accPlan1', 'accPlan2', 'accPlan3', 'accPlan4', 'accPlan5', 'accPlan6', 'accPlan7'
         ];
 
         // Map column indices dynamically based on headers in row 1
@@ -1155,7 +1166,13 @@ app.post('/api/gisx/upload', upload.single('file'), async (req, res) => {
             'Account Line of Business *': 'accLineOfBusiness',
             'Account Risk Level *': 'accRiskLevel',
             'Account Occupation Class *': 'accOccupationClass',
-            'Account Plan Type': 'accPlanType',
+            'AccPlan: 1 ชีวิต (Yes/No) *': 'accPlan1',
+            'AccPlan: 2 อุบัติเหตุ (Yes/No) *': 'accPlan2',
+            'AccPlan: 3 ทุพพลภาพ (Yes/No) *': 'accPlan3',
+            'AccPlan: 4 สุขภาพ (Yes/No) *': 'accPlan4',
+            'AccPlan: 5 โรคร้ายแรง (Yes/No) *': 'accPlan5',
+            'AccPlan: 6 รพก. (Yes/No) *': 'accPlan6',
+            'AccPlan: 7 อุบัติเหตุกลุ่มส่วนบุคคล (Yes/No) *': 'accPlan7',
             'Account Payment Type *': 'accPaymentType',
             'Account Paid To *': 'accPaidTo',
             'Account Payment Description': 'accPaymentDesc',
@@ -1191,7 +1208,9 @@ app.post('/api/gisx/upload', upload.single('file'), async (req, res) => {
             'plan1', 'plan2', 'plan3', 'plan4', 'plan5', 'plan6', 'plan7',
             'modeOfPayment',
             'channel', 'agentBrokerCode', 'salesTeam', 'salesName', 'erType', 'lossRatio', 'refundRate',
-            'accTitle', 'accNameTh', 'accNameEn', 'accTaxId', 'accType', 'accHeadCountType', 'accHeadCountDesc', 'accLineOfBusiness', 'accRiskLevel', 'accOccupationClass', 'accPlanType', 'accPaymentType', 'accPaidTo', 'accPaymentDesc',
+            'accTitle', 'accNameTh', 'accNameEn', 'accTaxId', 'accType', 'accHeadCountType', 'accHeadCountDesc', 'accLineOfBusiness', 'accRiskLevel', 'accOccupationClass',
+            'accPlan1', 'accPlan2', 'accPlan3', 'accPlan4', 'accPlan5', 'accPlan6', 'accPlan7',
+            'accPaymentType', 'accPaidTo', 'accPaymentDesc',
             'commPlanType1', 'commRate1', 'addCommRate1',
             'commPlanType2', 'commRate2', 'addCommRate2',
             'commPlanType3', 'commRate3', 'addCommRate3',
@@ -1252,6 +1271,17 @@ app.post('/api/gisx/upload', upload.single('file'), async (req, res) => {
             if (String(rowData.plan6).toLowerCase() === 'yes') selectedPlans.push('6 : รพก.');
             if (String(rowData.plan7).toLowerCase() === 'yes') selectedPlans.push('7 : อุบัติเหตุกลุ่มส่วนบุคคล');
             rowData.planType = selectedPlans.join(', ');
+
+            // Combine individual account plan selections into a single accPlanType string
+            const selectedAccPlans = [];
+            if (String(rowData.accPlan1).toLowerCase() === 'yes') selectedAccPlans.push('1 : ชีวิต');
+            if (String(rowData.accPlan2).toLowerCase() === 'yes') selectedAccPlans.push('2 : อุบัติเหตุ');
+            if (String(rowData.accPlan3).toLowerCase() === 'yes') selectedAccPlans.push('3 : ทุพพลภาพ');
+            if (String(rowData.accPlan4).toLowerCase() === 'yes') selectedAccPlans.push('4 : สุขภาพ');
+            if (String(rowData.accPlan5).toLowerCase() === 'yes') selectedAccPlans.push('5 : โรคร้ายแรง');
+            if (String(rowData.accPlan6).toLowerCase() === 'yes') selectedAccPlans.push('6 : รพก.');
+            if (String(rowData.accPlan7).toLowerCase() === 'yes') selectedAccPlans.push('7 : อุบัติเหตุกลุ่มส่วนบุคคล');
+            rowData.accPlanType = selectedAccPlans.join(', ');
 
             // Validate fields
             const missing = [];
