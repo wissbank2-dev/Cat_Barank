@@ -110,18 +110,6 @@ const results = [];
     }
 
     const context = await browser.newContext({ viewport: null });
-    
-    // Optimize performance by blocking images, media, fonts, and tracking beacons
-    await context.route('**/*', (route, request) => {
-        const type = request.resourceType();
-        const url = request.url();
-        if (type === 'image' || type === 'font' || type === 'media' || url.includes('beacon') || url.includes('rum') || url.includes('cloudflare')) {
-            route.abort();
-        } else {
-            route.continue();
-        }
-    });
-
     const page = await context.newPage();
 
     // Listen to network request failures and console errors
@@ -976,11 +964,13 @@ const results = [];
             try {
                 const agentCodeInput = page.locator('input[name="agent_broker.agent_broker_info.agent_broker_code"]').first();
                 await agentCodeInput.waitFor({ state: 'visible', timeout: 5000 });
+                await agentCodeInput.click({ force: true });
                 await agentCodeInput.fill(item.agentBrokerCode || '144660');
+                await page.keyboard.press('Enter');
                 await page.keyboard.press('Tab');
                 await page.waitForTimeout(5000); // Wait for API call
             } catch (e) {
-                console.log('[KUMA AUTO]   ⚠️  Agent Code input not found');
+                console.log('[KUMA AUTO]   ⚠️  Agent Code input error:', e.message);
             }
 
             if (item.salesTeam) {
