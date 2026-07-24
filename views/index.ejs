@@ -4541,6 +4541,20 @@ ${matrixTestCases.map((tc, i) => `${i + 1}. ${tc}`).join('\n')}`;
         let gisxLogVisible = true;
 
         window.runGisxAutomation = async function () {
+            const username = document.getElementById('gisxUsername')?.value?.trim() ?? '';
+            const password = document.getElementById('gisxPassword')?.value?.trim() ?? '';
+
+            if (!username) {
+                showToast('กรุณาระบุ Username ของ GISX ก่อนนะเมี้ยว! 🔑');
+                document.getElementById('gisxUsername')?.focus();
+                return;
+            }
+            if (!password) {
+                showToast('กรุณาระบุ Password ของ GISX ก่อนนะเมี้ยว! 🔑');
+                document.getElementById('gisxPassword')?.focus();
+                return;
+            }
+
             if (gisxCases.length === 0) {
                 showToast('ไม่มีข้อมูลเคสในตาราง กรุณาอัปโหลดไฟล์ Excel ก่อนนะเมี้ยว! 😿');
                 return;
