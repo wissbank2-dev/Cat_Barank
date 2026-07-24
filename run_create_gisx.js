@@ -729,9 +729,13 @@ const results = [];
                 await fillDropdown('field_type_dropdown_name_detail_policy.policy_holder_address.district', item.district);
                 await page.waitForTimeout(1500);
 
-                // Verify if selected successfully
-                const labelText = await page.locator('div[data-qa="field_type_dropdown_name_detail_policy.policy_holder_address.district"] #dropdown-label-ddl').textContent().catch(() => '');
-                if (labelText && labelText.trim() !== 'Select' && labelText.trim() !== 'เลือก') {
+                // Verify if selected successfully (check for any placeholder keywords)
+                const labelText = await page.locator('div[data-qa="field_type_dropdown_name_detail_policy.policy_holder_address.district"] selection-item, div[data-qa="field_type_dropdown_name_detail_policy.policy_holder_address.district"] [class*="selection-item"], div[data-qa="field_type_dropdown_name_detail_policy.policy_holder_address.district"] #dropdown-label-ddl').first().textContent().catch(() => '');
+                const isPlaceholder = !labelText || 
+                                      labelText.toLowerCase().includes('select') || 
+                                      labelText.includes('เลือก') || 
+                                      labelText.trim() === '';
+                if (!isPlaceholder) {
                     break;
                 }
                 
@@ -747,9 +751,13 @@ const results = [];
                 await fillDropdown('field_type_dropdown_name_detail_policy.policy_holder_address.sub_district', item.subDistrict);
                 await page.waitForTimeout(1500);
 
-                // Verify if selected successfully
-                const labelText = await page.locator('div[data-qa="field_type_dropdown_name_detail_policy.policy_holder_address.sub_district"] #dropdown-label-ddl').textContent().catch(() => '');
-                if (labelText && labelText.trim() !== 'Select' && labelText.trim() !== 'เลือก') {
+                // Verify if selected successfully (check for any placeholder keywords)
+                const labelText = await page.locator('div[data-qa="field_type_dropdown_name_detail_policy.policy_holder_address.sub_district"] selection-item, div[data-qa="field_type_dropdown_name_detail_policy.policy_holder_address.sub_district"] [class*="selection-item"], div[data-qa="field_type_dropdown_name_detail_policy.policy_holder_address.sub_district"] #dropdown-label-ddl').first().textContent().catch(() => '');
+                const isPlaceholder = !labelText || 
+                                      labelText.toLowerCase().includes('select') || 
+                                      labelText.includes('เลือก') || 
+                                      labelText.trim() === '';
+                if (!isPlaceholder) {
                     break;
                 }
                 
