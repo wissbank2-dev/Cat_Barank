@@ -142,6 +142,9 @@ const results = [];
     }
 
     async function fillDropdown(dataQaName, valueText = null, index = 0) {
+        if (valueText === undefined || valueText === null || valueText === '') {
+            return;
+        }
         const safeClick = async (loc) => {
             await loc.scrollIntoViewIfNeeded().catch(() => {});
             try {
@@ -967,9 +970,13 @@ const results = [];
                 console.log('[KUMA AUTO]   ⚠️  Agent Code input not found');
             }
 
-            await fillDropdown('field_type_dropdown_name_agent_broker.mtl_sales_info.sales_team', item.salesTeam);
-            await page.waitForTimeout(2000); // Wait for sales names to load based on team selection
-            await fillDropdown('field_type_dropdown_name_agent_broker.mtl_sales_info.sales_name', item.salesName);
+            if (item.salesTeam) {
+                await fillDropdown('field_type_dropdown_name_agent_broker.mtl_sales_info.sales_team', item.salesTeam);
+                await page.waitForTimeout(2000); // Wait for sales names to load based on team selection
+            }
+            if (item.salesName) {
+                await fillDropdown('field_type_dropdown_name_agent_broker.mtl_sales_info.sales_name', item.salesName);
+            }
 
             // Click "+ Add Commission Rate" and fill commission fields
             try {
