@@ -446,14 +446,25 @@ const results = [];
                             }
                         } catch (e) {}
 
-                        const applyBtn = activeOverlay.locator('[data-qa="btn_dropdown_confirm"], button:has-text("Apply"), button:has-text("ตกลง"), button:has-text("นำไปใช้"), button:has-text("OK")').first();
-                        if (await applyBtn.isVisible().catch(() => false)) {
-                            console.log(`[KUMA AUTO]     Clicking Apply button...`);
-                            await safeClick(applyBtn);
-                            await page.waitForTimeout(600);
-                        } else {
-                            console.log(`[KUMA AUTO]     ⚠️ Apply button not visible!`);
-                        }
+                        console.log(`[KUMA AUTO]     Clicking Apply button browser-side...`);
+                        await page.evaluate(() => {
+                            const overlays = Array.from(document.querySelectorAll('[data-qa="dropdown_overlay"]'));
+                            const activeOverlay = overlays.find(el => {
+                                const rect = el.getBoundingClientRect();
+                                const style = window.getComputedStyle(el);
+                                return rect.height > 0 && rect.width > 0 && style.display !== 'none' && style.visibility !== 'hidden' && style.opacity !== '0' && !el.className.includes('hidden') && !el.classList.contains('ant-select-dropdown-hidden');
+                            }) || overlays[overlays.length - 1];
+                            if (!activeOverlay) return;
+                            const applyBtn = activeOverlay.querySelector('[data-qa="btn_dropdown_confirm"]') ||
+                                             Array.from(activeOverlay.querySelectorAll('button, div, span')).find(btn => {
+                                                 const txt = btn.textContent.trim().toLowerCase();
+                                                 return txt === 'apply' || txt === 'ตกลง' || txt === 'นำไปใช้' || txt === 'ok';
+                                             });
+                            if (applyBtn) {
+                                applyBtn.click();
+                            }
+                        });
+                        await page.waitForTimeout(1000);
                     } else {
                         let matched = null;
                         for (const alt of alternatives) {
