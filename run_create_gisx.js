@@ -1218,13 +1218,19 @@ const results = [];
                 await fillDropdown('field_type_dropdown_name_claim_payment_object.claim_payment.0.plan_type', item.accPlanType || 'Select All,เลือกทั้งหมด');
                 await page.waitForTimeout(300);
 
-                // 2. Payment Type (Select first option)
-                await fillDropdown('field_type_dropdown_name_claim_payment_object.claim_payment.0.payment_type', '(first option)');
+                // 2. Payment Type
+                await fillDropdown('field_type_dropdown_name_claim_payment_object.claim_payment.0.payment_type', item.accPaymentType || 'Bank Transfer');
                 await page.waitForTimeout(300);
 
-                // 3. Paid To (Select first option)
-                await fillDropdown('field_type_dropdown_name_claim_payment_object.claim_payment.0.paid_type', '(first option)');
-                await page.waitForTimeout(500);
+                // 3. Paid To
+                await fillDropdown('field_type_dropdown_name_claim_payment_object.claim_payment.0.paid_type', item.accPaidTo || 'ผู้ถือกรมธรรม์ (Account)');
+                await page.waitForTimeout(300);
+ 
+                // 4. Payment Description
+                if (item.accPaymentDesc) {
+                    await fillText('input[name="claim_payment_object.claim_payment.0.payment_description"], input[name$="payment_description"]', item.accPaymentDesc);
+                    await page.waitForTimeout(300);
+                }
 
                 // Submit modal
                 const modalSubmitBtn = page.locator('#account-detail-modal-content_Account\\ Detail button:has-text("Submit"), button:has-text("Submit"), button:has-text("ตกลง"), button:has-text("บันทึก")').first();

@@ -596,6 +596,9 @@ app.get('/api/gisx/template', async (req, res) => {
             { header: 'Account Risk Level *', key: 'accRiskLevel', width: 22, required: true },
             { header: 'Account Occupation Class *', key: 'accOccupationClass', width: 35, required: true },
             { header: 'Account Plan Type', key: 'accPlanType', width: 30, required: false },
+            { header: 'Account Payment Type *', key: 'accPaymentType', width: 25, required: true },
+            { header: 'Account Paid To *', key: 'accPaidTo', width: 28, required: true },
+            { header: 'Account Payment Description', key: 'accPaymentDesc', width: 30, required: false },
 
             // Commission Rates
             { header: 'Commission Plan Type', key: 'commPlanType1', width: 25, required: false },
@@ -665,7 +668,31 @@ app.get('/api/gisx/template', async (req, res) => {
         ddWs.state = 'hidden'; // Hide the helper sheet
         
         const titlesList = options.titles || [];
-        const provincesList = ["กทม.", "นครสวรรค์", "นนทบุรี"];
+        let provincesList = ["กทม.", "นครสวรรค์", "นนทบุรี"];
+        let addressData = [];
+        const addressDataPath = path.join(__dirname, 'dataset', 'thai_address.json');
+        if (fs.existsSync(addressDataPath)) {
+            try {
+                addressData = JSON.parse(fs.readFileSync(addressDataPath, 'utf8'));
+                // Map Bangkok name to "กทม." and clean district names
+                addressData.forEach(p => {
+                    if (p.name_th === 'กรุงเทพมหานคร') {
+                        p.name_th = 'กทม.';
+                    }
+                    if (p.name_th === 'กทม.') {
+                        p.districts.forEach(d => {
+                            if (d.name_th.startsWith('เขต')) {
+                                d.name_th = d.name_th.substring(3);
+                            }
+                        });
+                    }
+                });
+                provincesList = addressData.map(p => p.name_th);
+            } catch (e) {
+                console.error('Failed to parse thai_address.json:', e);
+            }
+        }
+
         const accLobsList = (options.lineOfBusinesses || []).map(lob => `${lob.code} : ${lob.th || lob.en}`);
         const reinsList = (options.reinsuranceTypes || []).map(r => `${r.code} : ${r.name}`);
         const prodsList = (options.productTypes || []).map(p => `${p.code} : ${p.name}`);
@@ -690,31 +717,6 @@ app.get('/api/gisx/template', async (req, res) => {
             "V : PTTEP ED Group",
             "W : OR Group"
         ];
-
-        // Address Lookup Database for Dependent Dropdowns
-        const addressData = {
-            "กทม.": {
-                districts: ["วัฒนา", "บางรัก"],
-                subdistricts: {
-                    "วัฒนา": { list: ["คลองเตยเหนือ", "คลองตันเหนือ"], zip: "10110" },
-                    "บางรัก": { list: ["บางรัก", "มหาพฤฒาราม"], zip: "10500" }
-                }
-            },
-            "นครสวรรค์": {
-                districts: ["ชุมตาบง", "เมืองนครสวรรค์"],
-                subdistricts: {
-                    "ชุมตาบง": { list: ["ชุมตาบง", "ปางสวรรค์"], zip: "60150" },
-                    "เมืองนครสวรรค์": { list: ["ปากน้ำโพ", "วัดไทร"], zip: "60000" }
-                }
-            },
-            "นนทบุรี": {
-                districts: ["ปากเกร็ด", "เมืองนนทบุรี"],
-                subdistricts: {
-                    "ปากเกร็ด": { list: ["ปากเกร็ด", "บางตลาด"], zip: "11120" },
-                    "เมืองนนทบุรี": { list: ["สวนใหญ่", "ตลาดขวัญ"], zip: "11000" }
-                }
-            }
-        };
 
         function getColumnLetter(col) {
             let letter = '';
@@ -742,45 +744,63 @@ app.get('/api/gisx/template', async (req, res) => {
 
         // Populate address lookup tables in DropdownData sheet starting from column 8 (Column H)
         let addrCol = 8;
-        for (const [province, provData] of Object.entries(addressData)) {
-            const colLetter = getColumnLetter(addrCol);
-            
-            // Header
-            ddWs.getCell(1, addrCol).value = province + '_Districts';
-            // Values
-            provData.districts.forEach((dist, idx) => {
-                ddWs.getCell(idx + 2, addrCol).value = dist;
-            });
-            // Define named range for the province (districts list)
-            workbook.definedNames.add(province, `DropdownData!$${colLetter}$2:$${colLetter}$${provData.districts.length + 1}`);
-            addrCol++;
-            
-            for (const [district, distData] of Object.entries(provData.subdistricts)) {
-                const subColLetter = getColumnLetter(addrCol);
+        if (addressData.length > 0) {
+            // Write districts lists for each province
+            addressData.forEach(p => {
+                const colLetter = getColumnLetter(addrCol);
+                const districts = p.districts.map(d => d.name_th);
                 
                 // Header
-                ddWs.getCell(1, addrCol).value = district + '_Subdistricts';
+                ddWs.getCell(1, addrCol).value = p.name_th + '_Districts';
                 // Values
-                distData.list.forEach((sub, idx) => {
-                    ddWs.getCell(idx + 2, addrCol).value = sub;
+                districts.forEach((dist, idx) => {
+                    ddWs.getCell(idx + 2, addrCol).value = dist;
                 });
-                // Define named range for the district (subdistricts list)
-                workbook.definedNames.add(district, `DropdownData!$${subColLetter}$2:$${subColLetter}$${distData.list.length + 1}`);
-                addrCol++;
                 
-                // Define named ranges for each subdistrict zip code
-                distData.list.forEach((sub, idx) => {
-                    const zipColLetter = getColumnLetter(addrCol);
+                // Define named range for the province (pointing to its districts list)
+                const cleanProvinceName = p.name_th.replace(/[^a-zA-Z0-9ก-๙]/g, '');
+                workbook.definedNames.add(`DropdownData!$${colLetter}$2:$${colLetter}$${districts.length + 1}`, cleanProvinceName);
+                addrCol++;
+            });
+
+            // Write subdistricts lists for each district
+            const definedDistrictNames = new Set();
+            addressData.forEach(p => {
+                p.districts.forEach(d => {
+                    const cleanDistrictName = d.name_th.replace(/[^a-zA-Z0-9ก-๙]/g, '');
+                    if (definedDistrictNames.has(cleanDistrictName)) return;
+                    definedDistrictNames.add(cleanDistrictName);
+                    
+                    const colLetter = getColumnLetter(addrCol);
+                    const subdistricts = d.sub_districts || [];
+                    if (subdistricts.length === 0) return;
                     
                     // Header
-                    ddWs.getCell(1, addrCol).value = sub + '_ZipVal';
-                    // Zip Value
-                    ddWs.getCell(2, addrCol).value = distData.zip;
-                    // Define named range for the subdistrict Zip (pointing to the zip cell)
-                    workbook.definedNames.add(sub + '_Zip', `DropdownData!$${zipColLetter}$2:$${zipColLetter}$2`);
+                    ddWs.getCell(1, addrCol).value = d.name_th + '_Subdistricts';
+                    // Values
+                    subdistricts.forEach((sub, idx) => {
+                        ddWs.getCell(idx + 2, addrCol).value = sub.name_th;
+                    });
+                    
+                    // Define named range for the district (pointing to its subdistricts list)
+                    workbook.definedNames.add(`DropdownData!$${colLetter}$2:$${colLetter}$${subdistricts.length + 1}`, cleanDistrictName);
                     addrCol++;
+                    
+                    // Define named ranges for each subdistrict zip code
+                    subdistricts.forEach(sub => {
+                        const zipColLetter = getColumnLetter(addrCol);
+                        const cleanSubName = sub.name_th.replace(/[^a-zA-Z0-9ก-๙]/g, '');
+                        
+                        ddWs.getCell(1, addrCol).value = sub.name_th + '_ZipVal';
+                        ddWs.getCell(2, addrCol).value = String(sub.zip_code);
+                        
+                        try {
+                            workbook.definedNames.add(`DropdownData!$${zipColLetter}$2:$${zipColLetter}$2`, `${cleanSubName}_Zip`);
+                        } catch (e) {}
+                        addrCol++;
+                    });
                 });
-            }
+            });
         }
 
         // Add validations for rows 2 to 100
@@ -915,6 +935,16 @@ app.get('/api/gisx/template', async (req, res) => {
                 showInputMessage: true,
                 promptTitle: 'เลือกแผนสำหรับบัญชี',
                 prompt: 'เลือกแผนเดียวจากดรอปดาวน์ หรือพิมพ์เลือกหลายแผนแยกด้วยเครื่องหมายจุลภาค (,) เช่น: 1 : ชีวิต, 2 : อุบัติเหตุ (หรือระบุ: Select All เพื่อเลือกทั้งหมด)'
+            },
+            accPaymentType: {
+                type: 'list',
+                allowBlank: true,
+                formulae: ['"Bank Transfer,Cheque,Cash,Other"']
+            },
+            accPaidTo: {
+                type: 'list',
+                allowBlank: true,
+                formulae: ['"ผู้ถือกรมธรรม์ (Account),ผู้เอาประกันภัย (Insured),โรงพยาบาล (Hospital),อื่นๆ (Other)"']
             }
         };
 
@@ -1017,6 +1047,9 @@ app.get('/api/gisx/template', async (req, res) => {
             accRiskLevel: 'Low',
             accOccupationClass: 'Class 1',
             accPlanType: 'Select All,เลือกทั้งหมด',
+            accPaymentType: 'Bank Transfer',
+            accPaidTo: 'ผู้ถือกรมธรรม์ (Account)',
+            accPaymentDesc: 'จ่ายค่าสินไหมทดแทน',
             
             // Commission Rates Demo Values
             commPlanType1: '1 : ชีวิต',
@@ -1058,7 +1091,7 @@ app.post('/api/gisx/upload', upload.single('file'), async (req, res) => {
             'plan1', 'plan2', 'plan3', 'plan4', 'plan5', 'plan6', 'plan7',
             'modeOfPayment',
             'channel', 'agentBrokerCode', 'salesTeam', 'salesName', 'erType',
-            'accTitle', 'accNameTh', 'accNameEn', 'accTaxId', 'accType', 'accHeadCountType', 'accLineOfBusiness', 'accRiskLevel', 'accOccupationClass'
+            'accTitle', 'accNameTh', 'accNameEn', 'accTaxId', 'accType', 'accHeadCountType', 'accLineOfBusiness', 'accRiskLevel', 'accOccupationClass', 'accPaymentType', 'accPaidTo'
         ];
 
         // Map column indices dynamically based on headers in row 1
@@ -1123,6 +1156,9 @@ app.post('/api/gisx/upload', upload.single('file'), async (req, res) => {
             'Account Risk Level *': 'accRiskLevel',
             'Account Occupation Class *': 'accOccupationClass',
             'Account Plan Type': 'accPlanType',
+            'Account Payment Type *': 'accPaymentType',
+            'Account Paid To *': 'accPaidTo',
+            'Account Payment Description': 'accPaymentDesc',
             'Commission Plan Type': 'commPlanType1',
             'Commission Rate (%)': 'commRate1',
             'Additional Commission (%)': 'addCommRate1',
@@ -1155,7 +1191,7 @@ app.post('/api/gisx/upload', upload.single('file'), async (req, res) => {
             'plan1', 'plan2', 'plan3', 'plan4', 'plan5', 'plan6', 'plan7',
             'modeOfPayment',
             'channel', 'agentBrokerCode', 'salesTeam', 'salesName', 'erType', 'lossRatio', 'refundRate',
-            'accTitle', 'accNameTh', 'accNameEn', 'accTaxId', 'accType', 'accHeadCountType', 'accHeadCountDesc', 'accLineOfBusiness', 'accRiskLevel', 'accOccupationClass', 'accPlanType',
+            'accTitle', 'accNameTh', 'accNameEn', 'accTaxId', 'accType', 'accHeadCountType', 'accHeadCountDesc', 'accLineOfBusiness', 'accRiskLevel', 'accOccupationClass', 'accPlanType', 'accPaymentType', 'accPaidTo', 'accPaymentDesc',
             'commPlanType1', 'commRate1', 'addCommRate1',
             'commPlanType2', 'commRate2', 'addCommRate2',
             'commPlanType3', 'commRate3', 'addCommRate3',
