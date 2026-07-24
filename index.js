@@ -658,7 +658,7 @@ app.get('/api/gisx/template', async (req, res) => {
         ddWs.state = 'hidden'; // Hide the helper sheet
         
         const titlesList = options.titles || [];
-        const provincesList = options.provinces || [];
+        const provincesList = ["กทม.", "นครสวรรค์", "นนทบุรี"];
         const accLobsList = (options.lineOfBusinesses || []).map(lob => `${lob.code} : ${lob.th || lob.en}`);
         const reinsList = (options.reinsuranceTypes || []).map(r => `${r.code} : ${r.name}`);
         const prodsList = (options.productTypes || []).map(p => `${p.code} : ${p.name}`);
@@ -684,7 +684,42 @@ app.get('/api/gisx/template', async (req, res) => {
             "W : OR Group"
         ];
 
-        // Populate DropdownData headers and values
+        // Address Lookup Database for Dependent Dropdowns
+        const addressData = {
+            "กทม.": {
+                districts: ["วัฒนา", "บางรัก"],
+                subdistricts: {
+                    "วัฒนา": { list: ["คลองเตยเหนือ", "คลองตันเหนือ"], zip: "10110" },
+                    "บางรัก": { list: ["บางรัก", "มหาพฤฒาราม"], zip: "10500" }
+                }
+            },
+            "นครสวรรค์": {
+                districts: ["ชุมตาบง", "เมืองนครสวรรค์"],
+                subdistricts: {
+                    "ชุมตาบง": { list: ["ชุมตาบง", "ปางสวรรค์"], zip: "60150" },
+                    "เมืองนครสวรรค์": { list: ["ปากน้ำโพ", "วัดไทร"], zip: "60000" }
+                }
+            },
+            "นนทบุรี": {
+                districts: ["ปากเกร็ด", "เมืองนนทบุรี"],
+                subdistricts: {
+                    "ปากเกร็ด": { list: ["ปากเกร็ด", "บางตลาด"], zip: "11120" },
+                    "เมืองนนทบุรี": { list: ["สวนใหญ่", "ตลาดขวัญ"], zip: "11000" }
+                }
+            }
+        };
+
+        function getColumnLetter(col) {
+            let letter = '';
+            while (col > 0) {
+                let temp = (col - 1) % 26;
+                letter = String.fromCharCode(65 + temp) + letter;
+                col = Math.floor((col - temp - 1) / 26);
+            }
+            return letter;
+        }
+
+        // Populate DropdownData headers and values (Columns 1-7)
         ddWs.getRow(1).values = ['Titles', 'Provinces', 'AccountLOBs', 'Reinsurances', 'ProductTypes', 'SalesTeams', 'SubProducts'];
         const maxLen = Math.max(titlesList.length, provincesList.length, accLobsList.length, reinsList.length, prodsList.length, teamsList.length, subProdsList.length);
         for (let i = 0; i < maxLen; i++) {
@@ -696,6 +731,49 @@ app.get('/api/gisx/template', async (req, res) => {
             if (i < prodsList.length) row.getCell(5).value = prodsList[i];
             if (i < teamsList.length) row.getCell(6).value = teamsList[i];
             if (i < subProdsList.length) row.getCell(7).value = subProdsList[i];
+        }
+
+        // Populate address lookup tables in DropdownData sheet starting from column 8 (Column H)
+        let addrCol = 8;
+        for (const [province, provData] of Object.entries(addressData)) {
+            const colLetter = getColumnLetter(addrCol);
+            
+            // Header
+            ddWs.getCell(1, addrCol).value = province + '_Districts';
+            // Values
+            provData.districts.forEach((dist, idx) => {
+                ddWs.getCell(idx + 2, addrCol).value = dist;
+            });
+            // Define named range for the province (districts list)
+            workbook.definedNames.add(province, `DropdownData!$${colLetter}$2:$${colLetter}$${provData.districts.length + 1}`);
+            addrCol++;
+            
+            for (const [district, distData] of Object.entries(provData.subdistricts)) {
+                const subColLetter = getColumnLetter(addrCol);
+                
+                // Header
+                ddWs.getCell(1, addrCol).value = district + '_Subdistricts';
+                // Values
+                distData.list.forEach((sub, idx) => {
+                    ddWs.getCell(idx + 2, addrCol).value = sub;
+                });
+                // Define named range for the district (subdistricts list)
+                workbook.definedNames.add(district, `DropdownData!$${subColLetter}$2:$${subColLetter}$${distData.list.length + 1}`);
+                addrCol++;
+                
+                // Define named ranges for each subdistrict zip code
+                distData.list.forEach((sub, idx) => {
+                    const zipColLetter = getColumnLetter(addrCol);
+                    
+                    // Header
+                    ddWs.getCell(1, addrCol).value = sub + '_ZipVal';
+                    // Zip Value
+                    ddWs.getCell(2, addrCol).value = distData.zip;
+                    // Define named range for the subdistrict Zip (pointing to the zip cell)
+                    workbook.definedNames.add(sub + '_Zip', `DropdownData!$${zipColLetter}$2:$${zipColLetter}$2`);
+                    addrCol++;
+                });
+            }
         }
 
         // Add validations for rows 2 to 100
@@ -838,6 +916,31 @@ app.get('/api/gisx/template', async (req, res) => {
                     cell.numFmt = '0';
                 }
             });
+
+            // Dependent cascading dropdowns for Address fields using INDIRECT
+            const provinceCellRef = `Q${r}`;
+            const districtCellRef = `R${r}`;
+            const subDistrictCellRef = `S${r}`;
+            
+            ws.getCell(`R${r}`).dataValidation = {
+                type: 'list',
+                allowBlank: true,
+                formulae: [`=INDIRECT(${provinceCellRef})`]
+            };
+            ws.getCell(`S${r}`).dataValidation = {
+                type: 'list',
+                allowBlank: true,
+                formulae: [`=INDIRECT(${districtCellRef})`]
+            };
+            ws.getCell(`T${r}`).dataValidation = {
+                type: 'list',
+                allowBlank: true,
+                formulae: [`=INDIRECT(${subDistrictCellRef}&"_Zip")`],
+                showErrorMessage: false,
+                showInputMessage: true,
+                promptTitle: 'รหัสไปรษณีย์',
+                prompt: 'ดึงข้อมูลรหัสไปรษณีย์อัตโนมัติตามตำบลที่เลือก หรือระบุใหม่เองได้'
+            };
         }
 
         // Add a demo/example row on row 2 (first row under headers)
@@ -861,8 +964,8 @@ app.get('/api/gisx/template', async (req, res) => {
             country: 'Thailand',
             province: 'กทม.',
             district: 'วัฒนา',
-            subDistrict: 'คลองเตย',
-            zipCode: '10310',
+            subDistrict: 'คลองเตยเหนือ',
+            zipCode: '10110',
             contactName: 'สมชาย มั่งคั่งคุมะ',
             contactPosition: 'ผู้จัดการ',
             contactMobile: '',
