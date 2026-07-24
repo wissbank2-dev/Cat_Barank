@@ -604,11 +604,24 @@ const results = [];
                 console.log('[KUMA AUTO] No approve confirmation pop-up handled:', e.message);
             }
 
+            // Verify that the status changed to Approve (button becomes hidden and/or "Approve" text is found in status area)
+            console.log('[KUMA AUTO] Verifying case status has changed to Approve...');
+            try {
+                await Promise.race([
+                    approveBtn.waitFor({ state: 'hidden', timeout: 15000 }),
+                    page.locator('span:text-is("Approve"), div:text-is("Approve"), span:text-is("อนุมัติ"), div:text-is("อนุมัติ")').first().waitFor({ state: 'visible', timeout: 15000 })
+                ]);
+                console.log('[KUMA AUTO] Case status verified as APPROVED.');
+            } catch (verifErr) {
+                throw new Error(`Approval verification timed out: ${verifErr.message}`);
+            }
+
             await takeScreenshot(`${caseLabel}_10_APPROVED`);
             console.log(`[KUMA AUTO] ✅ Case ${caseIdx + 1} approved successfully!`);
         } catch (approveErr) {
             console.log('[KUMA AUTO] ⚠️ Automatic Approval failed:', approveErr.message);
             await takeScreenshot(`${caseLabel}_APPROVE_FAILED`);
+            throw approveErr; // Rethrow to let the main case runner catch it and mark case as error!
         }
     }
 
