@@ -4,6 +4,7 @@
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
+    "build": "npx playwright install",
     "dev": "node index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
