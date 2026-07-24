@@ -561,6 +561,51 @@ const results = [];
         }
     }
 
+    async function approveCase(caseLabel, caseIdx) {
+        try {
+            console.log('[KUMA AUTO] --- AUTOMATIC APPROVAL PROCESS ---');
+            await page.waitForTimeout(5000); // Wait for redirection back to list page
+
+            // Wait for register case list table to load
+            console.log('[KUMA AUTO] Waiting for Register Case list table...');
+            const tableLocator = page.locator('table tbody tr').first();
+            await tableLocator.waitFor({ state: 'visible', timeout: 15000 }).catch(() => {});
+
+            // Find and click the first row Case No link to enter detail view
+            const firstRowLink = page.locator('table tbody tr').first().locator('a').first();
+            const linkText = await firstRowLink.textContent().catch(() => '');
+            console.log(`[KUMA AUTO] Clicking Case link: "${linkText.trim()}" to enter detail page...`);
+            await firstRowLink.click({ force: true });
+            await page.waitForTimeout(4000); // Wait for detail page to load
+
+            // Wait for Approve button to be visible
+            const approveBtn = page.locator('button:has-text("Approve"), button:has-text("อนุมัติ")').first();
+            await approveBtn.waitFor({ state: 'visible', timeout: 10000 });
+
+            console.log('[KUMA AUTO] Clicking Approve button...');
+            await approveBtn.click({ force: true });
+            await page.waitForTimeout(3000);
+
+            // Handle Approve Confirmation dialog if it appears
+            try {
+                const confirmBtn = page.locator('button:has-text("Confirm"), button:has-text("Approve"), button:has-text("ตกลง"), button:has-text("ยืนยัน")').filter({ state: 'visible' }).last();
+                if (await confirmBtn.isVisible().catch(() => false)) {
+                    console.log('[KUMA AUTO] Approve confirmation pop-up detected. Clicking Confirm...');
+                    await confirmBtn.click({ force: true });
+                    await page.waitForTimeout(6000); // Wait for approval to save
+                }
+            } catch (e) {
+                console.log('[KUMA AUTO] No approve confirmation pop-up handled:', e.message);
+            }
+
+            await takeScreenshot(`${caseLabel}_10_APPROVED`);
+            console.log(`[KUMA AUTO] ✅ Case ${caseIdx + 1} approved successfully!`);
+        } catch (approveErr) {
+            console.log('[KUMA AUTO] ⚠️ Automatic Approval failed:', approveErr.message);
+            await takeScreenshot(`${caseLabel}_APPROVE_FAILED`);
+        }
+    }
+
     // ---------- Login once ----------
     console.log(`[KUMA AUTO] Navigating to ${GISX_BASE_URL}/new-business/register-case ...`);
     
@@ -1331,6 +1376,7 @@ const results = [];
                 await handleConfirmModal();
                 await takeScreenshot(`${caseLabel}_09_DONE`);
                 console.log(`[KUMA AUTO] ✅ Case ${caseIdx + 1} submitted successfully!`);
+                await approveCase(caseLabel, caseIdx);
             } else {
                 console.log('[KUMA AUTO]   ℹ️  Submit button not visible — attempting backup selector...');
                 // Fallback to general Submit but make sure it isn't "Save Draft" or "บันทึกร่าง"
@@ -1340,6 +1386,7 @@ const results = [];
                     await handleConfirmModal();
                     await takeScreenshot(`${caseLabel}_09_DONE`);
                     console.log(`[KUMA AUTO] ✅ Case ${caseIdx + 1} submitted successfully (via fallback selector)!`);
+                    await approveCase(caseLabel, caseIdx);
                 } else {
                     console.log('[KUMA AUTO]   ℹ️  Submit button not found — may require manual review.');
                     await takeScreenshot(`${caseLabel}_09_submit_not_found`);
