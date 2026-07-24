@@ -110,6 +110,18 @@ const results = [];
     }
 
     const context = await browser.newContext({ viewport: null });
+    
+    // Optimize performance by blocking images, media, fonts, and tracking beacons
+    await context.route('**/*', (route, request) => {
+        const type = request.resourceType();
+        const url = request.url();
+        if (type === 'image' || type === 'font' || type === 'media' || url.includes('beacon') || url.includes('rum') || url.includes('cloudflare')) {
+            route.abort();
+        } else {
+            route.continue();
+        }
+    });
+
     const page = await context.newPage();
 
     // Listen to network request failures and console errors
@@ -720,7 +732,8 @@ const results = [];
                 }
             });
 
-            await page.waitForTimeout(6000);
+            // Wait for key Quotation No. input element to render instead of hardcoded 6s
+            await page.locator('input[placeholder*="Quotation" i], input[placeholder*="ใบเสนอราคา" i]').first().waitFor({ state: 'visible', timeout: 15000 }).catch(() => {});
             const currentUrl = page.url();
             console.log(`[KUMA AUTO] Create page URL: ${currentUrl}`);
             await takeScreenshot(`${caseLabel}_01_create_page`);
@@ -734,7 +747,7 @@ const results = [];
             // ====================================================
             console.log('[KUMA AUTO] --- SUB-TAB: Policy Detail ---');
             await clickEl('a:has-text("Policy Detail"), button:has-text("Policy Detail")');
-            await page.waitForTimeout(1000);
+            await page.waitForTimeout(200);
 
             // 1. Quotation No.
             await fillText(
@@ -767,14 +780,14 @@ const results = [];
                 'field_type_dropdown_name_detail_policy.policy_info.line_of_business',
                 item.lineOfBusiness
             );
-            await page.waitForTimeout(2000);
+            await page.waitForTimeout(300);
 
             // 6. Risk Level
             await fillDropdown(
                 'field_type_dropdown_name_detail_policy.policy_info.risk_level',
                 item.riskLevel
             );
-            await page.waitForTimeout(2000);
+            await page.waitForTimeout(300);
 
             // 7. Occupational Classification
             await fillDropdown(
@@ -811,11 +824,11 @@ const results = [];
             // 13-16. Country > Province > District > Sub District
             await fillDropdown('field_type_dropdown_name_detail_policy.policy_holder_address.country', item.country);
             await fillDropdown('field_type_dropdown_name_detail_policy.policy_holder_address.province', item.province);
-            await page.waitForTimeout(2000);
+            await page.waitForTimeout(300);
             // Fill District (with Province re-select retry if options are blank/empty)
             for (let retryDist = 0; retryDist < 3; retryDist++) {
                 await fillDropdown('field_type_dropdown_name_detail_policy.policy_holder_address.district', item.district);
-                await page.waitForTimeout(1500);
+                await page.waitForTimeout(300);
 
                 // Verify if selected successfully (check for any placeholder keywords)
                 const labelText = await page.locator('div[data-qa="field_type_dropdown_name_detail_policy.policy_holder_address.district"] selection-item, div[data-qa="field_type_dropdown_name_detail_policy.policy_holder_address.district"] [class*="selection-item"], div[data-qa="field_type_dropdown_name_detail_policy.policy_holder_address.district"] #dropdown-label-ddl').first().textContent().catch(() => '');
@@ -837,7 +850,7 @@ const results = [];
             // Fill Sub District (with District re-select retry if options are blank/empty)
             for (let retrySub = 0; retrySub < 3; retrySub++) {
                 await fillDropdown('field_type_dropdown_name_detail_policy.policy_holder_address.sub_district', item.subDistrict);
-                await page.waitForTimeout(1500);
+                await page.waitForTimeout(300);
 
                 // Verify if selected successfully (check for any placeholder keywords)
                 const labelText = await page.locator('div[data-qa="field_type_dropdown_name_detail_policy.policy_holder_address.sub_district"] selection-item, div[data-qa="field_type_dropdown_name_detail_policy.policy_holder_address.sub_district"] [class*="selection-item"], div[data-qa="field_type_dropdown_name_detail_policy.policy_holder_address.sub_district"] #dropdown-label-ddl').first().textContent().catch(() => '');
@@ -890,10 +903,10 @@ const results = [];
             // ====================================================
             console.log('[KUMA AUTO] --- SUB-TAB: Coverage ---');
             await clickEl('a:has-text("Coverage"), button:has-text("Coverage")');
-            await page.waitForTimeout(1000);
+            await page.waitForTimeout(200);
 
             await fillDropdown('field_type_dropdown_name_coverage.coverage_info.product_type', item.productType || '01');
-            await page.waitForTimeout(2000);
+            await page.waitForTimeout(300);
             await fillDropdown('field_type_dropdown_name_coverage.coverage_info.sub_product_type', item.subProduct);
 
             await fillText('div[data-qa="field_type_inputSelection_name_coverage.coverage_info.age_average"] input', item.ageAverage || '40');
@@ -914,7 +927,7 @@ const results = [];
             try {
                 const enterBtn = page.locator('div[data-qa="field_type_inputBtn_name_coverage.coverage_table.plan_number"] button').first();
                 await enterBtn.click().catch(() => enterBtn.click({ force: true }));
-                await page.waitForTimeout(2000);
+                await page.waitForTimeout(300);
             } catch (e) {}
 
             const ptSelector = 'div[data-qa="field_type_dropdown_name_coverage.coverage_table.plan_type"] [data-qa="btn_dropdown_toggle_ddl"]';
@@ -1084,7 +1097,8 @@ const results = [];
             const nextBtn = page.locator('button:has-text("Next"), button:has-text("ถัดไป")').last();
             await nextBtn.scrollIntoViewIfNeeded().catch(() => {});
             await nextBtn.click({ force: true });
-            await page.waitForTimeout(8000);
+            // Wait up to 15s for the Account Detail Step 2 tab or content to appear
+            await page.locator('a:has-text("Account Summary"), button:has-text("Account Summary"), button:has-text("Create Account")').first().waitFor({ state: 'visible', timeout: 15000 }).catch(() => {});
             await takeScreenshot(`${caseLabel}_06_step2_account`);
 
             // ====================================================
@@ -1098,7 +1112,7 @@ const results = [];
                 ).first();
                 await accountSummaryTab.scrollIntoViewIfNeeded().catch(() => {});
                 await accountSummaryTab.click({ force: true });
-                await page.waitForTimeout(2000);
+                await page.waitForTimeout(300);
             } catch (e) {}
 
             // Scroll down to find + Create Account button
@@ -1107,7 +1121,7 @@ const results = [];
                 el.scrollTop = el.scrollHeight;
                 window.scrollTo(0, document.body.scrollHeight);
             });
-            await page.waitForTimeout(1000);
+            await page.waitForTimeout(200);
 
             try {
                 await page.evaluate(() => {
@@ -1313,7 +1327,8 @@ const results = [];
             const nextBtn2 = page.locator('button:has-text("Next"), button:has-text("ถัดไป")').last();
             await nextBtn2.scrollIntoViewIfNeeded().catch(() => {});
             await nextBtn2.click({ force: true });
-            await page.waitForTimeout(6000);
+            // Wait for document upload elements to appear
+            await page.locator('button:has-text("Upload File"), span:has-text("Upload File"), div:has-text("Upload File")').first().waitFor({ state: 'visible', timeout: 15000 }).catch(() => {});
             
             // Use the user's provided PNG file for uploading
             const dummyPath = path.join(__dirname, 'dummy.png');
@@ -1392,7 +1407,8 @@ const results = [];
             const nextBtn3 = page.locator('button:has-text("Next"), button:has-text("ถัดไป")').last();
             await nextBtn3.scrollIntoViewIfNeeded().catch(() => {});
             await nextBtn3.click({ force: true });
-            await page.waitForTimeout(6000);
+            // Wait for summary elements to appear
+            await page.locator('button:text-is("Submit"), button:text-is("Confirm"), button:text-is("สร้าง"), button:text-is("ส่งใบสมัคร"), button:has-text("Submit Case")').first().waitFor({ state: 'visible', timeout: 15000 }).catch(() => {});
             await takeScreenshot(`${caseLabel}_08_step4_summary`);
 
             // ====================================================
@@ -1402,14 +1418,16 @@ const results = [];
 
             const handleConfirmModal = async () => {
                 try {
-                    await page.waitForTimeout(3000);
+                    await page.waitForTimeout(500);
                     console.log('[KUMA AUTO] Searching for Submit Case confirmation modal...');
                     const modalSubmit = page.locator('button:has-text("Submit"), button:has-text("ตกลง"), button:has-text("ยืนยัน")').filter({ state: 'visible' }).last();
                     
                     if (await modalSubmit.isVisible().catch(() => false)) {
                         console.log('[KUMA AUTO] Clicking Submit button inside the visible confirmation modal...');
                         await modalSubmit.click({ force: true });
-                        await page.waitForTimeout(10000); // Wait for submit request to finish
+                        // Wait for submit request to finish
+                        await page.waitForLoadState('networkidle').catch(() => {});
+                        await page.waitForTimeout(1000);
                     } else {
                         console.log('[KUMA AUTO] Confirm Submit Case modal button not found via visible locator.');
                     }
@@ -1464,7 +1482,7 @@ const results = [];
         // Brief pause between cases
         if (caseIdx < cases.length - 1) {
             console.log('[KUMA AUTO] Waiting 3s before next case...');
-            await page.waitForTimeout(3000);
+            await page.waitForTimeout(1000);
         }
     }
 
