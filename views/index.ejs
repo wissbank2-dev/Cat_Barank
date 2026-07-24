@@ -1423,6 +1423,25 @@
                 </p>
             </div>
 
+            <!-- GISX Credentials Form -->
+            <div class="bg-white rounded-[2rem] p-6 shadow-xl border-2 border-rose-100 mb-8 fade-in">
+                <h3 class="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
+                    <span>🔑</span> ข้อมูลเข้าสู่ระบบ GISX (สำหรับใช้รันบอทอัตโนมัติ)
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="flex flex-col gap-1">
+                        <label for="gisxUsername" class="text-xs text-gray-400 font-semibold">Username *</label>
+                        <input id="gisxUsername" type="text" placeholder="ระบุ Username ของ GISX"
+                            class="px-4 py-2 rounded-xl border border-rose-100 focus:outline-none focus:ring-2 focus:ring-rose-400 text-sm" />
+                    </div>
+                    <div class="flex flex-col gap-1">
+                        <label for="gisxPassword" class="text-xs text-gray-400 font-semibold">Password *</label>
+                        <input id="gisxPassword" type="password" placeholder="ระบุ Password ของ GISX"
+                            class="px-4 py-2 rounded-xl border border-rose-100 focus:outline-none focus:ring-2 focus:ring-rose-400 text-sm" />
+                    </div>
+                </div>
+            </div>
+
             <!-- Download Template & Upload Card Grid -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                 <!-- Download Template -->
@@ -4557,10 +4576,13 @@ ${matrixTestCases.map((tc, i) => `${i + 1}. ${tc}`).join('\n')}`;
             try {
                 const cleanCases = validCases.map(({ isValid, missingFields, rowNum, ...rest }) => rest);
 
+                const username = document.getElementById('gisxUsername')?.value ?? '';
+                const password = document.getElementById('gisxPassword')?.value ?? '';
+
                 const startRes = await fetch('/api/gisx/run', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ cases: cleanCases, headless })
+                    body: JSON.stringify({ cases: cleanCases, headless, username, password })
                 });
 
                 const startData = await startRes.json();

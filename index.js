@@ -1395,7 +1395,7 @@ app.post('/api/gisx/sync', async (req, res) => {
 // 3. POST /api/gisx/run — start a new automation job
 app.post('/api/gisx/run', async (req, res) => {
     try {
-        const { cases, headless } = req.body;
+        const { cases, headless, username, password } = req.body;
 
         if (!cases || !Array.isArray(cases) || cases.length === 0) {
             return res.status(400).json({ error: 'ไม่พบข้อมูล cases ที่ต้องการรัน' });
@@ -1421,9 +1421,13 @@ app.post('/api/gisx/run', async (req, res) => {
 
         console.log(`[GISX RUN] Starting job ${jobId} with ${cases.length} case(s)...`);
 
+        const runEnv = { ...process.env };
+        if (username) runEnv.GISX_USERNAME = username;
+        if (password) runEnv.GISX_PASSWORD = password;
+
         const proc = spawn('node', scriptArgs, {
             cwd: __dirname,
-            env: { ...process.env }
+            env: runEnv
         });
 
         gisxJobs.set(jobId, { proc, clients: new Set(), inputFile, screenshotDir });
