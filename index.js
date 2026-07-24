@@ -595,6 +595,7 @@ app.get('/api/gisx/template', async (req, res) => {
             { header: 'Account Line of Business *', key: 'accLineOfBusiness', width: 28, required: true },
             { header: 'Account Risk Level *', key: 'accRiskLevel', width: 22, required: true },
             { header: 'Account Occupation Class *', key: 'accOccupationClass', width: 35, required: true },
+            { header: 'Account Plan Type', key: 'accPlanType', width: 30, required: false },
 
             // Commission Rates
             { header: 'Commission Plan Type', key: 'commPlanType1', width: 25, required: false },
@@ -905,6 +906,15 @@ app.get('/api/gisx/template', async (req, res) => {
                 type: 'list',
                 allowBlank: true,
                 formulae: ['"Class 1,Class 2,Class 3,Class 4"']
+            },
+            accPlanType: {
+                type: 'list',
+                allowBlank: true,
+                formulae: ['"Select All,เลือกทั้งหมด,1 : ชีวิต,2 : อุบัติเหตุ,3 : ทุพพลภาพ,4 : สุขภาพ,5 : โรคร้ายแรง,6 : รพก.,7 : อุบัติเหตุกลุ่มส่วนบุคคล"'],
+                showErrorMessage: false,
+                showInputMessage: true,
+                promptTitle: 'เลือกแผนสำหรับบัญชี',
+                prompt: 'เลือกแผนเดียวจากดรอปดาวน์ หรือพิมพ์เลือกหลายแผนแยกด้วยเครื่องหมายจุลภาค (,) เช่น: 1 : ชีวิต, 2 : อุบัติเหตุ (หรือระบุ: Select All เพื่อเลือกทั้งหมด)'
             }
         };
 
@@ -1006,6 +1016,7 @@ app.get('/api/gisx/template', async (req, res) => {
             accLineOfBusiness: 'Ordinary',
             accRiskLevel: 'Low',
             accOccupationClass: 'Class 1',
+            accPlanType: 'Select All,เลือกทั้งหมด',
             
             // Commission Rates Demo Values
             commPlanType1: '1 : ชีวิต',
@@ -1111,6 +1122,7 @@ app.post('/api/gisx/upload', upload.single('file'), async (req, res) => {
             'Account Line of Business *': 'accLineOfBusiness',
             'Account Risk Level *': 'accRiskLevel',
             'Account Occupation Class *': 'accOccupationClass',
+            'Account Plan Type': 'accPlanType',
             'Commission Plan Type': 'commPlanType1',
             'Commission Rate (%)': 'commRate1',
             'Additional Commission (%)': 'addCommRate1',
@@ -1143,7 +1155,7 @@ app.post('/api/gisx/upload', upload.single('file'), async (req, res) => {
             'plan1', 'plan2', 'plan3', 'plan4', 'plan5', 'plan6', 'plan7',
             'modeOfPayment',
             'channel', 'agentBrokerCode', 'salesTeam', 'salesName', 'erType', 'lossRatio', 'refundRate',
-            'accTitle', 'accNameTh', 'accNameEn', 'accTaxId', 'accType', 'accHeadCountType', 'accHeadCountDesc', 'accLineOfBusiness', 'accRiskLevel', 'accOccupationClass',
+            'accTitle', 'accNameTh', 'accNameEn', 'accTaxId', 'accType', 'accHeadCountType', 'accHeadCountDesc', 'accLineOfBusiness', 'accRiskLevel', 'accOccupationClass', 'accPlanType',
             'commPlanType1', 'commRate1', 'addCommRate1',
             'commPlanType2', 'commRate2', 'addCommRate2',
             'commPlanType3', 'commRate3', 'addCommRate3',

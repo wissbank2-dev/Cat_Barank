@@ -1215,7 +1215,7 @@ const results = [];
                 }
 
                 // 1. Plan Type
-                await fillDropdown('field_type_dropdown_name_claim_payment_object.claim_payment.0.plan_type', 'Select All,เลือกทั้งหมด');
+                await fillDropdown('field_type_dropdown_name_claim_payment_object.claim_payment.0.plan_type', item.accPlanType || 'Select All,เลือกทั้งหมด');
                 await page.waitForTimeout(300);
 
                 // 2. Payment Type (Select first option)
