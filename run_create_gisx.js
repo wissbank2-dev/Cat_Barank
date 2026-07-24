@@ -964,13 +964,25 @@ const results = [];
             try {
                 const agentCodeInput = page.locator('input[name="agent_broker.agent_broker_info.agent_broker_code"]').first();
                 await agentCodeInput.waitFor({ state: 'visible', timeout: 5000 });
-                console.log('[KUMA AUTO] Filling Agent Code...');
+                console.log('[KUMA AUTO] Typing Agent Code...');
                 await agentCodeInput.click({ force: true });
-                await agentCodeInput.fill(item.agentBrokerCode || '144660');
-                await page.waitForTimeout(1500); // Wait for autocomplete overlay to open
+                await agentCodeInput.focus();
+                await page.keyboard.press('Control+A');
+                await page.keyboard.press('Backspace');
+                await page.keyboard.type(item.agentBrokerCode || '144660');
+                await page.waitForTimeout(500);
+
+                // Click search magnifying glass icon
+                const searchIcon = page.locator('div[data-qa="field_type_text_name_agent_broker.agent_broker_info.agent_broker_code"] svg').first();
+                if (await searchIcon.isVisible().catch(() => false)) {
+                    console.log('[KUMA AUTO] Clicking search magnifying glass icon...');
+                    await searchIcon.click({ force: true });
+                }
+
+                await page.waitForTimeout(2000); // Wait for autocomplete overlay to open
 
                 // Click matching option in the autocomplete list if visible
-                const optionSelector = 'div[class*="option"], div[id*="option"], li[role="option"], [class*="Dropdown"], [class*="dropdown-item"]';
+                const optionSelector = 'div[class*="option"], div[id*="option"], li[role="option"], [class*="Dropdown"], [class*="dropdown-item"], .ant-select-item, [role="listbox"] [role="option"]';
                 const option = page.locator(optionSelector).filter({ hasText: item.agentBrokerCode || '144660' }).first();
                 if (await option.isVisible().catch(() => false)) {
                     console.log('[KUMA AUTO] Selecting agent from autocomplete dropdown...');
