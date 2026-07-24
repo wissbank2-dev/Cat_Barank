@@ -1306,7 +1306,7 @@ const results = [];
                 try {
                     await page.waitForTimeout(3000);
                     console.log('[KUMA AUTO] Searching for Submit Case confirmation modal...');
-                    const modalSubmit = page.locator('.ant-modal-content:visible button:has-text("Submit"), [role="dialog"]:visible button:has-text("Submit"), .ant-modal:visible button:has-text("Submit"), [role="dialog"]:visible button:has-text("ตกลง"), [role="dialog"]:visible button:has-text("ยืนยัน")').first();
+                    const modalSubmit = page.locator('button:has-text("Submit"), button:has-text("ตกลง"), button:has-text("ยืนยัน")').filter({ state: 'visible' }).last();
                     
                     if (await modalSubmit.isVisible().catch(() => false)) {
                         console.log('[KUMA AUTO] Clicking Submit button inside the visible confirmation modal...');
