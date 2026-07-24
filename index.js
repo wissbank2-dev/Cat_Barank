@@ -576,8 +576,8 @@ app.get('/api/gisx/template', async (req, res) => {
             // Agent/Broker
             { header: 'Channel *', key: 'channel', width: 25, required: true },
             { header: 'Agent/Broker Code *', key: 'agentBrokerCode', width: 22, required: true },
-            { header: 'Sales Team *', key: 'salesTeam', width: 22, required: true },
-            { header: 'Sales Name *', key: 'salesName', width: 25, required: true },
+            { header: 'Sales Team', key: 'salesTeam', width: 22, required: false },
+            { header: 'Sales Name', key: 'salesName', width: 25, required: false },
             
             // Experience Refund
             { header: 'Experience Refund (ER) *', key: 'erType', width: 25, required: true },
@@ -1100,7 +1100,7 @@ app.post('/api/gisx/upload', upload.single('file'), async (req, res) => {
             'productType', 'subProduct', 'ageAverage', 'minAge', 'maxAge', 'planNumber',
             'plan1', 'plan2', 'plan3', 'plan4', 'plan5', 'plan6', 'plan7',
             'modeOfPayment',
-            'channel', 'agentBrokerCode', 'salesTeam', 'salesName', 'erType',
+            'channel', 'agentBrokerCode', 'erType',
             'accTitle', 'accNameTh', 'accNameEn', 'accTaxId', 'accType', 'accHeadCountType', 'accLineOfBusiness', 'accRiskLevel', 'accOccupationClass', 'accPaymentType', 'accPaidTo',
             'accPlan1', 'accPlan2', 'accPlan3', 'accPlan4', 'accPlan5', 'accPlan6', 'accPlan7'
         ];
@@ -1151,8 +1151,8 @@ app.post('/api/gisx/upload', upload.single('file'), async (req, res) => {
             'Mode of Payment *': 'modeOfPayment',
             'Channel *': 'channel',
             'Agent/Broker Code *': 'agentBrokerCode',
-            'Sales Team *': 'salesTeam',
-            'Sales Name *': 'salesName',
+            'Sales Team': 'salesTeam',
+            'Sales Name': 'salesName',
             'Experience Refund (ER) *': 'erType',
             'Loss Ratio': 'lossRatio',
             'Refund Rate': 'refundRate',
