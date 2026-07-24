@@ -82,11 +82,32 @@ console.log(`[KUMA AUTO] Screenshots will be saved to: ${screenshotDir}`);
 const results = [];
 
 (async () => {
-    console.log('[KUMA AUTO] Launching browser...');
-    const browser = await chromium.launch({
-        headless: headless,
-        args: ['--start-maximized']
-    });
+    let browser;
+    try {
+        console.log('[KUMA AUTO] Launching browser...');
+        browser = await chromium.launch({
+            headless: headless,
+            args: ['--start-maximized']
+        });
+    } catch (launchErr) {
+        if (launchErr.message.includes("Executable doesn't exist") || launchErr.message.includes("Please run the following command")) {
+            console.log('[KUMA AUTO] Playwright browser not found. Automatically running "npx playwright install chromium" to install on the fly...');
+            try {
+                const { execSync } = require('child_process');
+                execSync('npx playwright install chromium', { stdio: 'inherit' });
+                console.log('[KUMA AUTO] Browser installed successfully! Retrying launch...');
+                browser = await chromium.launch({
+                    headless: headless,
+                    args: ['--start-maximized']
+                });
+            } catch (installErr) {
+                console.error('[KUMA AUTO] Failed to install Playwright browser automatically:', installErr.message);
+                throw launchErr;
+            }
+        } else {
+            throw launchErr;
+        }
+    }
 
     const context = await browser.newContext({ viewport: null });
     const page = await context.newPage();
