@@ -367,27 +367,67 @@ const results = [];
                     const alternatives = valueText.split(',').map(v => v.trim());
                     console.log(`[KUMA AUTO]   → alternatives to select: ${JSON.stringify(alternatives)} | hasApplyBtn: ${hasApplyBtn}`);
 
-                    if (hasApplyBtn) {
-                        for (const alt of alternatives) {
-                            const matched = await page.evaluate(({ value }) => {
-                                const overlays = Array.from(document.querySelectorAll('[data-qa="dropdown_overlay"]'));
-                                const activeOverlay = overlays.find(el => {
-                                    const rect = el.getBoundingClientRect();
-                                    const style = window.getComputedStyle(el);
-                                    return rect.height > 0 && rect.width > 0 && style.display !== 'none' && style.visibility !== 'hidden' && style.opacity !== '0' && !el.className.includes('hidden') && !el.classList.contains('ant-select-dropdown-hidden');
-                                }) || overlays[overlays.length - 1] || document;
-                                const items = Array.from(activeOverlay.querySelectorAll('[data-qa^="dropdown_item"], [id^="dropdown-overlay-item-"], .ant-select-item-option'));
-                                let match = items.find(el => el.textContent.trim().toLowerCase() === value.toLowerCase());
-                                if (!match) {
-                                    match = items.find(el => el.textContent.trim().toLowerCase().startsWith(value.toLowerCase()));
-                                }
-                                if (!match && value.length > 1) {
-                                    match = items.find(el => el.textContent.trim().toLowerCase().includes(value.toLowerCase()));
-                                }
-                                if (!match && /^\d+\s*:/.test(value)) {
-                                    const prefix = value.match(/^\d+\s*:/)[0].trim().toLowerCase();
+                    // Scroll to the top first to make sure top items are rendered in virtual list
+                    await page.evaluate(() => {
+                        const overlays = Array.from(document.querySelectorAll('[data-qa="dropdown_overlay"]'));
+                        const activeOverlay = overlays.find(el => {
+                            const rect = el.getBoundingClientRect();
+                            const style = window.getComputedStyle(el);
+                            return rect.height > 0 && rect.width > 0 && style.display !== 'none' && style.visibility !== 'hidden' && style.opacity !== '0' && !el.className.includes('hidden') && !el.classList.contains('ant-select-dropdown-hidden');
+                        }) || overlays[overlays.length - 1];
+                        if (!activeOverlay) return;
+                        const scrollable = Array.from(activeOverlay.querySelectorAll('*')).find(
+                            el => el.scrollHeight > el.clientHeight && 
+                                  (window.getComputedStyle(el).overflowY === 'auto' || 
+                                   window.getComputedStyle(el).overflowY === 'scroll' || 
+                                   el.classList.contains('rc-virtual-list-holder') || 
+                                   el.tagName === 'UL')
+                        );
+                        if (scrollable) {
+                            scrollable.scrollTop = 0;
+                        }
+                    });
+                    await page.waitForTimeout(300);
+
+                    let lastScrollTop = -1;
+                    let foundAll = false;
+                    const clickedAlts = new Set();
+
+                    for (let scrollStep = 0; scrollStep < 20; scrollStep++) {
+                        const visibleMatches = await page.evaluate(({ alternatives, clickedList }) => {
+                            const overlays = Array.from(document.querySelectorAll('[data-qa="dropdown_overlay"]'));
+                            const activeOverlay = overlays.find(el => {
+                                const rect = el.getBoundingClientRect();
+                                const style = window.getComputedStyle(el);
+                                return rect.height > 0 && rect.width > 0 && style.display !== 'none' && style.visibility !== 'hidden' && style.opacity !== '0' && !el.className.includes('hidden') && !el.classList.contains('ant-select-dropdown-hidden');
+                            }) || overlays[overlays.length - 1] || document;
+
+                            const items = Array.from(activeOverlay.querySelectorAll('[data-qa^="dropdown_item"], [id^="dropdown-overlay-item-"], .ant-select-item-option'));
+                            const found = [];
+
+                            for (const alt of alternatives) {
+                                if (clickedList.includes(alt)) continue;
+
+                                const cleanAlt = alt.toLowerCase().replace(/[\s\.]/g, '');
+                                let match = items.find(el => {
+                                    const textClean = el.textContent.trim().toLowerCase().replace(/[\s\.]/g, '');
+                                    
+                                    // Direct match
+                                    if (textClean === cleanAlt || textClean.startsWith(cleanAlt) || textClean.includes(cleanAlt)) {
+                                        return true;
+                                    }
+                                    // Province synonym match (e.g. กทม to กรุงเทพมหานคร)
+                                    if ((cleanAlt === 'กทม' || cleanAlt.includes('กรุงเทพ')) && textClean.includes('กรุงเทพ')) {
+                                        return true;
+                                    }
+                                    return false;
+                                });
+
+                                if (!match && /^\d+\s*:/.test(alt)) {
+                                    const prefix = alt.match(/^\d+\s*:/)[0].trim().toLowerCase();
                                     match = items.find(el => el.textContent.trim().toLowerCase().startsWith(prefix));
                                 }
+
                                 if (match) {
                                     const container = match.closest('.ant-select-item-option, .ant-select-item, [class*="option"], [class*="item"]') || match;
                                     const checkbox = container.querySelector('input[type="checkbox"]');
@@ -400,52 +440,78 @@ const results = [];
                                                        container.classList.contains('checked') ||
                                                        (checkbox && checkbox.checked) ||
                                                        !!container.querySelector('.ant-select-item-option-state-icon, [class*="selected-icon"], [class*="checked-icon"]');
-                                    if (match.getAttribute('data-qa')) {
-                                        return { type: 'data-qa', value: match.getAttribute('data-qa'), text: match.textContent.trim(), isSelected };
-                                    }
-                                    if (match.getAttribute('id')) {
-                                        return { type: 'id', value: match.getAttribute('id'), text: match.textContent.trim(), isSelected };
-                                    }
-                                }
-                                return null;
-                            }, { value: alt });
 
-                            if (matched) {
-                                if (matched.isSelected) {
-                                    console.log(`[KUMA AUTO]     Option "${alt}" ("${matched.text}") is already selected, skipping click.`);
-                                } else {
-                                    console.log(`[KUMA AUTO]     Matched "${alt}" to overlay item: "${matched.text}" (${matched.type}: ${matched.value})`);
-                                    let item;
-                                    if (matched.type === 'data-qa') {
-                                        item = activeOverlay.locator(`[data-qa="${matched.value}"]`).first();
-                                    } else {
-                                        item = activeOverlay.locator(`#${matched.value}`).first();
-                                    }
-                                    await safeClick(item);
-                                    await page.waitForTimeout(300);
+                                    found.push({
+                                        alt,
+                                        type: match.getAttribute('data-qa') ? 'data-qa' : (match.getAttribute('id') ? 'id' : 'class'),
+                                        value: match.getAttribute('data-qa') || match.getAttribute('id') || match.className,
+                                        text: match.textContent.trim(),
+                                        isSelected
+                                    });
                                 }
+                            }
+                            return found;
+                        }, { alternatives, clickedList: Array.from(clickedAlts) });
+
+                        for (const match of visibleMatches) {
+                            clickedAlts.add(match.alt);
+                            if (match.isSelected) {
+                                console.log(`[KUMA AUTO]     Option "${match.alt}" is already selected, skipping click.`);
                             } else {
-                                console.log(`[KUMA AUTO]     ⚠️ Could not match alternative "${alt}"`);
+                                console.log(`[KUMA AUTO]     Matched "${match.alt}" to overlay item: "${match.text}"`);
+                                let element;
+                                if (match.type === 'data-qa') {
+                                    element = activeOverlay.locator(`[data-qa="${match.value}"]`).first();
+                                } else if (match.type === 'id') {
+                                    element = activeOverlay.locator(`#${match.value}`).first();
+                                } else {
+                                    element = activeOverlay.locator(`text="${match.text}"`).first();
+                                }
+                                await safeClick(element);
+                                await page.waitForTimeout(300);
+                            }
+
+                            if (!hasApplyBtn) {
+                                foundAll = true;
+                                break;
                             }
                         }
-                        // Scroll the modal and page to the bottom if we are in modal to make sure Apply is visible!
-                        try {
-                            const isInModal = dataQaName.includes('account_detail') || dataQaName.includes('claim_payment_object') || dataQaName.includes('account_information');
-                            if (isInModal) {
-                                console.log('[KUMA AUTO] Scrolling modal/page to bottom before clicking Apply (Alternatives)...');
-                                await page.evaluate(() => {
-                                    const els = Array.from(document.querySelectorAll('*'));
-                                    els.forEach(el => {
-                                        if (el.scrollHeight > el.clientHeight) {
-                                            el.scrollTop = el.scrollHeight;
-                                        }
-                                    });
-                                    window.scrollTo(0, document.body.scrollHeight);
-                                });
-                                await page.waitForTimeout(600);
-                            }
-                        } catch (e) {}
 
+                        if (foundAll || clickedAlts.size === alternatives.length) {
+                            foundAll = true;
+                            break;
+                        }
+
+                        const scrollResult = await page.evaluate(() => {
+                            const overlays = Array.from(document.querySelectorAll('[data-qa="dropdown_overlay"]'));
+                            const activeOverlay = overlays.find(el => {
+                                const rect = el.getBoundingClientRect();
+                                const style = window.getComputedStyle(el);
+                                return rect.height > 0 && rect.width > 0 && style.display !== 'none' && style.visibility !== 'hidden' && style.opacity !== '0' && !el.className.includes('hidden') && !el.classList.contains('ant-select-dropdown-hidden');
+                            }) || overlays[overlays.length - 1];
+                            if (!activeOverlay) return { scrollTop: 0, reachedBottom: true };
+
+                            const scrollable = Array.from(activeOverlay.querySelectorAll('*')).find(
+                                el => el.scrollHeight > el.clientHeight && 
+                                      (window.getComputedStyle(el).overflowY === 'auto' || 
+                                       window.getComputedStyle(el).overflowY === 'scroll' || 
+                                       el.classList.contains('rc-virtual-list-holder') || 
+                                       el.tagName === 'UL')
+                            );
+                            if (!scrollable) return { scrollTop: 0, reachedBottom: true };
+
+                            scrollable.scrollTop += 200;
+                            return { scrollTop: scrollable.scrollTop, reachedBottom: (scrollable.scrollTop + scrollable.clientHeight >= scrollable.scrollHeight - 5) };
+                        });
+
+                        if (scrollResult.reachedBottom || scrollResult.scrollTop === lastScrollTop) {
+                            break;
+                        }
+                        lastScrollTop = scrollResult.scrollTop;
+                        await page.waitForTimeout(200);
+                    }
+
+                    if (hasApplyBtn) {
                         console.log(`[KUMA AUTO]     Clicking Apply button browser-side...`);
                         await page.evaluate(() => {
                             const overlays = Array.from(document.querySelectorAll('[data-qa="dropdown_overlay"]'));
@@ -465,65 +531,8 @@ const results = [];
                             }
                         });
                         await page.waitForTimeout(1000);
-                    } else {
-                        let matched = null;
-                        for (const alt of alternatives) {
-                            matched = await page.evaluate(({ value }) => {
-                                const overlays = Array.from(document.querySelectorAll('[data-qa="dropdown_overlay"]'));
-                                const activeOverlay = overlays.find(el => {
-                                    const rect = el.getBoundingClientRect();
-                                    const style = window.getComputedStyle(el);
-                                    return rect.height > 0 && rect.width > 0 && style.display !== 'none' && style.visibility !== 'hidden' && style.opacity !== '0' && !el.className.includes('hidden') && !el.classList.contains('ant-select-dropdown-hidden');
-                                }) || overlays[overlays.length - 1] || document;
-                                const items = Array.from(activeOverlay.querySelectorAll('[data-qa^="dropdown_item"], [id^="dropdown-overlay-item-"], .ant-select-item-option'));
-                                let match = items.find(el => el.textContent.trim().toLowerCase() === value.toLowerCase());
-                                if (!match) {
-                                    match = items.find(el => el.textContent.trim().toLowerCase().startsWith(value.toLowerCase()));
-                                }
-                                if (!match && value.length > 1) {
-                                    match = items.find(el => el.textContent.trim().toLowerCase().includes(value.toLowerCase()));
-                                }
-                                if (!match && /^\d+\s*:/.test(value)) {
-                                    const prefix = value.match(/^\d+\s*:/)[0].trim().toLowerCase();
-                                    match = items.find(el => el.textContent.trim().toLowerCase().startsWith(prefix));
-                                }
-                                if (match) {
-                                    if (match.getAttribute('data-qa')) {
-                                        return { type: 'data-qa', value: match.getAttribute('data-qa'), text: match.textContent.trim() };
-                                    }
-                                    if (match.getAttribute('id')) {
-                                        return { type: 'id', value: match.getAttribute('id'), text: match.textContent.trim() };
-                                    }
-                                }
-                                return null;
-                            }, { value: alt });
-                            if (matched) break;
-                        }
-
-                        if (matched) {
-                            console.log(`[KUMA AUTO]     Matched "${valueText}" to overlay item: "${matched.text}" (${matched.type}: ${matched.value})`);
-                            let option;
-                            if (matched.type === 'data-qa') {
-                                option = activeOverlay.locator(`[data-qa="${matched.value}"]`).first();
-                            } else {
-                                option = activeOverlay.locator(`#${matched.value}`).first();
-                            }
-                            await safeClick(option);
-                            await page.waitForTimeout(600);
-                        } else {
-                            // Fallback: select first option in list
-                            const firstOpt = activeOverlay.locator('[data-qa^="dropdown_item"], [id^="dropdown-overlay-item-"], .ant-select-item-option').first();
-                            if (await firstOpt.isVisible().catch(() => false)) {
-                                await safeClick(firstOpt);
-                                await page.waitForTimeout(600);
-                            } else {
-                                console.log(`[KUMA AUTO]   ⚠️  Option "${valueText}" not found in "${dataQaName}"`);
-                                await page.keyboard.press('Escape').catch(() => {});
-                            }
-                        }
                     }
                 } else {
-                    // Pick Nth option (0-indexed)
                     const items = activeOverlay.locator('[data-qa^="dropdown_item"], [id^="dropdown-overlay-item-"], .ant-select-item-option');
                     const targetItem = items.nth(targetOptIndex);
                     await targetItem.waitFor({ state: 'visible', timeout: 4000 }).catch(() => {});
@@ -532,11 +541,25 @@ const results = [];
                         await page.waitForTimeout(600);
                     }
                     if (hasApplyBtn) {
-                        const applyBtn = activeOverlay.locator('[data-qa="btn_dropdown_confirm"], button:has-text("Apply"), button:has-text("ตกลง"), button:has-text("นำไปใช้"), button:has-text("OK")').first();
-                        if (await applyBtn.isVisible().catch(() => false)) {
-                            await safeClick(applyBtn);
-                            await page.waitForTimeout(600);
-                        }
+                        console.log(`[KUMA AUTO]     Clicking Apply button browser-side (Index option)...`);
+                        await page.evaluate(() => {
+                            const overlays = Array.from(document.querySelectorAll('[data-qa="dropdown_overlay"]'));
+                            const activeOverlay = overlays.find(el => {
+                                const rect = el.getBoundingClientRect();
+                                const style = window.getComputedStyle(el);
+                                return rect.height > 0 && rect.width > 0 && style.display !== 'none' && style.visibility !== 'hidden' && style.opacity !== '0' && !el.className.includes('hidden') && !el.classList.contains('ant-select-dropdown-hidden');
+                            }) || overlays[overlays.length - 1];
+                            if (!activeOverlay) return;
+                            const applyBtn = activeOverlay.querySelector('[data-qa="btn_dropdown_confirm"]') ||
+                                             Array.from(activeOverlay.querySelectorAll('button, div, span')).find(btn => {
+                                                 const txt = btn.textContent.trim().toLowerCase();
+                                                 return txt === 'apply' || txt === 'ตกลง' || txt === 'นำไปใช้' || txt === 'ok';
+                                             });
+                            if (applyBtn) {
+                                applyBtn.click();
+                            }
+                        });
+                        await page.waitForTimeout(1000);
                     }
                 }
 
@@ -779,14 +802,14 @@ const results = [];
                 'field_type_dropdown_name_detail_policy.policy_info.line_of_business',
                 item.lineOfBusiness
             );
-            await page.waitForTimeout(300);
+            await page.waitForTimeout(1500); // Wait for risk level / other fields to refresh
 
             // 6. Risk Level
             await fillDropdown(
                 'field_type_dropdown_name_detail_policy.policy_info.risk_level',
                 item.riskLevel
             );
-            await page.waitForTimeout(300);
+            await page.waitForTimeout(4000); // Wait for occupational classification options to load via API
 
             // 7. Occupational Classification
             await fillDropdown(
@@ -823,11 +846,11 @@ const results = [];
             // 13-16. Country > Province > District > Sub District
             await fillDropdown('field_type_dropdown_name_detail_policy.policy_holder_address.country', item.country);
             await fillDropdown('field_type_dropdown_name_detail_policy.policy_holder_address.province', item.province);
-            await page.waitForTimeout(300);
+            await page.waitForTimeout(2500); // Wait for District options to load via API
             // Fill District (with Province re-select retry if options are blank/empty)
             for (let retryDist = 0; retryDist < 3; retryDist++) {
                 await fillDropdown('field_type_dropdown_name_detail_policy.policy_holder_address.district', item.district);
-                await page.waitForTimeout(300);
+                await page.waitForTimeout(1500); // Wait for Sub District options to load via API
 
                 // Verify if selected successfully (check for any placeholder keywords)
                 const labelText = await page.locator('div[data-qa="field_type_dropdown_name_detail_policy.policy_holder_address.district"] selection-item, div[data-qa="field_type_dropdown_name_detail_policy.policy_holder_address.district"] [class*="selection-item"], div[data-qa="field_type_dropdown_name_detail_policy.policy_holder_address.district"] #dropdown-label-ddl').first().textContent().catch(() => '');
@@ -849,7 +872,7 @@ const results = [];
             // Fill Sub District (with District re-select retry if options are blank/empty)
             for (let retrySub = 0; retrySub < 3; retrySub++) {
                 await fillDropdown('field_type_dropdown_name_detail_policy.policy_holder_address.sub_district', item.subDistrict);
-                await page.waitForTimeout(300);
+                await page.waitForTimeout(1500);
 
                 // Verify if selected successfully (check for any placeholder keywords)
                 const labelText = await page.locator('div[data-qa="field_type_dropdown_name_detail_policy.policy_holder_address.sub_district"] selection-item, div[data-qa="field_type_dropdown_name_detail_policy.policy_holder_address.sub_district"] [class*="selection-item"], div[data-qa="field_type_dropdown_name_detail_policy.policy_holder_address.sub_district"] #dropdown-label-ddl').first().textContent().catch(() => '');
