@@ -564,7 +564,14 @@ app.get('/api/gisx/template', async (req, res) => {
             { header: 'Min Age *', key: 'minAge', width: 15, required: true },
             { header: 'Max Age *', key: 'maxAge', width: 15, required: true },
             { header: 'Plan Number *', key: 'planNumber', width: 15, required: true },
-            { header: 'Plan Type *', key: 'planType', width: 45, required: true },
+            { header: 'Plan: 1 ชีวิต (Yes/No) *', key: 'plan1', width: 22, required: true },
+            { header: 'Plan: 2 อุบัติเหตุ (Yes/No) *', key: 'plan2', width: 22, required: true },
+            { header: 'Plan: 3 ทุพพลภาพ (Yes/No) *', key: 'plan3', width: 22, required: true },
+            { header: 'Plan: 4 สุขภาพ (Yes/No) *', key: 'plan4', width: 22, required: true },
+            { header: 'Plan: 5 โรคร้ายแรง (Yes/No) *', key: 'plan5', width: 22, required: true },
+            { header: 'Plan: 6 รพก. (Yes/No) *', key: 'plan6', width: 22, required: true },
+            { header: 'Plan: 7 อุบัติเหตุกลุ่มส่วนบุคคล (Yes/No) *', key: 'plan7', width: 32, required: true },
+            { header: 'Plan: 9 QA (Yes/No) *', key: 'plan9', width: 22, required: true },
             { header: 'Mode of Payment *', key: 'modeOfPayment', width: 25, required: true },
             
             // Agent/Broker
