@@ -247,7 +247,7 @@ const results = [];
                 }
 
                 // Wait for at least one dropdown item inside this active overlay to render and become visible
-                await activeOverlay.locator('[data-qa^="dropdown_item"], [id^="dropdown-overlay-item-"]').first()
+                await activeOverlay.locator('[data-qa^="dropdown_item"], [id^="dropdown-overlay-item-"], .ant-select-item-option').first()
                     .waitFor({ state: 'visible', timeout: 5000 })
                     .catch(() => {});
 
@@ -290,7 +290,7 @@ const results = [];
                             const style = window.getComputedStyle(el);
                             return rect.height > 0 && rect.width > 0 && style.display !== 'none' && style.visibility !== 'hidden' && style.opacity !== '0' && !el.className.includes('hidden') && !el.classList.contains('ant-select-dropdown-hidden');
                         }) || overlays[overlays.length - 1] || document;
-                        const items = Array.from(activeOverlay.querySelectorAll('[data-qa^="dropdown_item"], [id^="dropdown-overlay-item-"]'));
+                        const items = Array.from(activeOverlay.querySelectorAll('[data-qa^="dropdown_item"], [id^="dropdown-overlay-item-"], .ant-select-item-option'));
                         return items.map(el => el.textContent.trim());
                     });
                     console.log(`[KUMA DUMP] Dropdown "${dataQaName}" options:`, JSON.stringify(optionsText));
@@ -319,7 +319,7 @@ const results = [];
                             await selectAllItem.click().catch(() => selectAllItem.click({ force: true }));
                             await page.waitForTimeout(500);
                         } else {
-                            const items = activeOverlay.locator('[data-qa^="dropdown_item"], [id^="dropdown-overlay-item-"]');
+                            const items = activeOverlay.locator('[data-qa^="dropdown_item"], [id^="dropdown-overlay-item-"], .ant-select-item-option');
                             const count = await items.count().catch(() => 0);
                             console.log(`[KUMA AUTO] "Select all" item not found. Total items in overlay: ${count}`);
                             for (let i = 0; i < count; i++) {
@@ -381,7 +381,7 @@ const results = [];
                                     const style = window.getComputedStyle(el);
                                     return rect.height > 0 && rect.width > 0 && style.display !== 'none' && style.visibility !== 'hidden' && style.opacity !== '0' && !el.className.includes('hidden') && !el.classList.contains('ant-select-dropdown-hidden');
                                 }) || overlays[overlays.length - 1] || document;
-                                const items = Array.from(activeOverlay.querySelectorAll('[data-qa^="dropdown_item"], [id^="dropdown-overlay-item-"]'));
+                                const items = Array.from(activeOverlay.querySelectorAll('[data-qa^="dropdown_item"], [id^="dropdown-overlay-item-"], .ant-select-item-option'));
                                 let match = items.find(el => el.textContent.trim().toLowerCase() === value.toLowerCase());
                                 if (!match) {
                                     match = items.find(el => el.textContent.trim().toLowerCase().startsWith(value.toLowerCase()));
@@ -469,7 +469,7 @@ const results = [];
                                     const style = window.getComputedStyle(el);
                                     return rect.height > 0 && rect.width > 0 && style.display !== 'none' && style.visibility !== 'hidden' && style.opacity !== '0' && !el.className.includes('hidden') && !el.classList.contains('ant-select-dropdown-hidden');
                                 }) || overlays[overlays.length - 1] || document;
-                                const items = Array.from(activeOverlay.querySelectorAll('[data-qa^="dropdown_item"], [id^="dropdown-overlay-item-"]'));
+                                const items = Array.from(activeOverlay.querySelectorAll('[data-qa^="dropdown_item"], [id^="dropdown-overlay-item-"], .ant-select-item-option'));
                                 let match = items.find(el => el.textContent.trim().toLowerCase() === value.toLowerCase());
                                 if (!match) {
                                     match = items.find(el => el.textContent.trim().toLowerCase().startsWith(value.toLowerCase()));
@@ -506,7 +506,7 @@ const results = [];
                             await page.waitForTimeout(600);
                         } else {
                             // Fallback: select first option in list
-                            const firstOpt = activeOverlay.locator('[data-qa^="dropdown_item"], [id^="dropdown-overlay-item-"]').first();
+                            const firstOpt = activeOverlay.locator('[data-qa^="dropdown_item"], [id^="dropdown-overlay-item-"], .ant-select-item-option').first();
                             if (await firstOpt.isVisible().catch(() => false)) {
                                 await safeClick(firstOpt);
                                 await page.waitForTimeout(600);
@@ -518,7 +518,7 @@ const results = [];
                     }
                 } else {
                     // Pick Nth option (0-indexed)
-                    const items = activeOverlay.locator('[data-qa^="dropdown_item"], [id^="dropdown-overlay-item-"]');
+                    const items = activeOverlay.locator('[data-qa^="dropdown_item"], [id^="dropdown-overlay-item-"], .ant-select-item-option');
                     const targetItem = items.nth(targetOptIndex);
                     await targetItem.waitFor({ state: 'visible', timeout: 4000 }).catch(() => {});
                     if (await targetItem.isVisible().catch(() => false)) {
@@ -1185,7 +1185,7 @@ const results = [];
                 }
 
                 // 1. Plan Type
-                await fillDropdown('field_type_dropdown_name_claim_payment_object.claim_payment.0.plan_type', '(first option)');
+                await fillDropdown('field_type_dropdown_name_claim_payment_object.claim_payment.0.plan_type', 'Select All,เลือกทั้งหมด');
                 await page.waitForTimeout(300);
 
                 // 2. Payment Type (Select first option)
