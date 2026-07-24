@@ -964,11 +964,23 @@ const results = [];
             try {
                 const agentCodeInput = page.locator('input[name="agent_broker.agent_broker_info.agent_broker_code"]').first();
                 await agentCodeInput.waitFor({ state: 'visible', timeout: 5000 });
+                console.log('[KUMA AUTO] Filling Agent Code...');
                 await agentCodeInput.click({ force: true });
                 await agentCodeInput.fill(item.agentBrokerCode || '144660');
-                await page.keyboard.press('Enter');
-                await page.keyboard.press('Tab');
-                await page.waitForTimeout(5000); // Wait for API call
+                await page.waitForTimeout(1500); // Wait for autocomplete overlay to open
+
+                // Click matching option in the autocomplete list if visible
+                const optionSelector = 'div[class*="option"], div[id*="option"], li[role="option"], [class*="Dropdown"], [class*="dropdown-item"]';
+                const option = page.locator(optionSelector).filter({ hasText: item.agentBrokerCode || '144660' }).first();
+                if (await option.isVisible().catch(() => false)) {
+                    console.log('[KUMA AUTO] Selecting agent from autocomplete dropdown...');
+                    await option.click({ force: true });
+                } else {
+                    console.log('[KUMA AUTO] Autocomplete dropdown not visible, pressing Enter/Tab...');
+                    await page.keyboard.press('Enter');
+                    await page.keyboard.press('Tab');
+                }
+                await page.waitForTimeout(4000); // Wait for API validation call
             } catch (e) {
                 console.log('[KUMA AUTO]   ⚠️  Agent Code input error:', e.message);
             }
