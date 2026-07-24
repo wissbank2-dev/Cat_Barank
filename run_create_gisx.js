@@ -218,33 +218,9 @@ const results = [];
                         }
                     } catch (e) {}
 
-                // Find the active visible dropdown overlay in DOM that has actual option items loaded
-                let activeOverlay = null;
-                for (let attempt2 = 0; attempt2 < 30; attempt2++) {
-                    const overlays = page.locator('[data-qa="dropdown_overlay"]');
-                    const count = await overlays.count().catch(() => 0);
-                    for (let i = 0; i < count; i++) {
-                        const ov = overlays.nth(i);
-                        const isVisible = await ov.isVisible().catch(() => false);
-                        if (isVisible) {
-                            const isHidden = await ov.evaluate(el => {
-                                const rect = el.getBoundingClientRect();
-                                const style = window.getComputedStyle(el);
-                                return rect.height === 0 || rect.width === 0 || style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0' || el.className.includes('hidden') || el.classList.contains('ant-select-dropdown-hidden');
-                            }).catch(() => true);
-                            if (!isHidden) {
-                                activeOverlay = ov;
-                                break;
-                            }
-                        }
-                    }
-                    if (activeOverlay) break;
-                    await page.waitForTimeout(100);
-                }
-                if (!activeOverlay) {
-                    console.log('[KUMA AUTO] No visible dropdown overlay found via visibility and item check, using last() fallback');
-                    activeOverlay = page.locator('[data-qa="dropdown_overlay"]').last();
-                }
+                // Find the active visible dropdown overlay in DOM
+                const activeOverlay = page.locator('[data-qa="dropdown_overlay"]:visible, .ant-select-dropdown:not(.ant-select-dropdown-hidden)').last();
+                await activeOverlay.waitFor({ state: 'visible', timeout: 5000 }).catch(() => {});
 
                 // Wait for at least one dropdown item inside this active overlay to render and become visible
                 await activeOverlay.locator('[data-qa^="dropdown_item"], [id^="dropdown-overlay-item-"], .ant-select-item-option').first()
