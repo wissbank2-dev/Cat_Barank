@@ -123,7 +123,12 @@ const results = [];
     async function fillDropdown(dataQaName, valueText = null, index = 0) {
         const safeClick = async (loc) => {
             await loc.scrollIntoViewIfNeeded().catch(() => {});
-            await loc.click().catch(() => loc.click({ force: true }));
+            try {
+                await loc.click();
+            } catch (err) {
+                console.log(`[KUMA AUTO]     safeClick primary failed: ${err.message}. Retrying with force: true...`);
+                await loc.click({ force: true });
+            }
         };
         try {
             // Apply QA environment mappings
@@ -281,17 +286,22 @@ const results = [];
 
                 if (valueText) {
                     if (valueText === 'Select All,เลือกทั้งหมด') {
-                        console.log(`[KUMA AUTO] Selecting all items one-by-one by checking selection state...`);
-                        const itemsToClick = await page.evaluate(() => {
+                        console.log(`[KUMA AUTO] Selecting all items one-by-one and clicking Apply browser-side...`);
+                        const result = await page.evaluate(() => {
                             const overlays = Array.from(document.querySelectorAll('[data-qa="dropdown_overlay"]'));
                             const activeOverlay = overlays.find(el => {
                                 const rect = el.getBoundingClientRect();
                                 const style = window.getComputedStyle(el);
                                 return rect.height > 0 && rect.width > 0 && style.display !== 'none' && style.visibility !== 'hidden' && style.opacity !== '0' && !el.className.includes('hidden') && !el.classList.contains('ant-select-dropdown-hidden');
-                            }) || overlays[overlays.length - 1] || document;
-                            
+                            }) || overlays[overlays.length - 1];
+                            if (!activeOverlay) return { clicked: 0, applied: false };
+
                             const items = Array.from(activeOverlay.querySelectorAll('[data-qa^="dropdown_item"], [id^="dropdown-overlay-item-"], .ant-select-item-option'));
-                            return items.map(el => {
+                            let clicked = 0;
+                            items.forEach(el => {
+                                const text = el.textContent.trim().toLowerCase();
+                                if (text.includes('select all') || text.includes('เลือกทั้งหมด')) return;
+
                                 const container = el.closest('.ant-select-item-option, .ant-select-item, [class*="option"], [class*="item"]') || el;
                                 const checkbox = container.querySelector('input[type="checkbox"]');
                                 const isSelected = el.classList.contains('ant-select-item-option-selected') || 
@@ -303,59 +313,30 @@ const results = [];
                                                    container.classList.contains('checked') ||
                                                    (checkbox && checkbox.checked) ||
                                                    !!container.querySelector('.ant-select-item-option-state-icon, [class*="selected-icon"], [class*="checked-icon"]');
-                                return {
-                                    type: el.getAttribute('data-qa') ? 'data-qa' : (el.getAttribute('id') ? 'id' : null),
-                                    value: el.getAttribute('data-qa') || el.getAttribute('id'),
-                                    text: el.textContent.trim(),
-                                    isSelected
-                                };
-                            }).filter(item => item.value && !item.text.toLowerCase().includes('select all') && !item.text.includes('เลือกทั้งหมด'));
+
+                                if (!isSelected) {
+                                    // Target the text content span or checkbox container for maximum click compatibility
+                                    const clickTarget = container.querySelector('.ant-select-item-option-content') || checkbox || el;
+                                    clickTarget.click();
+                                    clicked++;
+                                }
+                            });
+
+                            // Find and click the Apply button browser-side immediately
+                            const applyBtn = activeOverlay.querySelector('[data-qa="btn_dropdown_confirm"]') ||
+                                             Array.from(activeOverlay.querySelectorAll('button, div, span')).find(btn => {
+                                                 const txt = btn.textContent.trim().toLowerCase();
+                                                 return txt === 'apply' || txt === 'ตกลง' || txt === 'นำไปใช้' || txt === 'ok';
+                                             });
+                            let applied = false;
+                            if (applyBtn) {
+                                applyBtn.click();
+                                applied = true;
+                            }
+                            return { clicked, applied };
                         });
-
-                        console.log(`[KUMA AUTO] Found ${itemsToClick.length} total options:`, JSON.stringify(itemsToClick));
-                        for (const itemInfo of itemsToClick) {
-                            if (itemInfo.isSelected) {
-                                console.log(`[KUMA AUTO]     Option "${itemInfo.text}" is already selected, skipping.`);
-                            } else {
-                                console.log(`[KUMA AUTO]     Clicking unselected option: "${itemInfo.text}" (${itemInfo.type}: ${itemInfo.value})`);
-                                let itemLoc;
-                                if (itemInfo.type === 'data-qa') {
-                                    itemLoc = activeOverlay.locator(`[data-qa="${itemInfo.value}"]`).first();
-                                } else {
-                                    itemLoc = activeOverlay.locator(`#${itemInfo.value}`).first();
-                                }
-                                await safeClick(itemLoc);
-                                await page.waitForTimeout(600);
-                            }
-                        }
-
-                        if (hasApplyBtn) {
-                            // Scroll the modal and page to the bottom if we are in modal to make sure Apply is visible!
-                            try {
-                                const isInModal = dataQaName.includes('account_detail') || dataQaName.includes('claim_payment_object') || dataQaName.includes('account_information');
-                                if (isInModal) {
-                                    console.log('[KUMA AUTO] Scrolling modal/page to bottom before clicking Apply (Select All)...');
-                                    await page.evaluate(() => {
-                                        const els = Array.from(document.querySelectorAll('*'));
-                                        els.forEach(el => {
-                                            if (el.scrollHeight > el.clientHeight) {
-                                                el.scrollTop = el.scrollHeight;
-                                            }
-                                        });
-                                        window.scrollTo(0, document.body.scrollHeight);
-                                    });
-                                    await page.waitForTimeout(600);
-                                }
-                            } catch (e) {}
-
-                            const applyBtn = activeOverlay.locator('[data-qa="btn_dropdown_confirm"], button:has-text("Apply"), button:has-text("ตกลง"), button:has-text("นำไปใช้"), button:has-text("OK")').first();
-                            if (await applyBtn.isVisible().catch(() => false)) {
-                                console.log(`[KUMA AUTO] Clicking Apply button in dropdown overlay...`);
-                                await applyBtn.scrollIntoViewIfNeeded().catch(() => {});
-                                await applyBtn.click().catch(() => applyBtn.click({ force: true }));
-                                await page.waitForTimeout(1000);
-                            }
-                        }
+                        console.log(`[KUMA AUTO] Browser-clicked ${result.clicked} options. Apply button clicked browser-side: ${result.applied}`);
+                        await page.waitForTimeout(1000);
                         return;
                     }
 
