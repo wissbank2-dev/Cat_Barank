@@ -1434,6 +1434,28 @@
                         <p class="text-gray-500 text-sm mb-4 leading-relaxed">
                             ดาวน์โหลดไฟล์เทมเพลตสำหรับกรอกเคส โดยคอลัมน์ที่ **บังคับกรอก (Required)** จะแสดงเป็น **สีแดง** และคอลัมน์ที่เป็นตัวเลือกรายการมีดรอปดาวน์เลือกใน Excel ให้เหมือนหน้าจอเว็บ GISX จริงครับเมี้ยว!
                         </p>
+                        
+                        <!-- Dropdown Options Sync Status & Buttons -->
+                        <div class="border-t border-rose-50 pt-4 mt-4 mb-4 flex flex-col gap-2">
+                            <div class="flex justify-between items-center text-xs">
+                                <span class="text-gray-400">สถานะตัวเลือกดรอปดาวน์:</span>
+                                <span id="gisxSyncStatus" class="font-bold text-yellow-500">กำลังตรวจสอบ...</span>
+                            </div>
+                            <div class="flex justify-between items-center text-xs">
+                                <span class="text-gray-400">อัปเดตล่าสุด:</span>
+                                <span id="gisxLastSyncTime" class="text-gray-500 font-medium">-</span>
+                            </div>
+                            <div class="flex gap-2">
+                                <button id="gisxSyncBtn" onclick="runGisxSync()"
+                                    class="mt-2 bg-rose-50 text-rose-500 hover:bg-rose-100 transition-colors w-full py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1 shadow-sm">
+                                    🔄 ซิงค์ข้อมูลดรอปดาวน์จาก GISX
+                                </button>
+                                <button id="gisxStopSyncBtn" onclick="stopGisxSync()" style="display:none;"
+                                    class="mt-2 bg-gray-700 text-white hover:bg-gray-800 transition-colors w-full py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1 shadow-sm">
+                                    ⛔ หยุดการซิงค์
+                                </button>
+                            </div>
+                        </div>
                     </div>
                     <button onclick="downloadGisxTemplate()"
                         class="btn-primary w-full py-3 rounded-2xl font-bold shadow-md hover:shadow-lg flex items-center justify-center gap-2">
@@ -4273,8 +4295,128 @@ ${matrixTestCases.map((tc, i) => `${i + 1}. ${tc}`).join('\n')}`;
             window.location.href = '/api/gisx/template';
         };
 
+        // ==================== GISX Sync Dropdown Options ====================
+        let currentSyncJobId = null;
+        let syncSseSource = null;
+
+        window.runGisxSync = async function () {
+            if (!confirm('🔄 คุณต้องการเริ่มซิงค์ข้อมูลดรอปดาวน์จากเว็บ GISX QA จริงๆ ใช่ไหมครับ?\n\n(การทำงานนี้ใช้เวลาประมาณ 20-30 วินาที ระบบจะเปิดเบราว์เซอร์เบื้องหลังเพื่อจำลองการดึงข้อมูลตัวเลือก)')) return;
+
+            const syncBtn = document.getElementById('gisxSyncBtn');
+            const stopBtn = document.getElementById('gisxStopSyncBtn');
+            const statusEl = document.getElementById('gisxSyncStatus');
+
+            syncBtn.disabled = true;
+            syncBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            stopBtn.style.display = 'inline-flex';
+            statusEl.textContent = 'กำลังซิงค์... ⏳';
+            statusEl.className = 'font-bold text-yellow-500';
+
+            // Show log panel automatically to let user see progress
+            document.getElementById('gisxLogPanel').classList.remove('hidden');
+            appendGisxLog('[KUMA SYNC] 🐾 เริ่มส่งคำสั่งซิงค์ข้อมูลไปยัง Server...\n', 'sys');
+            document.getElementById('gisxLogPanel').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+            if (syncSseSource) { syncSseSource.close(); syncSseSource = null; }
+
+            try {
+                const res = await fetch('/api/gisx/sync', { method: 'POST' });
+                const data = await res.json();
+                if (!res.ok || data.error) {
+                    appendGisxLog('[ERROR] ' + (data.error || 'ไม่สามารถเริ่มซิงค์ได้') + '\n', 'err');
+                    resetSyncUI();
+                    return;
+                }
+
+                currentSyncJobId = data.jobId;
+                appendGisxLog(`[KUMA SYNC] Job ID: ${currentSyncJobId}\n`, 'sys');
+
+                syncSseSource = new EventSource(`/api/gisx/run/${currentSyncJobId}/stream`);
+                syncSseSource.onmessage = function (e) {
+                    try {
+                        const msg = JSON.parse(e.data);
+                        if (msg.type === 'stdout') {
+                            appendGisxLog(msg.text, 'out');
+                        } else if (msg.type === 'stderr') {
+                            appendGisxLog(msg.text, 'err');
+                        } else if (msg.type === 'done') {
+                            appendGisxLog(msg.text, 'sys');
+                            syncSseSource.close();
+                            syncSseSource = null;
+                            resetSyncUI();
+                            updateSyncStatus();
+                            showToast('ซิงค์ข้อมูลดรอปดาวน์สำเร็จแล้วครับเหมียว! 🎉🐾');
+                        }
+                    } catch (ex) {
+                        console.error('SSE sync parse error:', ex);
+                    }
+                };
+
+                syncSseSource.onerror = function () {
+                    appendGisxLog('[ERROR] การเชื่อมต่อกับ Server ขัดข้องระหว่างซิงค์\n', 'err');
+                    if (syncSseSource) { syncSseSource.close(); syncSseSource = null; }
+                    resetSyncUI();
+                    updateSyncStatus();
+                };
+
+            } catch (err) {
+                appendGisxLog('[ERROR] เกิดข้อผิดพลาด: ' + err.message + '\n', 'err');
+                resetSyncUI();
+                updateSyncStatus();
+            }
+        };
+
+        window.stopGisxSync = async function () {
+            if (!currentSyncJobId) return;
+            try {
+                const res = await fetch(`/api/gisx/run/${currentSyncJobId}/stop`, { method: 'POST' });
+                const data = await res.json();
+                if (data.message) {
+                    appendGisxLog('\n[KUMA SYNC] ⛔ ผู้ใช้หยุดการทำงานระหว่างซิงค์\n', 'err');
+                }
+            } catch (e) {
+                console.error(e);
+            }
+            if (syncSseSource) { syncSseSource.close(); syncSseSource = null; }
+            resetSyncUI();
+            updateSyncStatus();
+        };
+
+        function resetSyncUI() {
+            const syncBtn = document.getElementById('gisxSyncBtn');
+            const stopBtn = document.getElementById('gisxStopSyncBtn');
+            if (syncBtn) {
+                syncBtn.disabled = false;
+                syncBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            }
+            if (stopBtn) stopBtn.style.display = 'none';
+        }
+
+        window.updateSyncStatus = async function () {
+            try {
+                const res = await fetch('/api/gisx/sync/status');
+                const data = await res.json();
+                const statusEl = document.getElementById('gisxSyncStatus');
+                const timeEl = document.getElementById('gisxLastSyncTime');
+                if (!statusEl || !timeEl) return;
+                if (data.synced) {
+                    statusEl.textContent = 'ซิงค์แล้ว ✅';
+                    statusEl.className = 'font-bold text-green-500';
+                    const localTime = new Date(data.lastSynced).toLocaleString('th-TH');
+                    timeEl.textContent = localTime;
+                } else {
+                    statusEl.textContent = 'ยังไม่ได้ซิงค์ ⚠️';
+                    statusEl.className = 'font-bold text-yellow-500';
+                    timeEl.textContent = '-';
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        };
+
         // Setup Drag & Drop for GISX Upload Zone
         setTimeout(() => {
+            updateSyncStatus();
             const zone = document.getElementById('gisxUploadZone');
             if (!zone) return;
 

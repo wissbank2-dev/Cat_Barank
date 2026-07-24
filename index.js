@@ -613,9 +613,57 @@ app.get('/api/gisx/template', async (req, res) => {
             };
         });
 
+        // Load synced options if available
+        let options = {
+            titles: ["นาย","นาง","นางสาว","เด็กชาย","เด็กหญิง","บจก.","บมจ."],
+            provinces: ["กทม."],
+            lineOfBusinesses: [{code:"Ordinary",th:"Ordinary"},{code:"Group",th:"Group"},{code:"Credit Life",th:"Credit Life"},{code:"Accident",th:"Accident"}],
+            riskLevels: [{code:"Low",th:"Low"},{code:"Medium",th:"Medium"},{code:"High",th:"High"}],
+            occupations: [{code:"Class 1",th:"Class 1"},{code:"Class 2",th:"Class 2"},{code:"Class 3",th:"Class 3"},{code:"Class 4",th:"Class 4"}],
+            channels: [{code:"Agent (บุคคลธรรมดา)",th:"Agent (บุคคลธรรมดา)"}],
+            modeOfPayments: [{code:"Monthly",th:"รายเดือน"}]
+        };
+
+        const optionsPath = path.join(__dirname, 'dataset', 'gisx_options.json');
+        if (fs.existsSync(optionsPath)) {
+            try {
+                options = JSON.parse(fs.readFileSync(optionsPath, 'utf8'));
+            } catch (e) {
+                console.error('Error reading gisx_options.json:', e);
+            }
+        }
+
+        // Create DropdownData sheet for storing lists
+        const ddWs = workbook.addWorksheet('DropdownData');
+        ddWs.state = 'hidden'; // Hide the helper sheet
+        
+        const titlesList = options.titles || [];
+        const provincesList = options.provinces || [];
+        const accLobsList = (options.lineOfBusinesses || []).map(lob => `${lob.code} : ${lob.th || lob.en}`);
+        const reinsList = (options.reinsuranceTypes || []).map(r => `${r.code} : ${r.name}`);
+        const prodsList = (options.productTypes || []).map(p => `${p.code} : ${p.name}`);
+        const teamsList = (options.salesTeams || []).map(t => `${t.code} : ${t.name}`);
+
+        // Populate DropdownData headers and values
+        ddWs.getRow(1).values = ['Titles', 'Provinces', 'AccountLOBs', 'Reinsurances', 'ProductTypes', 'SalesTeams'];
+        const maxLen = Math.max(titlesList.length, provincesList.length, accLobsList.length, reinsList.length, prodsList.length, teamsList.length);
+        for (let i = 0; i < maxLen; i++) {
+            const row = ddWs.getRow(i + 2);
+            if (i < titlesList.length) row.getCell(1).value = titlesList[i];
+            if (i < provincesList.length) row.getCell(2).value = provincesList[i];
+            if (i < accLobsList.length) row.getCell(3).value = accLobsList[i];
+            if (i < reinsList.length) row.getCell(4).value = reinsList[i];
+            if (i < prodsList.length) row.getCell(5).value = prodsList[i];
+            if (i < teamsList.length) row.getCell(6).value = teamsList[i];
+        }
+
         // Add validations for rows 2 to 100
         const validations = {
-            title: {
+            title: titlesList.length > 0 ? {
+                type: 'list',
+                allowBlank: true,
+                formulae: [`=DropdownData!$A$2:$A$${titlesList.length + 1}`]
+            } : {
                 type: 'list',
                 allowBlank: true,
                 formulae: ['"นาย,นาง,นางสาว,เด็กชาย,เด็กหญิง,บจก.,บมจ."']
@@ -645,12 +693,20 @@ app.get('/api/gisx/template', async (req, res) => {
                 allowBlank: true,
                 formulae: ['"Thailand"']
             },
-            province: {
+            province: provincesList.length > 0 ? {
+                type: 'list',
+                allowBlank: true,
+                formulae: [`=DropdownData!$B$2:$B$${provincesList.length + 1}`]
+            } : {
                 type: 'list',
                 allowBlank: true,
                 formulae: ['"กทม."']
             },
-            productType: {
+            productType: prodsList.length > 0 ? {
+                type: 'list',
+                allowBlank: true,
+                formulae: [`=DropdownData!$E$2:$E$${prodsList.length + 1}`]
+            } : {
                 type: 'list',
                 allowBlank: true,
                 formulae: ['"01"']
@@ -675,12 +731,21 @@ app.get('/api/gisx/template', async (req, res) => {
                 allowBlank: true,
                 formulae: ['"Agent (บุคคลธรรมดา)"']
             },
+            salesTeam: teamsList.length > 0 ? {
+                type: 'list',
+                allowBlank: true,
+                formulae: [`=DropdownData!$F$2:$F$${teamsList.length + 1}`]
+            } : null,
             erType: {
                 type: 'list',
                 allowBlank: true,
                 formulae: ['"ER,NON_ER"']
             },
-            accTitle: {
+            accTitle: titlesList.length > 0 ? {
+                type: 'list',
+                allowBlank: true,
+                formulae: [`=DropdownData!$A$2:$A$${titlesList.length + 1}`]
+            } : {
                 type: 'list',
                 allowBlank: true,
                 formulae: ['"นาย,นาง,นางสาว,เด็กชาย,เด็กหญิง,บจก.,บมจ."']
@@ -690,7 +755,11 @@ app.get('/api/gisx/template', async (req, res) => {
                 allowBlank: true,
                 formulae: ['"Non Head Count,Head Count"']
             },
-            accLineOfBusiness: {
+            accLineOfBusiness: accLobsList.length > 0 ? {
+                type: 'list',
+                allowBlank: true,
+                formulae: [`=DropdownData!$C$2:$C$${accLobsList.length + 1}`]
+            } : {
                 type: 'list',
                 allowBlank: true,
                 formulae: ['"Ordinary,Group,Credit Life,Accident"']
@@ -977,8 +1046,89 @@ app.post('/api/gisx/upload', upload.single('file'), async (req, res) => {
 // ==================== GISX Run Automation (SSE Streaming) ====================
 const { spawn } = require('child_process');
 
-// Active run jobs: jobId -> { proc, clients }
 const gisxJobs = new Map();
+
+// Active run jobs: jobId -> { proc, clients }
+// GET /api/gisx/sync/status — check last sync time
+app.get('/api/gisx/sync/status', (req, res) => {
+    const optionsPath = path.join(__dirname, 'dataset', 'gisx_options.json');
+    if (fs.existsSync(optionsPath)) {
+        try {
+            const data = JSON.parse(fs.readFileSync(optionsPath, 'utf8'));
+            return res.json({
+                synced: true,
+                lastSynced: data.lastSynced,
+                stats: {
+                    titles: (data.titles || []).length,
+                    provinces: (data.provinces || []).length,
+                    lineOfBusinesses: (data.lineOfBusinesses || []).length,
+                    riskLevels: (data.riskLevels || []).length,
+                    occupations: (data.occupations || []).length,
+                    channels: (data.channels || []).length,
+                    modeOfPayments: (data.modeOfPayments || []).length,
+                    reinsuranceTypes: (data.reinsuranceTypes || []).length,
+                    productTypes: (data.productTypes || []).length,
+                    salesTeams: (data.salesTeams || []).length
+                }
+            });
+        } catch (e) {
+            return res.json({ synced: false, lastSynced: null, error: 'ไม่สามารถอ่านไฟล์ได้' });
+        }
+    }
+    res.json({ synced: false, lastSynced: null });
+});
+
+// POST /api/gisx/sync — start a new sync job
+app.post('/api/gisx/sync', async (req, res) => {
+    try {
+        const jobId = 'gisx_sync_' + Date.now();
+        const scriptArgs = [ path.join(__dirname, 'sync_gisx.js') ];
+
+        console.log(`[GISX SYNC] Starting sync job ${jobId}...`);
+
+        const proc = spawn('node', scriptArgs, {
+            cwd: __dirname,
+            env: { ...process.env }
+        });
+
+        gisxJobs.set(jobId, { proc, clients: new Set() });
+
+        proc.stdout.on('data', (data) => {
+            const text = data.toString();
+            process.stdout.write('[GISX SYNC PROC] ' + text);
+            broadcastJobLog(jobId, 'stdout', text);
+        });
+
+        proc.stderr.on('data', (data) => {
+            const text = data.toString();
+            process.stderr.write('[GISX SYNC PROC ERR] ' + text);
+            broadcastJobLog(jobId, 'stderr', text);
+        });
+
+        proc.on('close', (code) => {
+            console.log(`[GISX SYNC] Job ${jobId} finished with code ${code}`);
+            if (code === 0) {
+                broadcastJobLog(jobId, 'done', `\n[KUMA SYNC] ✅ ซิงค์ข้อมูลตัวเลือกสำเร็จแล้วครับเมี้ยว! (exit code: ${code})\n`);
+            } else {
+                broadcastJobLog(jobId, 'done', `\n[KUMA SYNC] ❌ ซิงค์ข้อมูลล้มเหลว (exit code: ${code})\n`);
+            }
+            setTimeout(() => {
+                gisxJobs.delete(jobId);
+            }, 5 * 60 * 1000);
+        });
+
+        proc.on('error', (err) => {
+            console.error(`[GISX SYNC] Job ${jobId} spawn error:`, err);
+            broadcastJobLog(jobId, 'stderr', `\n[ERROR] ไม่สามารถเริ่ม Playwright Sync ได้: ${err.message}\n`);
+        });
+
+        res.json({ jobId, message: `เริ่มกระบวนการซิงค์ข้อมูลแล้วครับเมี้ยว! Job ID: ${jobId}` });
+
+    } catch (error) {
+        console.error('GISX Sync Error:', error);
+        res.status(500).json({ error: 'เกิดข้อผิดพลาดในการเริ่มซิงค์: ' + error.message });
+    }
+});
 
 // 3. POST /api/gisx/run — start a new automation job
 app.post('/api/gisx/run', async (req, res) => {

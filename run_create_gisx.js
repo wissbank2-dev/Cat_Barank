@@ -31,17 +31,20 @@ const GISX_BASE_URL = process.env.GISX_BASE_URL || 'https://gisx-qa.muangthai.co
 
 // ---- Load cases ----
 let cases = [];
-if (inputFile && fs.existsSync(inputFile)) {
+const defaultDatasetPath = path.join(__dirname, 'dataset', 'cases.json');
+const targetInputFile = inputFile || (fs.existsSync(defaultDatasetPath) ? defaultDatasetPath : null);
+
+if (targetInputFile && fs.existsSync(targetInputFile)) {
     try {
-        cases = JSON.parse(fs.readFileSync(inputFile, 'utf8'));
-        console.log(`[KUMA AUTO] Loaded ${cases.length} case(s) from: ${inputFile}`);
+        cases = JSON.parse(fs.readFileSync(targetInputFile, 'utf8'));
+        console.log(`[KUMA AUTO] Loaded ${cases.length} case(s) from: ${targetInputFile}`);
     } catch (e) {
         console.error('[KUMA AUTO] Failed to parse input JSON:', e.message);
         process.exit(1);
     }
 } else {
     // Fallback demo case
-    console.log('[KUMA AUTO] No --input file provided. Running with demo case...');
+    console.log('[KUMA AUTO] No dataset/cases.json or --input file provided. Running with demo case...');
     cases = [{
         quotationNo: 'QT20260721-DEMO',
         title: 'นาย',
@@ -88,6 +91,22 @@ const results = [];
     const context = await browser.newContext({ viewport: null });
     const page = await context.newPage();
 
+    // Listen to network request failures and console errors
+    page.on('console', msg => {
+        if (msg.type() === 'error' || msg.text().includes('failed') || msg.text().includes('Error')) {
+            console.log(`[BROWSER CONSOLE] [${msg.type()}] ${msg.text()}`);
+        }
+    });
+    page.on('requestfailed', request => {
+        console.log(`[BROWSER REQUEST FAILED] ${request.url()} | Error: ${request.failure()?.errorText || 'unknown'}`);
+    });
+    page.on('response', response => {
+        const status = response.status();
+        if (status >= 400) {
+            console.log(`[BROWSER RESPONSE ERROR] ${response.url()} | Status: ${status}`);
+        }
+    });
+
     // ---------- Helpers ----------
 
     async function takeScreenshot(label) {
@@ -111,7 +130,7 @@ const results = [];
             if (valueText) {
                 const valClean = valueText.trim().toLowerCase();
                 if (dataQaName.includes('line_of_business')) {
-                    if (valClean.startsWith('o')) valueText = 'O'; // e.g. Ordinary -> O
+                    if (valClean.startsWith('o')) valueText = 'TINSU'; // Map Ordinary to TINSU to get standard occupations
                     else if (valClean.startsWith('g')) valueText = 'G'; // e.g. Group -> G
                     else if (valClean.startsWith('c')) valueText = 'P'; // e.g. Credit Life -> P (since codes start with P)
                     else if (valClean.startsWith('a')) valueText = 'F'; // e.g. Accident -> F (since codes start with F)
@@ -134,11 +153,45 @@ const results = [];
                 }
             }
 
-            console.log(`[KUMA AUTO]   → Dropdown "${dataQaName}" [index: ${index}] = "${valueText ?? '(first option)'}"`);
+            let targetOptIndex = 0;
+            if (valueText && valueText.startsWith('(nth option:')) {
+                const match = valueText.match(/\d+/);
+                if (match) {
+                    targetOptIndex = parseInt(match[0], 10);
+                }
+                valueText = null;
+            } else if (valueText === '(first option)') {
+                valueText = null;
+            }
+
+            console.log(`[KUMA AUTO]   → Dropdown "${dataQaName}" [index: ${index}] = "${valueText ?? ('(option index: ' + targetOptIndex + ')')}"`);
+            
+            // Wait for any loading spinner to disappear
+            await page.waitForTimeout(500);
+            try {
+                await page.locator('.ant-spin-spinning, .ant-spin, [class*="loading"], [class*="spinner"]').first().waitFor({ state: 'hidden', timeout: 10000 });
+            } catch (e) {}
+
+            // Wait for Ant Design select loading/disabled class to disappear
+            try {
+                const selectEl = page.locator(`div[data-qa="${dataQaName}"] .ant-select`).first();
+                if (await selectEl.count().catch(() => 0) > 0) {
+                    for (let i = 0; i < 80; i++) {
+                        const classes = await selectEl.getAttribute('class').catch(() => '');
+                        if (!classes.includes('loading') && !classes.includes('disabled')) {
+                            break;
+                        }
+                        await page.waitForTimeout(100);
+                    }
+                }
+            } catch (e) {}
+
             await page.keyboard.press('Escape').catch(() => {});
             await page.waitForTimeout(300);
 
             const selector = `div[data-qa="${dataQaName}"] [data-qa="btn_dropdown_toggle_ddl"]`;
+            const triggerCount = await page.locator(selector).count().catch(() => 0);
+            console.log(`[KUMA AUTO]   Trigger count for "${dataQaName}": ${triggerCount}`);
             const trigger = page.locator(selector).nth(index);
 
             for (let attempt = 1; attempt <= 3; attempt++) {
@@ -173,8 +226,7 @@ const results = [];
                     for (let i = 0; i < count; i++) {
                         const ov = overlays.nth(i);
                         const isVisible = await ov.isVisible().catch(() => false);
-                        const hasItems = (await ov.locator('[data-qa^="dropdown_item"], [id^="dropdown-overlay-item-"]').count().catch(() => 0)) > 0;
-                        if (isVisible && hasItems) {
+                        if (isVisible) {
                             const isHidden = await ov.evaluate(el => {
                                 const rect = el.getBoundingClientRect();
                                 const style = window.getComputedStyle(el);
@@ -332,10 +384,10 @@ const results = [];
                                 const items = Array.from(activeOverlay.querySelectorAll('[data-qa^="dropdown_item"], [id^="dropdown-overlay-item-"]'));
                                 let match = items.find(el => el.textContent.trim().toLowerCase() === value.toLowerCase());
                                 if (!match) {
-                                    match = items.find(el => el.textContent.trim().toLowerCase().includes(value.toLowerCase()));
+                                    match = items.find(el => el.textContent.trim().toLowerCase().startsWith(value.toLowerCase()));
                                 }
-                                if (!match && value.length === 1) {
-                                    match = items.find(el => el.textContent.trim().toUpperCase().startsWith(value.toUpperCase()));
+                                if (!match && value.length > 1) {
+                                    match = items.find(el => el.textContent.trim().toLowerCase().includes(value.toLowerCase()));
                                 }
                                 if (!match && /^\d+\s*:/.test(value)) {
                                     const prefix = value.match(/^\d+\s*:/)[0].trim().toLowerCase();
@@ -420,10 +472,10 @@ const results = [];
                                 const items = Array.from(activeOverlay.querySelectorAll('[data-qa^="dropdown_item"], [id^="dropdown-overlay-item-"]'));
                                 let match = items.find(el => el.textContent.trim().toLowerCase() === value.toLowerCase());
                                 if (!match) {
-                                    match = items.find(el => el.textContent.trim().toLowerCase().includes(value.toLowerCase()));
+                                    match = items.find(el => el.textContent.trim().toLowerCase().startsWith(value.toLowerCase()));
                                 }
-                                if (!match && value.length === 1) {
-                                    match = items.find(el => el.textContent.trim().toUpperCase().startsWith(value.toUpperCase()));
+                                if (!match && value.length > 1) {
+                                    match = items.find(el => el.textContent.trim().toLowerCase().includes(value.toLowerCase()));
                                 }
                                 if (!match && /^\d+\s*:/.test(value)) {
                                     const prefix = value.match(/^\d+\s*:/)[0].trim().toLowerCase();
@@ -465,11 +517,12 @@ const results = [];
                         }
                     }
                 } else {
-                    // Pick first option
-                    const firstItem = activeOverlay.locator('[data-qa^="dropdown_item"], [id^="dropdown-overlay-item-"]').first();
-                    await firstItem.waitFor({ state: 'visible', timeout: 4000 }).catch(() => {});
-                    if (await firstItem.isVisible().catch(() => false)) {
-                        await safeClick(firstItem);
+                    // Pick Nth option (0-indexed)
+                    const items = activeOverlay.locator('[data-qa^="dropdown_item"], [id^="dropdown-overlay-item-"]');
+                    const targetItem = items.nth(targetOptIndex);
+                    await targetItem.waitFor({ state: 'visible', timeout: 4000 }).catch(() => {});
+                    if (await targetItem.isVisible().catch(() => false)) {
+                        await safeClick(targetItem);
                         await page.waitForTimeout(600);
                     }
                     if (hasApplyBtn) {
@@ -522,6 +575,12 @@ const results = [];
 
     async function clickEl(selector) {
         try {
+            // Wait for any loading spinner to disappear
+            await page.waitForTimeout(500);
+            try {
+                await page.locator('.ant-spin-spinning, .ant-spin, [class*="loading"], [class*="spinner"]').first().waitFor({ state: 'hidden', timeout: 10000 });
+            } catch (e) {}
+
             const el = page.locator(selector).first();
             await el.scrollIntoViewIfNeeded().catch(() => {});
             await el.click({ force: true });
@@ -533,30 +592,43 @@ const results = [];
 
     // ---------- Login once ----------
     console.log(`[KUMA AUTO] Navigating to ${GISX_BASE_URL}/new-business/register-case ...`);
-    await page.goto(`${GISX_BASE_URL}/new-business/register-case`);
+    
+    let loggedIn = false;
+    for (let loginAttempt = 1; loginAttempt <= 5; loginAttempt++) {
+        try {
+            await page.goto(`${GISX_BASE_URL}/new-business/register-case`, { waitUntil: 'load', timeout: 30000 }).catch(() => {});
+            
+            const title = await page.title().catch(() => '');
+            if (title.includes('unknown error') || title.includes('520') || title.includes('Error') || (await page.locator('text="Error code 520"').count().catch(() => 0)) > 0) {
+                console.log(`[KUMA AUTO]   ⚠️  Cloudflare / Server error detected (Attempt ${loginAttempt}/5). Retrying in 10s...`);
+                await page.waitForTimeout(10000);
+                continue;
+            }
 
-    try {
-        console.log('[KUMA AUTO] Checking for login form...');
-        // Wait up to 30 seconds for either the login form (username input) or the dashboard (e.g. Create button or logout)
-        await Promise.race([
-            page.waitForSelector('input[type="text"], input[name="username"]', { timeout: 30000 }),
-            page.waitForSelector('button:has-text("Create"), button:has-text("สร้าง"), a:has-text("Create")', { timeout: 30000 })
-        ]);
+            console.log('[KUMA AUTO] Checking for login form...');
+            await Promise.race([
+                page.waitForSelector('input[type="text"], input[name="username"]', { timeout: 20000 }),
+                page.waitForSelector('button:has-text("Create"), button:has-text("สร้าง"), a:has-text("Create")', { timeout: 20000 })
+            ]);
 
-        if (await page.locator('input[type="text"], input[name="username"]').first().isVisible()) {
-            console.log('[KUMA AUTO] Login page detected. Logging in...');
-            await page.locator('input[type="text"], input[name="username"]').first().fill(GISX_USERNAME);
-            await page.locator('input[type="password"]').first().fill(GISX_PASSWORD);
+            if (await page.locator('input[type="text"], input[name="username"]').first().isVisible()) {
+                console.log('[KUMA AUTO] Login page detected. Logging in...');
+                await page.locator('input[type="text"], input[name="username"]').first().fill(GISX_USERNAME);
+                await page.locator('input[type="password"]').first().fill(GISX_PASSWORD);
 
-            const submitBtn = page.locator('input[type="submit"], #kc-login, button[type="submit"], button:has-text("Login")').first();
-            await submitBtn.click();
-            console.log('[KUMA AUTO] Clicked login. Waiting for navigation...');
-            await page.waitForNavigation({ timeout: 30000 }).catch(() => {});
-        } else {
-            console.log('[KUMA AUTO] Already logged in (found dashboard controls).');
+                const submitBtn = page.locator('input[type="submit"], #kc-login, button[type="submit"], button:has-text("Login")').first();
+                await submitBtn.click();
+                console.log('[KUMA AUTO] Clicked login. Waiting for navigation...');
+                await page.waitForNavigation({ timeout: 30000 }).catch(() => {});
+            } else {
+                console.log('[KUMA AUTO] Already logged in (found dashboard controls).');
+            }
+            loggedIn = true;
+            break;
+        } catch (e) {
+            console.log(`[KUMA AUTO]   ⚠️  Login attempt ${loginAttempt} error: ${e.message}`);
+            await page.waitForTimeout(5000);
         }
-    } catch (e) {
-        console.log('[KUMA AUTO] Login check or step error:', e.message);
     }
 
     await page.waitForTimeout(4000);
@@ -636,12 +708,14 @@ const results = [];
                 'field_type_dropdown_name_detail_policy.policy_info.line_of_business',
                 item.lineOfBusiness
             );
+            await page.waitForTimeout(2000);
 
             // 6. Risk Level
             await fillDropdown(
                 'field_type_dropdown_name_detail_policy.policy_info.risk_level',
                 item.riskLevel
             );
+            await page.waitForTimeout(2000);
 
             // 7. Occupational Classification
             await fillDropdown(
@@ -679,10 +753,40 @@ const results = [];
             await fillDropdown('field_type_dropdown_name_detail_policy.policy_holder_address.country', item.country);
             await fillDropdown('field_type_dropdown_name_detail_policy.policy_holder_address.province', item.province);
             await page.waitForTimeout(2000);
-            await fillDropdown('field_type_dropdown_name_detail_policy.policy_holder_address.district', item.district);
-            await page.waitForTimeout(2000);
-            await fillDropdown('field_type_dropdown_name_detail_policy.policy_holder_address.sub_district', item.subDistrict);
-            await page.waitForTimeout(1500);
+            // Fill District (with Province re-select retry if options are blank/empty)
+            for (let retryDist = 0; retryDist < 3; retryDist++) {
+                await fillDropdown('field_type_dropdown_name_detail_policy.policy_holder_address.district', item.district);
+                await page.waitForTimeout(1500);
+
+                // Verify if selected successfully
+                const labelText = await page.locator('div[data-qa="field_type_dropdown_name_detail_policy.policy_holder_address.district"] #dropdown-label-ddl').textContent().catch(() => '');
+                if (labelText && labelText.trim() !== 'Select' && labelText.trim() !== 'เลือก') {
+                    break;
+                }
+                
+                // If it fails, select a DIFFERENT province to force the API to load!
+                const fallbackProv = `(nth option: ${retryDist + 1})`;
+                console.log(`[KUMA AUTO]   ⚠️  District dropdown selection failed or empty. Selecting a DIFFERENT Province "${fallbackProv}" to trigger new API fetch (Attempt ${retryDist + 1}/3)...`);
+                await fillDropdown('field_type_dropdown_name_detail_policy.policy_holder_address.province', fallbackProv);
+                await page.waitForTimeout(3000);
+            }
+
+            // Fill Sub District (with District re-select retry if options are blank/empty)
+            for (let retrySub = 0; retrySub < 3; retrySub++) {
+                await fillDropdown('field_type_dropdown_name_detail_policy.policy_holder_address.sub_district', item.subDistrict);
+                await page.waitForTimeout(1500);
+
+                // Verify if selected successfully
+                const labelText = await page.locator('div[data-qa="field_type_dropdown_name_detail_policy.policy_holder_address.sub_district"] #dropdown-label-ddl').textContent().catch(() => '');
+                if (labelText && labelText.trim() !== 'Select' && labelText.trim() !== 'เลือก') {
+                    break;
+                }
+                
+                const fallbackDist = `(nth option: ${retrySub + 1})`;
+                console.log(`[KUMA AUTO]   ⚠️  Sub District dropdown selection failed or empty. Selecting a DIFFERENT District "${fallbackDist}" to trigger new API fetch (Attempt ${retrySub + 1}/3)...`);
+                await fillDropdown('field_type_dropdown_name_detail_policy.policy_holder_address.district', fallbackDist);
+                await page.waitForTimeout(3000);
+            }
 
             // 17. Zip Code (check if it has value first, do not modify if it does)
             try {
@@ -751,7 +855,26 @@ const results = [];
             console.log(`[KUMA AUTO] Filling ${countPlanType} plan rows in Coverage table...`);
             for (let i = 0; i < countPlanType; i++) {
                 await fillDropdown('field_type_dropdown_name_coverage.coverage_table.plan_type', item.planType || '1 :, 2 :, 3 :, 4 :, 5 :, 6 :', i);
-                await fillDropdown('field_type_dropdown_name_coverage.coverage_table.mode_of_payment', item.modeOfPayment || 'Monthly, รายเดือน', i);
+                
+                // Wait 1.5 seconds for Mode of Payment to load dynamically
+                await page.waitForTimeout(1500);
+
+                // Retry mode of payment dropdown up to 3 times
+                let mopSuccess = false;
+                for (let retry = 0; retry < 3; retry++) {
+                    await fillDropdown('field_type_dropdown_name_coverage.coverage_table.mode_of_payment', item.modeOfPayment || 'Monthly, รายเดือน', i);
+                    
+                    // Verify if the option is actually selected and not empty
+                    const selector = `div[data-qa="field_type_dropdown_name_coverage.coverage_table.mode_of_payment"] [data-qa="btn_dropdown_toggle_ddl"]`;
+                    const triggerText = (await page.locator(selector).nth(i).textContent().catch(() => '')).trim();
+                    const isEmpty = !triggerText || triggerText.toLowerCase().includes('select') || triggerText.includes('เลือก');
+                    if (!isEmpty) {
+                        mopSuccess = true;
+                        break;
+                    }
+                    console.log(`[KUMA AUTO]   ⚠️  mode_of_payment index ${i} is still empty. Retry ${retry + 1}/3...`);
+                    await page.waitForTimeout(1000);
+                }
             }
 
             await clickEl('input[id$="-WAIVED"]');
@@ -1062,7 +1185,7 @@ const results = [];
                 }
 
                 // 1. Plan Type
-                await fillDropdown('field_type_dropdown_name_claim_payment_object.claim_payment.0.plan_type', '1 :, 2 :, 3 :, 4 :, 5 :, 6 :');
+                await fillDropdown('field_type_dropdown_name_claim_payment_object.claim_payment.0.plan_type', '(first option)');
                 await page.waitForTimeout(300);
 
                 // 2. Payment Type (Select first option)
@@ -1108,6 +1231,13 @@ const results = [];
             // ====================================================
             console.log('[KUMA AUTO] --- STEP 3: Upload Documents ---');
             
+            // Click Next (Step 2 → Step 3)
+            console.log('[KUMA AUTO] Clicking Next (Step 2 → Step 3)...');
+            const nextBtn2 = page.locator('button:has-text("Next"), button:has-text("ถัดไป")').last();
+            await nextBtn2.scrollIntoViewIfNeeded().catch(() => {});
+            await nextBtn2.click({ force: true });
+            await page.waitForTimeout(6000);
+            
             // Use the user's provided PNG file for uploading
             const dummyPath = path.join(__dirname, 'dummy.png');
             if (!fs.existsSync(dummyPath)) {
@@ -1122,6 +1252,27 @@ const results = [];
                 console.log('[KUMA AUTO] Document upload table loaded successfully.');
             } catch (err) {
                 console.log('[KUMA AUTO]   ⚠️ Upload File button did not become visible within 15s:', err.message);
+            }
+
+            // Make sure all required rows have ATTACHED_FILE selected
+            console.log('[KUMA AUTO] Selecting ATTACHED_FILE radio buttons for document rows...');
+            try {
+                const radioLocator = page.locator('input[type="radio"][value="ATTACHED_FILE"]');
+                await radioLocator.first().waitFor({ state: 'attached', timeout: 5000 }).catch(() => {});
+                
+                const radios = await radioLocator.all();
+                console.log(`[KUMA AUTO] Found ${radios.length} ATTACHED_FILE radio targets.`);
+                for (let r of radios) {
+                    try {
+                        await r.click({ force: true });
+                        await page.waitForTimeout(500); // Wait for UI transition
+                    } catch (e) {
+                        console.log('[KUMA AUTO]   ⚠️  Failed clicking radio:', e.message);
+                    }
+                }
+                await page.waitForTimeout(1000); // Let all file inputs mount
+            } catch (e) {
+                console.log('[KUMA AUTO] Failed to click ATTACHED_FILE radios:', e.message);
             }
 
             // Find all file inputs on the Step 3 page
@@ -1171,6 +1322,38 @@ const results = [];
             // STEP 4 — Case Summary → Submit
             // ====================================================
             console.log('[KUMA AUTO] --- STEP 4: Case Summary → Submit ---');
+
+            const handleConfirmModal = async () => {
+                try {
+                    await page.waitForTimeout(3000);
+                    console.log('[KUMA AUTO] Searching for Submit Case confirmation modal...');
+                    const clicked = await page.evaluate(() => {
+                        const modalElement = document.querySelector('.ant-modal-content, .ant-modal, [role="dialog"], div[class*="modal"]');
+                        if (modalElement) {
+                            const modalButtons = Array.from(modalElement.querySelectorAll('button'));
+                            const modalSubmit = modalButtons.find(b => {
+                                const text = b.textContent.trim();
+                                return text === 'Submit' || text === 'ตกลง' || text === 'ยืนยัน' || text === 'สร้าง';
+                            });
+                            if (modalSubmit) {
+                                modalSubmit.click();
+                                return true;
+                            }
+                        }
+                        return false;
+                    });
+                    
+                    if (clicked) {
+                        console.log('[KUMA AUTO] Successfully clicked Submit inside the confirmation modal.');
+                        await page.waitForTimeout(10000); // Wait for submit request to finish
+                    } else {
+                        console.log('[KUMA AUTO] Confirm Submit Case modal button not found via DOM path check.');
+                    }
+                } catch (e) {
+                    console.log('[KUMA AUTO] Failed to handle confirm submit inside modal:', e.message);
+                }
+            };
+
             // Select the actual Submit/Confirm/สร้าง button (avoiding Draft/บันทึกร่าง/Save Draft)
             const submitBtn = page.locator(
                 'button:text-is("Submit"), button:text-is("Confirm"), button:text-is("สร้าง"), button:text-is("ส่งใบสมัคร"), button:has-text("Submit Case")'
@@ -1179,7 +1362,7 @@ const results = [];
             if (await submitBtn.isVisible().catch(() => false)) {
                 console.log('[KUMA AUTO] Clicking final Submit button...');
                 await submitBtn.click({ force: true });
-                await page.waitForTimeout(8000);
+                await handleConfirmModal();
                 await takeScreenshot(`${caseLabel}_09_DONE`);
                 console.log(`[KUMA AUTO] ✅ Case ${caseIdx + 1} submitted successfully!`);
             } else {
@@ -1188,7 +1371,7 @@ const results = [];
                 const fallbackSubmit = page.locator('button:has-text("Submit"), button:has-text("สร้าง")').filter({ hasNotText: 'Draft' }).filter({ hasNotText: 'ร่าง' }).first();
                 if (await fallbackSubmit.isVisible().catch(() => false)) {
                     await fallbackSubmit.click({ force: true });
-                    await page.waitForTimeout(8000);
+                    await handleConfirmModal();
                     await takeScreenshot(`${caseLabel}_09_DONE`);
                     console.log(`[KUMA AUTO] ✅ Case ${caseIdx + 1} submitted successfully (via fallback selector)!`);
                 } else {
